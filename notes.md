@@ -1,5 +1,5 @@
 ---
-layout: page
+layout: deafult
 title: "Notes"
 permalink: /notes/
 ---
