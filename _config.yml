@@ -1,3 +1,7 @@
 theme: jekyll-theme-architect
 title: Baksho's homepage
-description: Bookmark this to keep an eye on my project updates!
+description: Personal site and research notes!
+
+header_pages:
+  - index.md
+  - notes.md
