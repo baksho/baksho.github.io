@@ -1,49 +1,31 @@
-/* .button {
-  display: inline-block;
-  background-color: #007acc;
-  color: white;
-  padding: 8px 8px;
-  text-decoration: none;
-  border-radius: 6px;
-  font-weight: 500;
-  transition: background 0.3s ease;
-  margin-right: 10px;
+/* Force override with !important to bypass Architect's rules */
+
+.button-group {
+  display: flex !important;
+  justify-content: center !important;
+  flex-wrap: nowrap !important;
+  gap: 10px !important;
+  margin-top: 20px !important;
 }
-
-.button:hover {
-  background-color: #005fa3;
-  color: #fff;
-} */
-
 
 .button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #007acc;
-  color: white;
-  padding: 8px 16px;
-  text-decoration: none;
-  border-radius: 4px;
-  font-weight: 500;
-  font-size: 15px;
-  transition: background 0.25s ease, transform 0.1s ease;
-  margin: 5px;
-  white-space: nowrap;
-  min-width: 100px;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background-color: #0366d6 !important;
+  color: #fff !important;
+  padding: 6px 14px !important;
+  border-radius: 6px !important;
+  text-decoration: none !important;
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  white-space: nowrap !important;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  transition: background-color 0.2s ease, transform 0.1s ease !important;
 }
 
 .button:hover {
-  background-color: #005fa3;
-  transform: translateY(-2px);
-  color: #fff;
-}
-
-/* Optional: center all buttons in a row */
-.button-group {
-  display: flex;
-  justify-content: center;
-  flex-wrap: wrap;
-  margin-top: 1.5em;
-  gap: 10px;
+  background-color: #024ea0 !important;
+  transform: translateY(-2px) !important;
+  color: #fff !important;
 }
