@@ -1,4 +1,4 @@
-.button {
+/* .button {
   display: inline-block;
   background-color: #007acc;
   color: white;
@@ -13,4 +13,37 @@
 .button:hover {
   background-color: #005fa3;
   color: #fff;
+} */
+
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #007acc;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 15px;
+  transition: background 0.25s ease, transform 0.1s ease;
+  margin: 5px;
+  white-space: nowrap;
+  min-width: 100px;
+}
+
+.button:hover {
+  background-color: #005fa3;
+  transform: translateY(-2px);
+  color: #fff;
+}
+
+/* Optional: center all buttons in a row */
+.button-group {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5em;
+  gap: 10px;
 }
