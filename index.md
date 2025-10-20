@@ -3,7 +3,7 @@ layout: default
 title: "Home"
 ---
 <div class="button-group">
-  <a href="/about" class="button">About</a>
+  <a href="/about" class="button">About Me</a>
   <a href="/projects" class="button">My Projects</a>
   <a href="/notes" class="button">View Notes</a>
 </div>
