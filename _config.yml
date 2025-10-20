@@ -2,6 +2,14 @@ theme: jekyll-theme-architect
 title: Baksho's homepage
 description: Personal site and research notes!
 
+# Blog setup
+collections:
+  posts:
+    output: true
+
+# Optional: show navigation tabs automatically
 header_pages:
   - index.md
-  - notes.md
+  - ml/index.md
+  - mathematics/index.md
+  - statistics/index.md
