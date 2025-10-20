@@ -14,6 +14,13 @@ header_pages:
   - mathematics/index.md
   - statistics/index.md
 
-# at the end of _config.yml
+# # at the end of _config.yml
+# include:
+#   - assets/css/custom.css
+
+sass:
+  style: compressed
+
+# Optional but good practice
 include:
-  - assets/css/custom.css
+  - assets/css
