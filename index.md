@@ -10,7 +10,7 @@ I explore machine learning and statistics applied to biology.
 
 ---
 
-### Explore my notes →:
+### Explore my notes →
 - [Machine Learning & Deep Learning](/ml/)
 - [Mathematics](/mathematics/)
 - [Statistics](/statistics/)
