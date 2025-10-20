@@ -6,9 +6,11 @@ title: "Home"
 ## Hi, I’m Suvinava
 
 I’m a Data Science Master’s student at TU Braunschweig.  
-I’m interested in ML for biology — GRN inference, calibration, covariate shift, etc.
+I explore machine learning and statistics applied to biology.
 
-This is my small site where I share notes and ideas.
+---
 
-
-[Read my Notes →](/notes/)
+### Explore my notes →:
+- [Machine Learning & Deep Learning](/ml/)
+- [Mathematics](/mathematics/)
+- [Statistics](/statistics/)
