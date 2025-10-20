@@ -13,3 +13,7 @@ header_pages:
   - ml/index.md
   - mathematics/index.md
   - statistics/index.md
+
+# at the end of _config.yml
+include:
+  - assets/css/custom.css
