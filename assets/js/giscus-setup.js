@@ -18,7 +18,7 @@ function determineGiscusTheme() {
 
   let giscusAttributes = {
     src: "https://giscus.app/client.js",
-    "data-repo": "baksho/baksho-portfolio",
+    "data-repo": "baksho/baksho.github.io",
     "data-repo-id": "",
     "data-category": "Comments",
     "data-category-id": "",
