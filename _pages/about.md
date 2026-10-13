@@ -2,33 +2,40 @@
 layout: about
 title: about
 permalink: /
-subtitle: <a href='#'>Affiliations</a>. Address. Contacts. Motto. Etc.
+subtitle: Data Science · TU Braunschweig
 
 profile:
   align: right
   image: prof_pic.jpg
   image_circular: false # crops the image to make it circular
   more_info: >
-    <p>555 your office number</p>
-    <p>123 your address street</p>
-    <p>Your City, State 12345</p>
+    <p>Braunschweig, Germany</p>
 
-selected_papers: true # includes a list of papers marked as "selected={true}"
-social: true # includes social icons at the bottom of the page
+selected_papers: true # includes a list of papers marked as "selected={true}" in _bibliography/papers.bib
+social: false # the link row below replaces the icon-only social bar
 
 announcements:
-  enabled: true # includes a list of news items
-  scrollable: true # adds a vertical scroll bar if there are more than 3 news items
+  enabled: true # includes a list of news items (files in _news/)
+  scrollable: false # adds a vertical scroll bar if there are more than 3 news items
   limit: 5 # leave blank to include all the news in the `_news` folder
 
 latest_posts:
   enabled: true
-  scrollable: true # adds a vertical scroll bar if there are more than 3 new posts items
-  limit: 3 # leave blank to include all the blog posts
+  scrollable: false # adds a vertical scroll bar if there are more than 3 new posts items
+  limit: 2 # number of blog posts shown on the home page
 ---
 
-Write your biography here. Tell the world about yourself. Link to your favorite [subreddit](https://www.reddit.com). You can put a picture in, too. The code is already in, just name your picture `prof_pic.jpg` and put it in the `img/` folder.
+I am a statistical machine learning researcher interested in the mathematical and empirical foundations of deep learning: generalization, optimization, uncertainty quantification, calibration and learning under distribution shift. I combine theoretical analysis of neural-network behavior with computational experiments, and apply it to biomedical machine learning.
 
-Put your address / P.O. box / other info right below your picture. You can also disable any of these elements by editing `profile` property of the YAML header of your `_pages/about.md`. Edit `_bibliography/papers.bib` and Jekyll will render your [publications page](/al-folio/publications/) automatically.
+I am an M.Sc. student in Data Science at [TU Braunschweig](https://www.tu-braunschweig.de/en) and am writing my thesis on end-to-end calibration of neural networks in a biomedical context, supervised by Prof. Dr. Nicole Mücke at the Institute for Statistics and Foundations of Machine Learning. I also work as a student research assistant at [Medizinische Hochschule Hannover](https://www.mhh.de/en), where I develop an LLM- and knowledge-graph-aware multi-agent RAG system for scientific hypothesis generation from heterogeneous biomedical evidence.
 
-Link to your social media connections, too. This theme is set up to use [Font Awesome icons](https://fontawesome.com/) and [Academicons](https://jpswalsh.github.io/academicons/), like the ones below. Add your Facebook, Twitter, LinkedIn, Google Scholar, or just disable all of them.
+Before my master's I worked in industry for several years, first at Ericsson and then as a strategy consultant at Wipro, with an MBA from IIM Indore in between. I am a recipient of the Deutschlandstipendium (2025/26).
+
+<div class="link-row">
+  <a href="mailto:{{ site.data.socials.email }}"><i class="fa-solid fa-envelope"></i>Email</a>
+  <a href="{{ site.data.socials.cv_pdf | relative_url }}"><i class="fa-solid fa-file-pdf"></i>CV</a>
+  <a href="https://scholar.google.com/citations?user={{ site.data.socials.scholar_userid }}"><i class="ai ai-google-scholar"></i>Google Scholar</a>
+  <a href="https://github.com/{{ site.data.socials.github_username }}"><i class="fa-brands fa-github"></i>GitHub</a>
+  <a href="https://www.linkedin.com/in/{{ site.data.socials.linkedin_username }}/"><i class="fa-brands fa-linkedin"></i>LinkedIn</a>
+  <a href="https://orcid.org/{{ site.data.socials.orcid_id }}"><i class="ai ai-orcid"></i>ORCID</a>
+</div>

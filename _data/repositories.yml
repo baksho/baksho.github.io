@@ -1,14 +1,9 @@
 github_users:
-  - torvalds
-  - alshedivat
+  - baksho
 
 repo_description_lines_max: 2
 
 github_repos:
-  - alshedivat/al-folio
-  - jekyll/jekyll
-  - twbs/bootstrap
-  - jquery/jquery
-  - FortAwesome/Font-Awesome
-  - mathjax/MathJax
-  - jpswalsh/academicons
+  - baksho/dist_shift_regularization
+  - baksho/infinite-width-uq
+  - baksho/AMRxformer

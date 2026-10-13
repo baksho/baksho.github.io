@@ -2,8 +2,7 @@
 layout: default
 permalink: /blog/
 title: blog
-nav: true
-nav_order: 1
+nav: false # blog lives in the 'writing' dropdown (see _pages/dropdown.md)
 pagination:
   enabled: true
   collection: posts

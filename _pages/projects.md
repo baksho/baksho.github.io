@@ -2,11 +2,11 @@
 layout: page
 title: projects
 permalink: /projects/
-description: A growing collection of your cool projects.
+description: Research and course projects.
 nav: true
 nav_order: 3
-display_categories: [work, fun]
-horizontal: false
+display_categories: [] # categories are switched off in _config.yml (enable_project_categories)
+horizontal: true
 ---
 
 <!-- pages/projects.md -->

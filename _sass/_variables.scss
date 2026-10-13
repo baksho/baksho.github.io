@@ -32,9 +32,24 @@ $grey-900: #212529;
 $white-color: #ffffff !default;
 $black-color: #000000 !default;
 
+// Portfolio palette: blue accent on quiet paper/ink tones.
+// Change $accent-light / $accent-dark to re-colour the whole site.
+$accent-light: #1f5fd1 !default; // links, active nav, badges (light mode)
+$accent-dark: #7fb0ff !default; // same, in dark mode
+$paper-light: #fcfcfd;
+$paper-2-light: #f2f3f6;
+$ink-light: #14161a;
+$ink-3-light: #5f6675;
+$rule-light: #e4e6eb;
+$paper-dark: #0e1013;
+$paper-2-dark: #14171c;
+$ink-dark: #e8eaee;
+$ink-3-dark: #9aa1ae;
+$rule-dark: #262a31;
+
 // Theme colors
 
-$code-bg-color-light: rgba($purple-color, 0.05);
+$code-bg-color-light: rgba($accent-light, 0.06);
 $code-bg-color-dark: #2c3237 !default;
 
 // Font awesome location
