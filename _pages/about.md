@@ -1,8 +1,14 @@
 ---
 layout: about
+full_bleed: true # the About layout is full width (hero + landscape); other pages use the normal container
 title: about
 permalink: /
 subtitle: Data Science · TU Braunschweig
+
+hero: # the first screen (editable here)
+  eyebrow: Hello, I'm
+  role: Data Scientist · Machine Learning · Computational Biology
+  bio: I build intelligent systems at the intersection of machine learning and biological applications.
 
 profile:
   align: right
@@ -31,6 +37,7 @@ I am an M.Sc. student in Data Science at [TU Braunschweig](https://www.tu-brauns
 
 Before my master's I worked in industry for several years, first at Ericsson and then as a strategy consultant at Wipro, with an MBA from IIM Indore in between. I am a recipient of the Deutschlandstipendium (2025/26).
 
+<!-- The icon row under the name (see _layouts/about.liquid) replaces the old text link row. To bring it back, delete these comment markers:
 <div class="link-row">
   <a href="mailto:{{ site.data.socials.email }}"><i class="fa-solid fa-envelope"></i>Email</a>
   <a href="{{ site.data.socials.cv_pdf | relative_url }}"><i class="fa-solid fa-file-pdf"></i>CV</a>
@@ -39,3 +46,4 @@ Before my master's I worked in industry for several years, first at Ericsson and
   <a href="https://www.linkedin.com/in/{{ site.data.socials.linkedin_username }}/"><i class="fa-brands fa-linkedin"></i>LinkedIn</a>
   <a href="https://orcid.org/{{ site.data.socials.orcid_id }}"><i class="ai ai-orcid"></i>ORCID</a>
 </div>
+-->

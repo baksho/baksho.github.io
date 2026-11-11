@@ -16,11 +16,20 @@
   </head>
 
   <!-- Body -->
-  <body class="{% if site.navbar_fixed %}fixed-top-nav{% endif %} {% unless site.footer_fixed %}sticky-bottom-footer{% endunless %}">
+  <body class="{% if site.navbar_fixed %}fixed-top-nav{% endif %} {% unless site.footer_fixed %}sticky-bottom-footer{% endunless %}{% if page.full_bleed %} sb-about{% endif %}">
+    {% unless page.full_bleed %}
+      {% if site.landscape_backdrop %}
+        <!-- faint, static copy of this session's loss landscape (see assets/js/landscape.js) -->
+        <canvas id="sb-backdrop" aria-hidden="true"></canvas>
+      {% endif %}
+    {% endunless %}
     <!-- Header -->
     {% include header.liquid %}
 
     <!-- Content -->
+    {% if page.full_bleed %}
+      <div role="main">{{ content }}</div>
+    {% else %}
     <div class="container mt-5" role="main">
       {% if page.toc and page.toc.sidebar %}
         {% if page.toc.sidebar == 'right' %}
@@ -46,6 +55,7 @@
         {{ content }}
       {% endif %}
     </div>
+    {% endif %}
 
     <!-- Footer -->
     {% include footer.liquid %}

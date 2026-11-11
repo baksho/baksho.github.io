@@ -130,7 +130,7 @@ pagination:
         {% if post.redirect == blank %}
           <a class="post-title" href="{{ post.url | relative_url }}">{{ post.title }}</a>
         {% elsif post.redirect contains '://' %}
-          <a class="post-title" href="{{ post.redirect }}" target="_blank">{{ post.title }}</a>
+          <a class="post-title" href="{{ post.redirect }}" target="_blank" rel="noopener noreferrer">{{ post.title }}</a>
           <svg width="2rem" height="2rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
             <path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path>
           </svg>
@@ -138,7 +138,15 @@ pagination:
           <a class="post-title" href="{{ post.redirect | relative_url }}">{{ post.title }}</a>
         {% endif %}
       </h3>
-      <p>{{ post.description }}</p>
+      {% if post.description != blank %}<p>{{ post.description }}</p>{% endif %}
+      {% if post.redirect contains '://' %}
+      <p class="post-meta">
+        {% unless post.hide_date %}{{ post.date | date: '%B %d, %Y' }} &nbsp; &middot; &nbsp;{% endunless %}
+        {{ post.external_source | default: 'external' }}
+        &nbsp; &middot; &nbsp;
+        <a class="read-more" href="{{ post.redirect }}" target="_blank" rel="noopener noreferrer" aria-label="Read &ldquo;{{ post.title | escape }}&rdquo; on {{ post.external_source | default: 'the web' }} (opens in a new tab)">read more <i class="fa-solid fa-arrow-up-right-from-square fa-xs"></i></a>
+      </p>
+      {% else %}
       <p class="post-meta">
         {{ read_time }} min read &nbsp; &middot; &nbsp;
         {{ post.date | date: '%B %d, %Y' }}
@@ -146,6 +154,7 @@ pagination:
         &nbsp; &middot; &nbsp; {{ post.external_source }}
         {% endif %}
       </p>
+      {% endif %}
       <p class="post-tags">
         <a href="{{ year | prepend: '/blog/' | relative_url }}">
           <i class="fa-solid fa-calendar fa-sm"></i> {{ year }} </a>

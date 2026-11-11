@@ -376,3 +376,9 @@
 {% if site.newsletter.enabled %}
   <script defer src="{{ '/assets/js/newsletter.js' | relative_url | bust_file_cache }}"></script>
 {% endif %}
+
+<!-- Loss landscape (backdrop on every page, interactive stage on About) -->
+<script defer src="{{ '/assets/js/landscape.js' | relative_url | bust_file_cache }}"></script>
+{% if page.full_bleed %}
+  <script defer src="{{ '/assets/js/stage.js' | relative_url | bust_file_cache }}"></script>
+{% endif %}

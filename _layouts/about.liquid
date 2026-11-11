@@ -1,80 +1,119 @@
 ---
 layout: default
 ---
-<div class="post">
-  <header class="post-header">
-    <h1 class="post-title">
-      {% if site.title == 'blank' %}
-        <span class="font-weight-bold">{{ site.first_name }}</span> {{ site.middle_name }}
-        {{ site.last_name }}
-      {% else %}
-        {{ site.title }}
-      {% endif %}
-    </h1>
-    <p class="desc">{{ page.subtitle }}</p>
-  </header>
+{% assign hero = page.hero %}
+{% assign links = site.data.socials %}
 
-  <article>
-    {% if page.profile %}
-      <div class="profile float-{% if page.profile.align == 'left' %}left{% else %}right{% endif %}">
-        {% if page.profile.image %}
-          {% assign profile_image_path = page.profile.image | prepend: 'assets/img/' %}
-          {% if page.profile.image_circular %}
-            {% assign profile_image_class = 'img-fluid z-depth-1 rounded-circle' %}
-          {% else %}
-            {% assign profile_image_class = 'img-fluid z-depth-1
-      rounded' %}
+<!-- Landing page (first visit of a session) -->
+{% include landing.liquid %}
+
+<!-- Hero: the loss landscape on the right, introduction on the left -->
+<section class="sb-hero" id="sbHero" aria-label="Introduction">
+  <canvas id="sbStage" aria-hidden="true"></canvas>
+  <div class="sb-hero-inner sb-chrome">
+    <div class="sb-intro">
+      <p class="sb-eyebrow sb-fade">{{ hero.eyebrow | default: "Hello, I'm" }}</p>
+      <div class="sb-ph sb-ph-name" id="sbPhName" aria-hidden="true">Suvinava</div>
+      <div class="sb-ph sb-ph-role" id="sbPhRole" aria-hidden="true">{{ hero.role }}</div>
+      <p class="sb-bio sb-fade">{{ hero.bio }}</p>
+      <div class="sb-actions sb-fade">
+        <a class="sb-btn sb-btn-primary" href="{{ '/projects/' | relative_url }}">View My Work <svg class="sb-arrow" width="9" height="9" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 2l6 6M8 3v5H3"/></svg></a>
+        <a class="sb-btn sb-btn-secondary" href="{{ links.cv_pdf | relative_url }}" download><i class="fa-solid fa-file-lines" aria-hidden="true"></i>Resume</a>
+      </div>
+      <div class="sb-ph sb-ph-icons" id="sbPhIcons" aria-hidden="true"></div>
+    </div>
+  </div>
+  <div class="sb-scroll sb-chrome" aria-hidden="true">SCROLL<span></span></div>
+</section>
+
+<!-- The page itself. The name, role line and icons above fly into the three slots below as you scroll. -->
+<div class="container sb-body">
+  <div class="post">
+    <header class="post-header sb-dockhead">
+      <div class="sb-slot">
+        <h1 class="post-title sb-trav sb-trav-name" data-kind="name" data-ph="sbPhName">
+          <span class="first font-weight-bold">{{ site.first_name }}</span><span class="last"> {{ site.last_name }}</span>
+        </h1>
+      </div>
+      <div class="sb-slot">
+        <p class="desc sb-trav sb-trav-role" data-kind="role" data-ph="sbPhRole">
+          <span class="a">{{ hero.role }}</span><span class="b">{{ hero.role_short | default: hero.role }}</span>
+        </p>
+      </div>
+      <div class="sb-slot">
+        <div class="sb-trav sb-icons" data-kind="icons" data-ph="sbPhIcons">
+          <a href="mailto:{{ links.email }}" aria-label="Email" title="Email"><i class="fa-solid fa-envelope"></i></a>
+          <a href="https://scholar.google.com/citations?user={{ links.scholar_userid }}" target="_blank" rel="noopener" aria-label="Google Scholar" title="Google Scholar"><i class="ai ai-google-scholar"></i></a>
+          <a href="https://github.com/{{ links.github_username }}" target="_blank" rel="noopener" aria-label="GitHub" title="GitHub"><i class="fa-brands fa-github"></i></a>
+          <a href="https://www.linkedin.com/in/{{ links.linkedin_username }}/" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><i class="fa-brands fa-linkedin"></i></a>
+          <a href="https://orcid.org/{{ links.orcid_id }}" target="_blank" rel="noopener" aria-label="ORCID" title="ORCID"><i class="ai ai-orcid"></i></a>
+          <a href="{{ links.medium_url }}" target="_blank" rel="noopener" aria-label="Medium" title="Medium"><i class="fa-brands fa-medium"></i></a>
+        </div>
+      </div>
+    </header>
+
+    <article>
+      {% if page.profile %}
+        <div class="profile float-{% if page.profile.align == 'left' %}left{% else %}right{% endif %}">
+          {% if page.profile.image %}
+            {% assign profile_image_path = page.profile.image | prepend: 'assets/img/' %}
+            {% if page.profile.image_circular %}
+              {% assign profile_image_class = 'img-fluid z-depth-1 rounded-circle' %}
+            {% else %}
+              {% assign profile_image_class = 'img-fluid z-depth-1
+        rounded' %}
+            {% endif %}
+            {% capture sizes %}(min-width: {{ site.max_width }}) {{ site.max_width | minus: 30 | times: 0.3}}px, (min-width: 576px)
+        30vw, 95vw"{% endcapture %}
+            {%
+              include figure.liquid loading="eager" path=profile_image_path class=profile_image_class sizes=sizes alt=page.profile.image
+              cache_bust=true
+            %}
           {% endif %}
-          {% capture sizes %}(min-width: {{ site.max_width }}) {{ site.max_width | minus: 30 | times: 0.3}}px, (min-width: 576px)
-      30vw, 95vw"{% endcapture %}
-          {%
-            include figure.liquid loading="eager" path=profile_image_path class=profile_image_class sizes=sizes alt=page.profile.image
-            cache_bust=true
-          %}
-        {% endif %}
-        {% if page.profile.more_info %}
-          <div class="more-info">{{ page.profile.more_info }}</div>
-        {% endif %}
-      </div>
-    {% endif %}
+          {% if page.profile.more_info %}
+            <div class="more-info">{{ page.profile.more_info }}</div>
+          {% endif %}
+        </div>
+      {% endif %}
 
-    <div class="clearfix">{{ content }}</div>
+      <div class="clearfix">{{ content }}</div>
 
-    <!-- News -->
-    {% if page.announcements and page.announcements.enabled %}
-      <h2>
-        <a href="{{ '/news/' | relative_url }}" style="color: inherit">news</a>
-      </h2>
-      {% include news.liquid limit=true %}
-    {% endif %}
+      <!-- News -->
+      {% if page.announcements and page.announcements.enabled %}
+        <h2>
+          <a href="{{ '/news/' | relative_url }}" style="color: inherit">news</a>
+        </h2>
+        {% include news.liquid limit=true %}
+      {% endif %}
 
-    <!-- Latest posts -->
-    {% if page.latest_posts and page.latest_posts.enabled %}
-      <h2>
-        <a href="{{ '/blog/' | relative_url }}" style="color: inherit">latest posts</a>
-      </h2>
-      {% include latest_posts.liquid %}
-    {% endif %}
+      <!-- Latest posts -->
+      {% if page.latest_posts and page.latest_posts.enabled %}
+        <h2>
+          <a href="{{ '/blog/' | relative_url }}" style="color: inherit">latest posts</a>
+        </h2>
+        {% include latest_posts.liquid %}
+      {% endif %}
 
-    <!-- Selected papers -->
-    {% if page.selected_papers %}
-      <h2>
-        <a href="{{ '/publications/' | relative_url }}" style="color: inherit">selected publications</a>
-      </h2>
-      {% include selected_papers.liquid %}
-    {% endif %}
+      <!-- Selected papers -->
+      {% if page.selected_papers %}
+        <h2>
+          <a href="{{ '/publications/' | relative_url }}" style="color: inherit">selected publications</a>
+        </h2>
+        {% include selected_papers.liquid %}
+      {% endif %}
 
-    <!-- Social -->
-    {% if page.social %}
-      <div class="social">
-        <div class="contact-icons">{% social_links %}</div>
+      <!-- Social -->
+      {% if page.social %}
+        <div class="social">
+          <div class="contact-icons">{% social_links %}</div>
 
-        <div class="contact-note">{{ site.contact_note }}</div>
-      </div>
-    {% endif %}
+          <div class="contact-note">{{ site.contact_note }}</div>
+        </div>
+      {% endif %}
 
-    {% if site.newsletter and site.newsletter.enabled and site.footer_fixed %}
-      {% include newsletter.liquid center=true %}
-    {% endif %}
-  </article>
+      {% if site.newsletter and site.newsletter.enabled and site.footer_fixed %}
+        {% include newsletter.liquid center=true %}
+      {% endif %}
+    </article>
+  </div>
 </div>
