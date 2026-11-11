@@ -30,31 +30,31 @@
     {% if page.full_bleed %}
       <div role="main">{{ content }}</div>
     {% else %}
-    <div class="container mt-5" role="main">
-      {% if page.toc and page.toc.sidebar %}
-        {% if page.toc.sidebar == 'right' %}
-          <div class="row">
-            <!-- main content area -->
-            <div class="col-sm-9">{{ content }}</div>
-            <!-- sidebar, which will move to the top on a small screen -->
-            <div class="col-sm-3">
-              <nav id="toc-sidebar" class="sticky-top"></nav>
+      <div class="container mt-5" role="main">
+        {% if page.toc and page.toc.sidebar %}
+          {% if page.toc.sidebar == 'right' %}
+            <div class="row">
+              <!-- main content area -->
+              <div class="col-sm-9">{{ content }}</div>
+              <!-- sidebar, which will move to the top on a small screen -->
+              <div class="col-sm-3">
+                <nav id="toc-sidebar" class="sticky-top"></nav>
+              </div>
             </div>
-          </div>
+          {% else %}
+            <div class="row">
+              <!-- sidebar, which will move to the top on a small screen -->
+              <div class="col-sm-3">
+                <nav id="toc-sidebar" class="sticky-top"></nav>
+              </div>
+              <!-- main content area -->
+              <div class="col-sm-9">{{ content }}</div>
+            </div>
+          {% endif %}
         {% else %}
-          <div class="row">
-            <!-- sidebar, which will move to the top on a small screen -->
-            <div class="col-sm-3">
-              <nav id="toc-sidebar" class="sticky-top"></nav>
-            </div>
-            <!-- main content area -->
-            <div class="col-sm-9">{{ content }}</div>
-          </div>
+          {{ content }}
         {% endif %}
-      {% else %}
-        {{ content }}
-      {% endif %}
-    </div>
+      </div>
     {% endif %}
 
     <!-- Footer -->

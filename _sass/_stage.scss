@@ -12,7 +12,7 @@
  ******************************************************************************/
 
 :root {
-  --sb-pad: clamp(24px, 4vw, 64px);          // page side padding (navbar + hero)
+  --sb-pad: clamp(24px, 4vw, 64px); // page side padding (navbar + hero)
   --sb-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
   --sb-mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
   --c: hsl(150 100% 60%);
@@ -100,7 +100,10 @@
       border: 1px solid transparent;
       border-radius: 8px;
       cursor: pointer;
-      transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+      transition:
+        color 0.2s ease,
+        background 0.2s ease,
+        border-color 0.2s ease;
 
       svg {
         width: 20px;
@@ -169,7 +172,10 @@ body.sb-about {
   #navbar {
     background-color: transparent;
     border-bottom-color: transparent;
-    transition: background-color 0.3s ease, border-color 0.3s ease, opacity 1s ease;
+    transition:
+      background-color 0.3s ease,
+      border-color 0.3s ease,
+      opacity 1s ease;
 
     &.sb-scrolled {
       background-color: var(--global-bg-color);
@@ -256,7 +262,11 @@ html.sb-landing #sbStage {
     position: fixed;
     top: 32px;
     left: 38px;
-    font: 700 16px/1 "Courier New", Courier, "Liberation Mono", monospace;
+    font:
+      700 16px/1 "Courier New",
+      Courier,
+      "Liberation Mono",
+      monospace;
     letter-spacing: 0;
     font-variant-ligatures: none;
     user-select: none;
@@ -308,7 +318,11 @@ html.sb-landing #sbStage {
     bottom: 45px;
     left: 50%;
     transform: translateX(-50%);
-    font: 500 14px/1 ui-monospace, Menlo, Consolas, monospace;
+    font:
+      500 14px/1 ui-monospace,
+      Menlo,
+      Consolas,
+      monospace;
     letter-spacing: 0.06em;
     color: var(--c);
     text-shadow: 0 0 9px var(--cg);
@@ -319,7 +333,10 @@ html.sb-landing #sbStage {
     padding: 9px 16px;
     cursor: pointer;
     white-space: nowrap;
-    transition: background 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease,
+      opacity 0.2s ease;
     &:hover,
     &:focus-visible {
       opacity: 1;
@@ -335,7 +352,11 @@ html.sb-landing #sbStage {
     left: 0;
     right: 0;
     text-align: center;
-    font: 400 12px/1 ui-monospace, Menlo, Consolas, monospace;
+    font:
+      400 12px/1 ui-monospace,
+      Menlo,
+      Consolas,
+      monospace;
     color: var(--l-hint);
     letter-spacing: 0.08em;
     user-select: none;
@@ -365,7 +386,11 @@ html.sb-landing #sbStage {
     border: 1px solid transparent;
     border-radius: 8px;
     cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      border-color 0.2s ease,
+      transform 0.2s ease;
     svg {
       width: 20px;
       height: 20px;
@@ -410,7 +435,10 @@ html.sb-landing #sbStage {
     border: 1px solid transparent;
     border-radius: 8px;
     cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease,
+      border-color 0.2s ease;
     svg {
       width: 20px;
       height: 20px;
@@ -433,7 +461,10 @@ html.sb-landing #sbStage {
     visibility: hidden;
     pointer-events: none;
     transform: translateY(-50%) translateX(var(--shift));
-    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s linear 0.18s;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease,
+      visibility 0s linear 0.18s;
   }
   .sb-dock.left .sb-panel {
     left: 100%;
@@ -452,7 +483,10 @@ html.sb-landing #sbStage {
     visibility: visible;
     pointer-events: auto;
     transform: translateY(-50%) translateX(0);
-    transition: opacity 0.18s ease, transform 0.18s ease, visibility 0s;
+    transition:
+      opacity 0.18s ease,
+      transform 0.18s ease,
+      visibility 0s;
   }
   .sb-box {
     display: flex;
@@ -477,16 +511,28 @@ html.sb-landing #sbStage {
     width: 62px;
   }
   .sb-val {
-    font: 500 11px/1 ui-monospace, Menlo, Consolas, monospace;
+    font:
+      500 11px/1 ui-monospace,
+      Menlo,
+      Consolas,
+      monospace;
     color: var(--c);
   }
   .sb-lab {
-    font: 400 10px/1 ui-monospace, Menlo, Consolas, monospace;
+    font:
+      400 10px/1 ui-monospace,
+      Menlo,
+      Consolas,
+      monospace;
     color: var(--l-label);
     white-space: nowrap;
   }
   .sb-reset {
-    font: 400 10px/1 ui-monospace, Menlo, Consolas, monospace;
+    font:
+      400 10px/1 ui-monospace,
+      Menlo,
+      Consolas,
+      monospace;
     letter-spacing: 0.08em;
     color: var(--l-label);
     background: transparent;
@@ -494,7 +540,9 @@ html.sb-landing #sbStage {
     border-radius: 4px;
     padding: 5px 9px;
     cursor: pointer;
-    transition: color 0.2s ease, background 0.2s ease;
+    transition:
+      color 0.2s ease,
+      background 0.2s ease;
     &:hover,
     &:focus-visible {
       color: var(--c);
@@ -557,7 +605,9 @@ html.sb-landing #sbStage {
         box-shadow: 0 0 8px var(--cg);
       }
       &:focus-visible::-webkit-slider-thumb {
-        box-shadow: 0 0 0 3px var(--cb), 0 0 8px var(--cg);
+        box-shadow:
+          0 0 0 3px var(--cb),
+          0 0 8px var(--cg);
       }
     }
   }
@@ -678,7 +728,9 @@ html.sb-reveal .sb-hero::after {
   gap: 13px;
   text-decoration: none !important;
   font: 600 11px/1 var(--sb-sans);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease;
   &:hover {
     transform: translateY(-2px);
   }
@@ -769,7 +821,7 @@ html.sb-reveal .sb-hero::after {
 .sb-trav-name {
   .last {
     font-weight: 400;
-    opacity: calc((var(--p, 1) - 0.55) * 3);
+    opacity: var(--o-last, 1);
   }
 }
 .sb-trav-role {
@@ -783,11 +835,11 @@ html.sb-reveal .sb-hero::after {
     letter-spacing: 0;
     text-transform: none;
     color: var(--global-text-color-light);
-    opacity: calc(1 - var(--p, 1) * 2.4);
+    opacity: var(--o-a, 0);
     pointer-events: none;
   }
   .b {
-    opacity: calc((var(--p, 1) - 0.35) * 2.2);
+    opacity: var(--o-b, 1);
   }
 }
 .sb-icons {
@@ -799,7 +851,9 @@ html.sb-reveal .sb-hero::after {
     font-size: 1.05rem;
     line-height: 1;
     border: 0;
-    transition: color 0.2s ease, transform 0.2s ease;
+    transition:
+      color 0.2s ease,
+      transform 0.2s ease;
     &:hover {
       color: var(--sb-c1);
       transform: translateY(-1px);
