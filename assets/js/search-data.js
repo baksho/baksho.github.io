@@ -65,26 +65,37 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "/books/";
               },
-            },{id: "post-placeholder-your-first-medium-post",
+            },{id: "post-rag-without-vectors-why-pageindex-might-be-the-architecture-we-ve-been-missing",
         
-          title: "Placeholder: your first Medium post",
+          title: 'RAG Without Vectors? Why PageIndex Might be the Architecture We’ve Been Missing <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
         
-        description: "One or two sentences that tell readers what this post is about. Replace this teaser with the opening of your Medium post.",
+        description: "",
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2026/placeholder-medium-post-1/";
+            window.open("https://pub.towardsai.net/rag-without-vectors-why-pageindex-might-be-the-architecture-weve-been-missing-4563adf8fe09", "_blank");
           
         },
-      },{id: "post-placeholder-your-second-medium-post",
+      },{id: "post-to-relu-or-not-to-relu-a-practitioner-s-guide-to-solve-the-zombie-neuron-problem-in-deep-networks",
         
-          title: "Placeholder: your second Medium post",
+          title: 'To ReLU, or not to ReLU: A Practitioner’s Guide to Solve the “Zombie... <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
         
-        description: "One or two sentences that tell readers what this post is about. Replace this teaser with the opening of your Medium post.",
+        description: "",
         section: "Posts",
         handler: () => {
           
-            window.location.href = "/blog/2026/placeholder-medium-post-2/";
+            window.open("https://pub.towardsai.net/to-relu-or-not-to-relu-a-practitioners-guide-to-solve-the-zombie-neuron-problem-in-deep-89a050a6b25b", "_blank");
+          
+        },
+      },{id: "post-getting-active-the-math-that-makes-neural-networks-learn",
+        
+          title: 'Getting Active: The Math That Makes Neural Networks Learn <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
+        
+        description: "",
+        section: "Posts",
+        handler: () => {
+          
+            window.open("https://medium.com/@basak.suvinava2008/getting-active-the-math-that-makes-neural-networks-learn-e500d6d71568", "_blank");
           
         },
       },{id: "books-another-placeholder-book-title",
@@ -172,6 +183,13 @@ ninja.data = [{
         section: 'Socials',
         handler: () => {
           window.open("https://scholar.google.com/citations?user=LdhKjt4AAAAJ", "_blank");
+        },
+      },{
+        id: 'social-medium_url',
+        title: 'Medium_url',
+        section: 'Socials',
+        handler: () => {
+          window.open("", "_blank");
         },
       },{
         id: 'social-rss',
