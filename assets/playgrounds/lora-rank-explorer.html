@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>LoRA Rank Explorer</title>
+<style>
+  :root{--orange:#f59322;--blue:#0877bd;--navy:#1b3b4f;--red:#e8590c;--green:#2e9e5b;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px}
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 24px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #cnt{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  #rankbox{min-width:260px}
+  #rankv{font-size:24px;font-weight:300;font-variant-numeric:tabular-nums}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  canvas{display:block}
+  #maps{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px}
+  #maps canvas{width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #maps .cap{font-size:12px;font-weight:600;color:#333;margin-top:6px}
+  #maps .sub{font-size:11.5px;color:#888;font-variant-numeric:tabular-nums}
+  .chartbox{margin-bottom:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .chartbox .ct select{font-weight:400;font-size:12px;min-width:80px;padding:2px 6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+  .chartframe canvas{max-width:100%;cursor:pointer}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0 4px;font-size:12px;color:#555}
+  .chips span{display:inline-flex;align-items:center;gap:6px}
+  .chips i{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .chips i.dot{width:9px;height:9px;border-radius:50%}
+  .chips i.ln{width:22px;height:0;border-radius:0;border-top:3px solid}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .nums hr{grid-column:1/-1;border:0;border-top:1px solid #e8e8e8;width:100%;margin:2px 0}
+  #verdict{margin-top:10px;font-size:12.5px;padding:7px 9px;border-radius:5px;background:#f3f5f6;color:#444}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  #tdesc{font-size:12.5px;color:#666;margin:6px 0 8px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .sbtn{border:1px solid #ccc;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12.5px}
+  .sbtn:hover{background:#f0f0f0}
+  .sect{margin-top:26px}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}#maps{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>LoRA Rank Explorer</h1>
+  <p class="blurb">LoRA fine-tunes a big weight matrix by learning only a small update <span style="font-family:monospace">ΔW = B·A</span> whose rank is at most <i>r</i>. Here you pick a target update, choose the rank, and see two things: the best any rank-<i>r</i> update could possibly do (the matrix's singular value spectrum), and what gradient descent on <i>B</i> and <i>A</i> actually finds.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="restart" title="Reset to step 0 (B = 0, same initial A)">&#8635;</button>
+      <button class="btn" id="play" title="Start / pause training">&#9654;</button>
+    </div>
+    <div class="grp"><label>Training steps</label><div id="cnt">0</div></div>
+    <div class="grp" id="rankbox"><label>Rank r &nbsp;<span id="rankv">8</span></label><input type="range" id="rank" min="1" max="64" step="1" value="8"></div>
+    <div class="grp"><label for="kind">Target update ΔW*</label><select id="kind"></select></div>
+    <div class="grp"><label for="speed">Training speed</label><select id="speed"><option value="slow">Slow (watch)</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div id="maps">
+        <div><canvas id="m_t" width="64" height="64"></canvas><div class="cap">Target ΔW*</div><div class="sub">64 × 64 matrix</div></div>
+        <div><canvas id="m_s" width="64" height="64"></canvas><div class="cap">Best rank-<span class="rr">8</span> (from the SVD)</div><div class="sub" id="m_s_sub"></div></div>
+        <div><canvas id="m_l" width="64" height="64"></canvas><div class="cap">LoRA: B·A after training</div><div class="sub" id="m_l_sub"></div></div>
+        <div><canvas id="m_e" width="64" height="64"></canvas><div class="cap">LoRA error (B·A − ΔW*)</div><div class="sub">same colour scale</div></div>
+      </div>
+
+      <div class="chartbox">
+        <div class="ct"><span>Singular values of the target (click a bar to set the rank)</span><select id="yscale"><option value="log">log scale</option><option value="lin">linear scale</option></select></div>
+        <div class="chartframe"><canvas id="spec"></canvas></div>
+        <div class="chips"><span><i style="background:#f59322"></i>kept by rank <span class="rr">8</span></span><span><i style="background:#cfd4d8"></i>lost</span><span><i class="dot" style="background:#0877bd"></i>singular values of the trained B·A</span></div>
+      </div>
+
+      <div class="chartbox">
+        <div class="ct"><span>Share of the target's energy captured by the best rank-r approximation</span></div>
+        <div class="chartframe"><canvas id="eng"></canvas></div>
+        <div class="note">Energy = sum of squared singular values (the squared Frobenius norm). Click to set the rank.</div>
+      </div>
+
+      <div class="chartbox">
+        <div class="ct"><span>Training: relative error of B·A against the target</span></div>
+        <div class="chartframe"><canvas id="trn"></canvas></div>
+        <div class="chips"><span><i class="ln" style="border-color:#0877bd"></i>LoRA trained by gradient descent</span><span><i class="ln" style="border-color:#e8590c;border-top-style:dashed"></i>best possible at this rank (SVD)</span></div>
+        <div class="note">Relative error = ‖B·A − ΔW*‖ / ‖ΔW*‖ (Frobenius norm). 1.0 means no better than ΔW = 0.</div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head">Numbers</div>
+      <div class="card">
+        <div class="nums" id="nums"></div>
+        <div id="verdict"></div>
+      </div>
+
+      <div class="head sect">Target</div>
+      <div id="tdesc"></div>
+      <div id="tpar"></div>
+      <div class="row2"><button class="sbtn" id="newseed">New random target</button></div>
+
+      <div class="head sect">Training settings</div>
+      <div class="slider"><div class="row"><span>Learning rate</span><b id="lrv"></b></div><input type="range" id="lr" min="0" max="1000" step="1"><div class="hint">Plain gradient descent step size.</div></div>
+      <div class="slider"><div class="row"><span>Initial size of A</span><b id="inv"></b></div><input type="range" id="init" min="0.02" max="1.5" step="0.01"><div class="hint">B starts at zero, so the update starts at zero. A starts random with this scale.</div></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is, and is not.</b> The target matrices here are made up, so they can show different spectrum shapes. They are not weight updates taken from a real fine-tuned model, and a real model's spectra have to be measured, not assumed. Real LoRA training also minimises a task loss on data, not the distance to a known matrix.</div>
+
+    <h3>The setup</h3>
+    <p>A layer has a frozen weight matrix <i>W</i> of size m × n. LoRA learns an update <span class="eq">ΔW = B·A</span> with <i>B</i> of size m × r and <i>A</i> of size r × n, so ΔW has rank at most <i>r</i> and only <span class="eq">r·(m + n)</span> numbers are trained instead of <span class="eq">m·n</span>. B starts at zero and A starts random, so the update starts at exactly zero.</p>
+
+    <h3>The best possible rank-r update</h3>
+    <p>Suppose the update you would like is a matrix ΔW*. The closest matrix of rank at most <i>r</i> in Frobenius norm is obtained by keeping its <i>r</i> largest singular values and dropping the rest (the Eckart–Young theorem). The squared error is the sum of the squares of the dropped singular values, so the share of energy captured at rank <i>r</i> tells you exactly how good any rank-<i>r</i> update can be. That is the orange spectrum, the middle heat map and the dashed line.</p>
+
+    <h3>What gradient descent finds</h3>
+    <p>LoRA does not compute an SVD. It trains <i>B</i> and <i>A</i> by gradient descent on <span class="eq">½‖B·A − ΔW*‖²</span>. In this demo it ends up close to the SVD optimum, and the blue dots show how: the strongest singular directions are picked up first, then the weaker ones, which gives the staircase-like descent in the training curve for small initial A. This page uses plain gradient descent for clarity; real LoRA fine-tuning usually uses an optimiser such as Adam, which behaves differently.</p>
+
+    <h3>If the SVD already gives the best answer, why train B and A?</h3>
+    <p>Because in real fine-tuning you never have ΔW*. It would be the difference between the fine-tuned weights and the original ones, and you only get fine-tuned weights after training. All you have is data and a loss, and LoRA's job is to find a good update using only that, while storing and training just <span class="eq">r·(m+n)</span> numbers. Computing an SVD of ΔW* would need ΔW* first, and that would mean training the full m × n update, which is exactly the cost LoRA avoids.</p>
+    <p>So here ΔW* is a stand-in used as a measuring stick. Because we know it, we can compute the best possible rank-r answer (the SVD) and ask how close gradient descent on B and A gets. In real use there is no such reference. Also note that the best rank-r update for a task loss is not necessarily the truncated SVD of the full fine-tuning update: the two optimise different things.</p>
+
+    <h3>Reading the charts</h3>
+    <ul>
+      <li><b>Singular values.</b> Every matrix can be written as a sum of simple rank-1 pieces, each with a strength, its singular value. The bars show those strengths, strongest first. A few tall bars followed by a short tail means the matrix is close to low rank. Orange bars are the pieces a rank-<i>r</i> update can hold; grey bars are lost. The blue dots show the strengths of the pieces the trained B·A has built so far, so you can watch it pick up the strongest pieces first. The vertical axis can be log or linear: log shows the tail, linear shows the head.</li>
+      <li><b>Energy captured.</b> Energy is the sum of the squared singular values. The curve gives, for each rank, the share of the total energy kept by the best rank-<i>r</i> update. A curve that rises steeply and flattens means a small rank is enough. A slowly rising curve means you need a high rank. The dashed lines mark 90% and 99%, and the numbers panel lists the rank needed for each.</li>
+      <li><b>Training.</b> The vertical axis is the relative error ‖B·A − ΔW*‖ / ‖ΔW*‖, where 1.0 means no better than a zero update and 0 would be a perfect match. The horizontal axis counts gradient steps on a log scale, so the first steps are visible. The dashed orange line is the best any rank-<i>r</i> update can reach, and the blue curve should settle onto it. With a small initial A the curve sits near 1.0 for a while before dropping.</li>
+    </ul>
+
+    <h3>What the target options mean</h3>
+    <p>Each target is built to have a particular spectrum, and all of them are scaled to the same overall size. For the first three, the singular directions are smooth cosine patterns paired at random, so the heat maps look like interference patterns; the directions do not affect the energy curve, only the spectrum does.</p>
+    <ul>
+      <li><b>Power-law spectrum.</b> Singular values fall as 1/i<sup>p</sup>. The tail decays slowly, so many weak directions together still carry real energy. A small exponent gives a flat-ish spectrum that needs high rank. A large one is nearly low-rank.</li>
+      <li><b>Exponential spectrum.</b> Singular values fall as e<sup>−i/L</sup>. The tail disappears fast, so it is close to exactly low rank, and a modest rank captures almost everything.</li>
+      <li><b>4 strong directions + noise.</b> Four large singular values and a small floor spread over all the others. This is a stand-in for "the update really is low rank plus a little residual": the energy jumps up to rank 4 and then climbs very slowly.</li>
+      <li><b>A picture.</b> A 64 × 64 image with a ring, a diagonal bar and a block on a soft background. Its spectrum is whatever the picture has, and sharp edges need many ranks to sharpen. It is useful for seeing what a given rank keeps visually.</li>
+      <li><b>Random (no structure).</b> Gaussian random numbers. The spectrum is roughly flat, so no low-rank update does well. It is the worst case for LoRA.</li>
+    </ul>
+
+    <h3>What to try</h3>
+    <ul>
+      <li>Choose <b>Power-law spectrum</b> and raise the rank: the first few ranks capture most of the energy, then returns shrink.</li>
+      <li>Choose <b>Random (no structure)</b>: the spectrum is flat, so low ranks capture little. Low-rank updates only help when the update really is close to low rank.</li>
+      <li>Choose <b>4 strong directions + noise</b> and compare rank 3, 4 and 5: the energy jumps up to rank 4 and then barely moves.</li>
+      <li>Make the learning rate small and the initial A tiny: training sits near zero for a while before it takes off.</li>
+    </ul>
+
+    <h3>Sizes</h3>
+    <p>The matrices are 64 × 64 so everything runs instantly. In real transformer layers the dimension is often in the thousands, where a small rank is a tiny share of the parameters: the page shows what the same rank would cost at d = 4096.</p>
+
+    <h3>Why low rank might work in practice</h3>
+    <p>The LoRA authors hypothesise that the updates needed to adapt a language model have a low "intrinsic rank", and report that very small ranks can suffice. Whether that holds depends on the model and the task. A related but different observation is that tuning only a small randomly projected set of parameters can recover most of the full fine-tuning performance for some models. This page does not test either claim.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>E. J. Hu, Y. Shen, P. Wallis, Z. Allen-Zhu, Y. Li, S. Wang, L. Wang and W. Chen, "LoRA: Low-Rank Adaptation of Large Language Models", ICLR 2022. arXiv:2106.09685.</li>
+      <li>C. Eckart and G. Young, "The approximation of one matrix by another of lower rank", <i>Psychometrika</i> 1(3), 211–218, 1936. doi:10.1007/BF02288367.</li>
+      <li>A. Aghajanyan, L. Zettlemoyer and S. Gupta, "Intrinsic Dimensionality Explains the Effectiveness of Language Model Fine-Tuning", 2020. arXiv:2012.13255.</li>
+    </ul>
+  </div>
+</div>
+
+<script>/* LoRA rank explorer: numerical core (matrices are row-major Float64Array, m x n) */
+(function (root) {
+"use strict";
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){const u=r()||1e-12,v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function fro(M){let s=0;for(let i=0;i<M.length;i++)s+=M[i]*M[i];return Math.sqrt(s);}
+
+/* one-sided Jacobi SVD of an m x n matrix (m >= n). returns {U (m x n), s (n, descending), V (n x n)} ; M = U diag(s) V^T */
+function svd(M, m, n, wantVectors) {
+  const U = new Float64Array(m*n), V = wantVectors ? new Float64Array(n*n) : null;
+  // work on columns: store column-major copy
+  const col = new Float64Array(m*n); for (let i=0;i<m;i++) for (let j=0;j<n;j++) col[j*m+i] = M[i*n+j];
+  if (V) for (let i=0;i<n;i++) V[i*n+i] = 1;     // V stored column-major as well: vcol[j*n+i]
+  const vc = V ? new Float64Array(n*n) : null; if (vc) for (let i=0;i<n;i++) vc[i*n+i] = 1;
+  for (let sweep=0; sweep<40; sweep++) {
+    let rot = 0;
+    for (let p=0;p<n-1;p++) for (let q=p+1;q<n;q++) {
+      let a=0,b=0,c=0; const po=p*m, qo=q*m;
+      for (let i=0;i<m;i++){const x=col[po+i],y=col[qo+i];a+=x*x;b+=y*y;c+=x*y;}
+      if (Math.abs(c) <= 1e-14*Math.sqrt(a*b) || c === 0) continue;
+      rot++;
+      const zeta=(b-a)/(2*c), t=Math.sign(zeta||1)/(Math.abs(zeta)+Math.sqrt(1+zeta*zeta)), cs=1/Math.sqrt(1+t*t), sn=cs*t;
+      for (let i=0;i<m;i++){const x=col[po+i],y=col[qo+i];col[po+i]=cs*x-sn*y;col[qo+i]=sn*x+cs*y;}
+      if (vc){const pv=p*n,qv=q*n;for(let i=0;i<n;i++){const x=vc[pv+i],y=vc[qv+i];vc[pv+i]=cs*x-sn*y;vc[qv+i]=sn*x+cs*y;}}
+    }
+    if (!rot) break;
+  }
+  const sv = new Float64Array(n); for (let j=0;j<n;j++){let s=0;for(let i=0;i<m;i++)s+=col[j*m+i]**2;sv[j]=Math.sqrt(s);}
+  const idx = Array.from({length:n},(_,i)=>i).sort((a,b)=>sv[b]-sv[a]);
+  const s = new Float64Array(n);
+  idx.forEach((j,k)=>{ s[k]=sv[j]; if (wantVectors){ const inv = sv[j]>1e-300?1/sv[j]:0; for(let i=0;i<m;i++)U[i*n+k]=col[j*m+i]*inv; for(let i=0;i<n;i++)V[i*n+k]=vc[j*n+i]; } });
+  return {U, s, V};
+}
+/* rank-r reconstruction from svd of an n x n (or m x n) matrix */
+function recon(sv, m, n, r) {
+  const out = new Float64Array(m*n), {U,s,V} = sv;
+  for (let k=0;k<r;k++){ const sk=s[k]; if(!sk)continue; for(let i=0;i<m;i++){const u=U[i*n+k]*sk; if(!u)continue; for(let j=0;j<n;j++) out[i*n+j]+=u*V[j*n+k];}}
+  return out;
+}
+/* orthonormal DCT-II basis vector k of length N */
+function dct(N, k){const v=new Float64Array(N),c=Math.sqrt((k===0?1:2)/N);for(let i=0;i<N;i++)v[i]=c*Math.cos(Math.PI*(i+.5)*k/N);return v;}
+function shuffle(a, r){for(let i=a.length-1;i>0;i--){const j=(r()*(i+1))|0;[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* targets: returns {T (Frobenius-normalised to 1), name} */
+const TARGETS = {
+  power:   {name: "Power-law spectrum",      par: {label: "Decay exponent p", lo: .3, hi: 3, step: .1, def: 1.0}},
+  expo:    {name: "Exponential spectrum",    par: {label: "Decay length (ranks)", lo: 1, hi: 30, step: .5, def: 6}},
+  lowrank: {name: "4 strong directions + noise", par: {label: "Noise floor", lo: 0, hi: .3, step: .01, def: .05}},
+  picture: {name: "A picture",               par: null},
+  random:  {name: "Random (no structure)",   par: null}
+};
+function sigmas(kind, n, p) {
+  const s = new Float64Array(n);
+  if (kind === "power") for (let i=0;i<n;i++) s[i] = Math.pow(i+1, -p);
+  else if (kind === "expo") for (let i=0;i<n;i++) s[i] = Math.exp(-i/p);
+  else if (kind === "lowrank") for (let i=0;i<n;i++) s[i] = i < 4 ? 1 - 0.12*i : p * (0.5 + 0.5*((i*7919)%13)/13);
+  return s;
+}
+function makeTarget(kind, n, par, seed) {
+  const r = mulberry32(seed*101+7), T = new Float64Array(n*n);
+  if (kind === "random") { for (let i=0;i<T.length;i++) T[i] = gauss(r); }
+  else if (kind === "picture") {
+    for (let i=0;i<n;i++) for (let j=0;j<n;j++) {
+      const y=(i+.5)/n*2-1, x=(j+.5)/n*2-1; let v = 0;
+      const d = Math.hypot(x-.15, y+.1); v += Math.abs(d-.55) < .09 ? 1 : 0;            // ring
+      v += (Math.abs(x+y) < .12 && Math.abs(x) < .8) ? -.9 : 0;                         // diagonal bar
+      v += (x > -.85 && x < -.45 && y > .35 && y < .8) ? .8 : 0;                         // block
+      v += .35*Math.sin(3.2*x+1.1)*Math.cos(2.1*y);                                       // soft background
+      T[i*n+j] = v;
+    }
+  } else {
+    const s = sigmas(kind, n, par), pa = shuffle(Array.from({length:n},(_,i)=>i), r), pb = shuffle(Array.from({length:n},(_,i)=>i), r);
+    const sgn = Array.from({length:n},()=>r()<.5?-1:1);
+    for (let k=0;k<n;k++){ const u=dct(n,pa[k]), v=dct(n,pb[k]), c=s[k]*sgn[k]; for(let i=0;i<n;i++){const ui=u[i]*c; for(let j=0;j<n;j++) T[i*n+j]+=ui*v[j];}}
+  }
+  const f = fro(T); for (let i=0;i<T.length;i++) T[i] /= f; return T;
+}
+
+/* LoRA factors: B (m x r), A (r x n). training: GD on 1/2 ||BA - T||^2 */
+function Lora(T, m, n, r, seed, initScale) {
+  this.m=m; this.n=n; this.r=r; this.T=T; this.step=0;
+  const rnd = mulberry32(seed*313+5);
+  this.B = new Float64Array(m*r); this.A = new Float64Array(r*n);
+  for (let i=0;i<this.A.length;i++) this.A[i] = gauss(rnd)*initScale/Math.sqrt(n);
+  this.W = new Float64Array(m*n); this.E = new Float64Array(m*n); this.gB = new Float64Array(m*r); this.gA = new Float64Array(r*n);
+}
+Lora.prototype.product = function () {
+  const {m,n,r,B,A,W} = this; W.fill(0);
+  for (let i=0;i<m;i++) for (let k=0;k<r;k++){ const b=B[i*r+k]; if(!b)continue; const ao=k*n, wo=i*n; for(let j=0;j<n;j++) W[wo+j]+=b*A[ao+j]; }
+  return W;
+};
+Lora.prototype.relErr = function () { const W=this.product(), T=this.T; let s=0; for(let i=0;i<W.length;i++){const d=W[i]-T[i]; s+=d*d;} return Math.sqrt(s); };
+Lora.prototype.gd = function (lr, steps) {
+  const {m,n,r,B,A,T,W,E,gB,gA} = this;
+  for (let it=0; it<steps; it++) {
+    this.product(); for (let i=0;i<E.length;i++) E[i]=W[i]-T[i];
+    gB.fill(0); gA.fill(0);
+    for (let i=0;i<m;i++) { const eo=i*n; for (let k=0;k<r;k++){ const ao=k*n; let s=0; for(let j=0;j<n;j++) s+=E[eo+j]*A[ao+j]; gB[i*r+k]=s; const b=B[i*r+k]; if(b){ for(let j=0;j<n;j++) gA[ao+j]+=b*E[eo+j]; } } }
+    for (let i=0;i<B.length;i++) B[i]-=lr*gB[i]; for (let i=0;i<A.length;i++) A[i]-=lr*gA[i];
+    this.step++;
+  }
+};
+const api = {mulberry32, gauss, fro, svd, recon, makeTarget, TARGETS, Lora};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.LoraCore = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const {svd, recon, makeTarget, TARGETS, Lora} = LoraCore;
+const N = 64, KINDS = Object.keys(TARGETS);
+const DESC = {
+  power: "Singular values fall off as 1/i<sup>p</sup>. A larger exponent means a more strongly low-rank update.",
+  expo: "Singular values fall off exponentially. The decay length sets how many ranks matter.",
+  lowrank: "Four strong directions plus a small noise floor spread over all the other singular values: the kind of update LoRA is hoped to meet.",
+  picture: "A 64 × 64 picture (a ring, a bar and a block on a soft background). Its spectrum is whatever the picture has.",
+  random: "Gaussian random numbers. No low-rank structure, so every rank is about equally useful. The hardest case for LoRA."
+};
+const S = {kind: "power", par: 1, seed: 1, r: 8, lr: 0.1, init: 0.3, speed: "normal", running: false, sv: null, T: null, Tr: null, opt: 0, en: null, lora: null, hist: [], ls: null, still: 0, lastErr: 1, scale: "log", frame: 0, is: 0};
+
+/* ---------- colours / heat maps ---------- */
+function rgb(v, mx) { const a = Math.min(1, Math.abs(v) / mx), b = v < 0 ? [8, 119, 189] : [232, 89, 12], w = window.SBT && SBT.dark ? SBT.bg : [255, 255, 255]; return [w[0] + (b[0] - w[0]) * a, w[1] + (b[1] - w[1]) * a, w[2] + (b[2] - w[2]) * a]; }
+function heat(id, M, mx) { const cv = $(id), c = cv.getContext("2d"), im = c.createImageData(N, N); for (let i = 0; i < N * N; i++) { const q = rgb(M[i], mx); im.data[4 * i] = q[0]; im.data[4 * i + 1] = q[1]; im.data[4 * i + 2] = q[2]; im.data[4 * i + 3] = 255; } c.putImageData(im, 0, 0); }
+function setup(cv, w, h) { const d = window.devicePixelRatio || 1; cv.width = Math.round(w * d); cv.height = Math.round(h * d); cv.style.width = w + "px"; cv.style.height = h + "px"; const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); return c; }
+
+/* ---------- state rebuilds ---------- */
+function buildTarget() {
+  S.T = makeTarget(S.kind, N, S.par, S.seed); S.sv = svd(S.T, N, N, true);
+  let tot = 0; for (let i = 0; i < N; i++) tot += S.sv.s[i] ** 2;
+  S.en = new Float64Array(N + 1); let a = 0; for (let i = 0; i < N; i++) { a += S.sv.s[i] ** 2; S.en[i + 1] = a / tot; }
+  S.mx = 0; for (let i = 0; i < N * N; i++) S.mx = Math.max(S.mx, Math.abs(S.T[i]));
+  heat("m_t", S.T, S.mx); rebuildRank(); restart();
+}
+function rebuildRank() { S.Tr = recon(S.sv, N, N, S.r); S.opt = Math.sqrt(Math.max(0, 1 - S.en[S.r])); heat("m_s", S.Tr, S.mx); document.querySelectorAll(".rr").forEach(e => e.textContent = S.r); $("rankv").textContent = S.r; $("rank").value = S.r; }
+function restart() {
+  S.lora = new Lora(S.T, N, N, S.r, S.seed + 1000 * S.is, S.init); S.hist = [{step: 0, err: S.lora.relErr()}]; S.ls = new Float64Array(N); S.still = 0; S.done = false; S.lastErr = 1; S.running = false; $("play").innerHTML = "&#9654;";
+  updateLearned(); draw(true);
+}
+
+/* singular values of B·A through the small r x r problem (QR of B and of A^T) */
+function qrR(M, rows, cols) { // modified Gram-Schmidt on columns of M (rows x cols, row-major); returns R (cols x cols)
+  const Q = []; for (let j = 0; j < cols; j++) { const v = new Float64Array(rows); for (let i = 0; i < rows; i++) v[i] = M[i * cols + j]; Q.push(v); }
+  const R = new Float64Array(cols * cols);
+  for (let j = 0; j < cols; j++) {
+    for (let k = 0; k < j; k++) { let d = 0; const qk = Q[k], qj = Q[j]; for (let i = 0; i < rows; i++) d += qk[i] * qj[i]; R[k * cols + j] = d; for (let i = 0; i < rows; i++) qj[i] -= d * qk[i]; }
+    let nrm = 0; for (let i = 0; i < rows; i++) nrm += Q[j][i] ** 2; nrm = Math.sqrt(nrm); R[j * cols + j] = nrm;
+    if (nrm > 1e-12) for (let i = 0; i < rows; i++) Q[j][i] /= nrm; else Q[j].fill(0);
+  }
+  return R;
+}
+function updateLearned() {
+  const L = S.lora, r = L.r, R1 = qrR(L.B, N, r), At = new Float64Array(N * r); for (let k = 0; k < r; k++) for (let j = 0; j < N; j++) At[j * r + k] = L.A[k * N + j];
+  const R2 = qrR(At, N, r), C = new Float64Array(r * r);
+  for (let i = 0; i < r; i++) for (let j = 0; j < r; j++) { let s = 0; for (let k = 0; k < r; k++) s += R1[i * r + k] * R2[j * r + k]; C[i * r + j] = s; }
+  S.ls = svd(C, r, r, false).s;
+}
+
+/* ---------- charts ---------- */
+const CW = 680;
+function drawSpec() {
+  const CH = 230, c = setup($("spec"), CW, CH), L = 52, R = 10, T = 10, B = 30, W = CW - L - R, H = CH - T - B, s = S.sv.s; c.clearRect(0, 0, CW, CH);
+  const log = S.scale === "log", lo = -4, hi = 0, smax = Math.max(s[0], S.ls && S.ls[0] || 0) * 1.05;
+  const Y = v => log ? T + H * (1 - (Math.log10(Math.max(v, 1e-4)) - lo) / (hi - lo)) : T + H * (1 - v / smax);
+  c.font = "11px Roboto,Arial,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+  const ticks = log ? [1e-4, 1e-3, 1e-2, 1e-1, 1] : [0, .2, .4, .6, .8].filter(v => v <= smax);
+  ticks.forEach(v => { const y = Y(v); c.strokeStyle = "#e6e6e6"; c.beginPath(); c.moveTo(L, y); c.lineTo(L + W, y); c.stroke(); c.fillStyle = "#777"; c.fillText(log ? "1e" + Math.round(Math.log10(v)) : v.toFixed(1), L - 6, y); });
+  const bw = W / N;
+  for (let i = 0; i < N; i++) { const y = Y(s[i]), x = L + i * bw; c.fillStyle = i < S.r ? "#f59322" : "#cfd4d8"; c.fillRect(x + 1, y, Math.max(1, bw - 2), T + H - y); }
+  c.fillStyle = "#0877bd"; for (let i = 0; i < S.r; i++) if (S.ls[i] > 1e-6) { c.beginPath(); c.arc(L + (i + .5) * bw, Y(S.ls[i]), 3, 0, 7); c.fill(); }
+  c.textAlign = "center"; c.textBaseline = "top"; c.fillStyle = "#777"; [1, 8, 16, 24, 32, 40, 48, 56, 64].forEach(i => c.fillText(i, L + (i - .5) * bw, T + H + 5)); c.fillStyle = "#555"; c.fillText("index of the singular value", L + W / 2, T + H + 17);
+  S.specGeom = {L, W, bw};
+}
+function drawEng() {
+  const CH = 210, c = setup($("eng"), CW, CH), L = 52, R = 10, T = 10, B = 30, W = CW - L - R, H = CH - T - B; c.clearRect(0, 0, CW, CH);
+  const X = k => L + W * k / N, Y = v => T + H * (1 - v);
+  c.font = "11px Roboto,Arial,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+  [0, .25, .5, .75, 1].forEach(v => { const y = Y(v); c.strokeStyle = "#e6e6e6"; c.beginPath(); c.moveTo(L, y); c.lineTo(L + W, y); c.stroke(); c.fillStyle = "#777"; c.fillText((v * 100).toFixed(0) + "%", L - 6, y); });
+  [.9, .99].forEach(v => { c.setLineDash([4, 4]); c.strokeStyle = "#bbb"; c.beginPath(); c.moveTo(L, Y(v)); c.lineTo(L + W, Y(v)); c.stroke(); c.setLineDash([]); c.fillStyle = "#aaa"; c.textAlign = "left"; c.fillText((v * 100) + "%", L + W - 26, Y(v) - 7); c.textAlign = "right"; });
+  c.beginPath(); c.moveTo(X(0), Y(0)); for (let k = 0; k <= N; k++) c.lineTo(X(k), Y(S.en[k])); c.lineTo(X(N), Y(0)); c.closePath(); c.fillStyle = "rgba(245,147,34,.15)"; c.fill();
+  c.beginPath(); for (let k = 0; k <= N; k++) k ? c.lineTo(X(k), Y(S.en[k])) : c.moveTo(X(k), Y(S.en[k])); c.strokeStyle = "#f59322"; c.lineWidth = 2; c.stroke(); c.lineWidth = 1;
+  c.strokeStyle = "#1b3b4f"; c.beginPath(); c.moveTo(X(S.r), T); c.lineTo(X(S.r), T + H); c.stroke(); c.fillStyle = "#1b3b4f"; c.beginPath(); c.arc(X(S.r), Y(S.en[S.r]), 4.5, 0, 7); c.fill();
+  c.textAlign = "center"; c.textBaseline = "top"; c.fillStyle = "#777"; [0, 8, 16, 24, 32, 40, 48, 56, 64].forEach(k => c.fillText(k, X(k), T + H + 5)); c.fillStyle = "#555"; c.fillText("rank r", L + W / 2, T + H + 17);
+  S.engGeom = {L, W};
+}
+function drawTrn() {
+  const CH = 230, c = setup($("trn"), CW, CH), L = 52, R = 10, T = 10, B = 30, W = CW - L - R, H = CH - T - B; c.clearRect(0, 0, CW, CH);
+  const xmax = Math.max(1000, S.lora.step), lx = s => Math.log10(1 + s), X = s => L + W * lx(s) / lx(xmax), Y = v => T + H * (1 - Math.min(1, v));
+  c.font = "11px Roboto,Arial,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+  [0, .25, .5, .75, 1].forEach(v => { const y = Y(v); c.strokeStyle = "#e6e6e6"; c.beginPath(); c.moveTo(L, y); c.lineTo(L + W, y); c.stroke(); c.fillStyle = "#777"; c.fillText(v.toFixed(2), L - 6, y); });
+  c.setLineDash([5, 4]); c.strokeStyle = "#e8590c"; c.lineWidth = 2; c.beginPath(); c.moveTo(L, Y(S.opt)); c.lineTo(L + W, Y(S.opt)); c.stroke(); c.setLineDash([]);
+  c.strokeStyle = "#0877bd"; c.beginPath(); S.hist.forEach((p, i) => i ? c.lineTo(X(p.step), Y(p.err)) : c.moveTo(X(p.step), Y(p.err))); c.stroke(); c.lineWidth = 1;
+  c.textAlign = "center"; c.textBaseline = "top"; c.fillStyle = "#777";
+  for (let v = 1; v <= xmax; v *= 10) { c.strokeStyle = "#eee"; c.beginPath(); c.moveTo(X(v), T); c.lineTo(X(v), T + H); c.stroke(); c.fillText(v.toLocaleString(), X(v), T + H + 5); }
+  c.fillStyle = "#555"; c.fillText("gradient steps (log scale)", L + W / 2, T + H + 17);
+}
+
+/* ---------- numbers ---------- */
+const pct = v => (v * 100).toFixed(1) + "%";
+function firstRank(th) { for (let k = 1; k <= N; k++) if (S.en[k] >= th) return k; return N; }
+function drawNums() {
+  const L = S.lora, err = S.hist[S.hist.length - 1].err, full = N * N, lp = S.r * 2 * N;
+  const row = (a, b) => `<span>${a}</span><b>${b}</b>`;
+  $("nums").innerHTML = `<div class="sec">Parameters</div>` + row("Trained by LoRA, r·(m+n)", lp.toLocaleString()) + row("Full matrix, m·n", full.toLocaleString()) + row("LoRA share of the full matrix", pct(lp / full)) + row("Same rank at d = 4096", (2 * S.r / 4096 * 100).toFixed(2) + "%") +
+    `<div class="sec">Best possible at rank ${S.r} (SVD)</div>` + row("Energy captured", pct(S.en[S.r])) + row("Relative error", S.opt.toFixed(3)) +
+    `<div class="sec">LoRA after ${L.step.toLocaleString()} steps</div>` + row("Relative error", err.toFixed(3)) + row("Above the best possible", "+" + Math.max(0, err - S.opt).toFixed(3)) +
+    `<div class="sec">Ranks needed for this target</div>` + row("90% of the energy", "r = " + firstRank(.9)) + row("99% of the energy", "r = " + firstRank(.99));
+  const k = Math.min(N, S.r * 2), gain = S.en[k] - S.en[S.r];
+  $("verdict").textContent = S.r >= N ? "Full rank: nothing is lost, but nothing is saved either." : `Rank ${S.r} captures ${pct(S.en[S.r])} of the energy. Doubling to rank ${k} would add ${(gain * 100).toFixed(1)} points.`;
+  $("m_s_sub").textContent = "relative error " + S.opt.toFixed(3); $("m_l_sub").textContent = "relative error " + err.toFixed(3);
+}
+
+/* ---------- main draw / loop ---------- */
+function draw(full) {
+  const W = S.lora.product(), E = new Float64Array(N * N); for (let i = 0; i < E.length; i++) E[i] = W[i] - S.T[i];
+  heat("m_l", W, S.mx); heat("m_e", E, S.mx); drawTrn();
+  if (full) { drawSpec(); drawEng(); drawNums(); $("cnt").textContent = S.lora.step.toLocaleString(); }
+}
+const SPD = {slow: 1, normal: 3, fast: 15};
+function frame() {
+  requestAnimationFrame(frame);
+  if (!S.running) return;
+  const L = S.lora, t0 = performance.now(), want = SPD[S.speed]; let done = 0;
+  while (done < want && performance.now() - t0 < 14) { L.gd(S.lr, 1); done++; }
+  const err = L.relErr(); S.hist.push({step: L.step, err}); if (S.hist.length > 4000) S.hist = S.hist.filter((_, i) => i % 2 === 0);
+  S.frame++;
+  if (!isFinite(err) || err > 5) { S.running = false; $("play").innerHTML = "&#9654;"; $("cnt").textContent = L.step.toLocaleString() + " (diverged: lower the learning rate)"; return; }
+  if (Math.abs(S.lastErr - err) < 2e-8 * Math.max(1, done) && L.step > 200) S.still++; else S.still = 0; S.lastErr = err;
+  if (S.still > 40) { S.running = false; S.done = true; $("play").innerHTML = "&#9654;"; }
+  if (S.frame % 5 === 0 || !S.running) { updateLearned(); }
+  draw(false); drawSpec(); $("cnt").textContent = L.step.toLocaleString() + (S.done ? " (converged)" : ""); if (S.frame % 4 === 0 || !S.running) drawNums();
+}
+
+/* ---------- controls ---------- */
+KINDS.forEach(k => $("kind").add(new Option(TARGETS[k].name, k)));
+function buildPar() {
+  const t = TARGETS[S.kind], p = t.par; $("newseed").disabled = S.kind === "picture"; $("tdesc").innerHTML = DESC[S.kind];
+  if (!p) { $("tpar").innerHTML = ""; return; }
+  $("tpar").innerHTML = `<div class="slider"><div class="row"><span>${p.label}</span><b id="parv">${S.par}</b></div><input type="range" id="par" min="${p.lo}" max="${p.hi}" step="${p.step}" value="${S.par}"></div>`;
+  $("par").oninput = e => { S.par = +e.target.value; $("parv").textContent = S.par; buildTarget(); };
+}
+$("kind").onchange = () => { S.kind = $("kind").value; const p = TARGETS[S.kind].par; S.par = p ? p.def : 0; buildPar(); buildTarget(); };
+$("newseed").onclick = () => { S.seed++; buildTarget(); };
+$("rank").oninput = e => { S.r = +e.target.value; rebuildRank(); restart(); };
+$("restart").onclick = () => restart();
+$("play").onclick = () => { S.done = false; S.running = !S.running; $("play").innerHTML = S.running ? "&#10074;&#10074;" : "&#9654;"; S.still = 0; };
+$("speed").onchange = () => S.speed = $("speed").value;
+$("yscale").onchange = () => { S.scale = $("yscale").value; drawSpec(); };
+const lrOf = p => Math.pow(10, -2.5 + p / 1000 * 2.5); const lrPos = v => (Math.log10(v) + 2.5) / 2.5 * 1000;
+$("lr").value = lrPos(S.lr); $("lrv").textContent = S.lr.toPrecision(2);
+$("lr").oninput = e => { S.lr = lrOf(+e.target.value); $("lrv").textContent = S.lr.toPrecision(2); S.still = 0; };
+$("init").value = S.init; $("inv").textContent = S.init.toFixed(2);
+$("init").oninput = e => { S.init = +e.target.value; $("inv").textContent = S.init.toFixed(2); restart(); };
+$("spec").onclick = e => { const g = S.specGeom, r = $("spec").getBoundingClientRect(), x = (e.clientX - r.left) * (CW / r.width); const i = Math.floor((x - g.L) / g.bw); if (i >= 0 && i < N) { S.r = i + 1; rebuildRank(); restart(); } };
+$("eng").onclick = e => { const g = S.engGeom, r = $("eng").getBoundingClientRect(), x = (e.clientX - r.left) * (CW / r.width); const k = Math.round((x - g.L) / g.W * N); if (k >= 1 && k <= N) { S.r = k; rebuildRank(); restart(); } };
+
+buildPar(); buildTarget(); requestAnimationFrame(frame);
+</script>
+
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw(true);}catch(e){} });
+</script>
+</body>
+</html>

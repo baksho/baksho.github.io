@@ -1,0 +1,595 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bias–Variance Playground</title>
+<style>
+  :root{
+    --orange:#f59322; --blue:#0877bd; --navy:#1b3b4f; --red:#e8590c; --green:#2e9e5b;
+    --ink:#333; --muted:#777; --line:#ddd; --bg:#fff; --panel:#f7f7f7;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:800px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px}
+
+  /* control bar */
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 20px;
+       background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444;letter-spacing:.01em}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #cnt{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+
+  /* layout */
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  canvas{display:block}
+  #plotwrap{position:relative;width:fit-content;max-width:100%}
+  #main canvas.pl{max-width:100%;cursor:crosshair}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0 48px;font-size:12px;color:#555}
+  .chips span{display:inline-flex;align-items:center;gap:6px}
+  .chips i{display:inline-block;width:22px;height:0;border-top:3px solid}
+  .chips i.dot{width:9px;height:9px;border:0;border-radius:50%}
+  .chips i.band{height:9px;border:0;opacity:.35}
+  .chartbox{margin-top:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+
+  /* right column */
+  #mname{font-weight:600;color:#222;margin:2px 0 2px}
+  #mdesc,#fdesc{font-size:12.5px;color:#666;margin:2px 0 8px}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .sect{margin-top:26px}
+  #stack{display:flex;height:22px;border-radius:4px;overflow:hidden;background:#eee;margin:4px 0 10px}
+  #stack div{height:100%;min-width:2px;transition:flex-grow .15s}
+  .nums{display:grid;grid-template-columns:auto 1fr auto;gap:5px 9px;font-size:13px;align-items:center}
+  .nums .sq{width:11px;height:11px;border-radius:2px}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222}
+  .nums .tot{font-weight:600}
+  .nums hr{grid-column:1/-1;border:0;border-top:1px solid #e3e3e3;width:100%;margin:2px 0}
+  #verdict{margin-top:10px;font-size:12.5px;padding:6px 9px;border-radius:5px;background:#f3f5f6;color:#444}
+  .atx{font-size:12.5px;color:#444;line-height:1.7;font-variant-numeric:tabular-nums}
+  .atx b{color:#222;font-weight:500}
+  .checks{display:grid;gap:6px;font-size:13px}
+  .checks label{display:flex;align-items:center;gap:8px;cursor:pointer}
+
+  /* sections */
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;
+       border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .divider button:hover{background:#f6f6f6}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px;scroll-margin-top:10px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:28px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  #refs{padding-top:70px}
+  #refs li{font-size:14.5px}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Bias–Variance Playground</h1>
+  <p class="blurb">Fit a model to a small noisy sample, then draw a fresh sample and fit again, many times over. The spread of the fitted curves is the model's variance, the gap between their average and the truth is its bias, and together with the noise they add up to the error you can expect on new data.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="resample" title="Draw new training sets">&#8635;</button>
+      <button class="btn" id="play" title="Keep drawing new samples">&#9654;</button>
+    </div>
+    <div class="grp"><label>Samples drawn</label><div id="cnt">000,000</div></div>
+    <div class="grp"><label for="model">Model</label><select id="model"></select></div>
+    <div class="grp"><label for="fn">True function</label><select id="fn"></select></div>
+    <div class="grp"><label for="sigma">Noise σ</label><select id="sigma"></select></div>
+    <div class="grp"><label for="nn">Training points</label><select id="nn"></select></div>
+    <div class="grp"><label for="kk">Number of fits</label><select id="kk"></select></div>
+    <div class="grp"><label for="design">x positions</label><select id="design"><option value="random">Random</option><option value="fixed">Fixed grid</option></select></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div id="plotwrap"><canvas id="cv" class="pl"></canvas></div>
+      <div class="chips" id="chips"></div>
+      <div class="chartbox">
+        <div class="ct">Where the error comes from: bias² and variance at each x</div>
+        <div class="chartframe"><canvas id="strip" class="pl"></canvas></div>
+      </div>
+      <div class="chartbox">
+        <div class="ct">Error against model flexibility (click to change the model)</div>
+        <div class="chartframe"><canvas id="sweep"></canvas></div>
+        <div class="note" id="sweepnote"></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head">Model</div>
+      <div id="mname"></div>
+      <div id="mdesc"></div>
+      <div id="ctrls"></div>
+
+      <div class="head sect">True function</div>
+      <div id="fdesc"></div>
+
+      <div class="head sect">Error decomposition</div>
+      <div class="card">
+        <div id="stack"></div>
+        <div class="nums" id="nums"></div>
+        <div id="verdict"></div>
+      </div>
+
+      <div class="head">At the pointer</div>
+      <div class="card"><div class="atx" id="atx"></div></div>
+
+      <div class="head">Display</div>
+      <div class="checks" id="checks"></div>
+    </div>
+  </div>
+
+  <div class="divider"><button id="down" aria-label="Scroll down"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></button></div>
+
+  <section id="about" class="prose">
+    <h2>What is happening here?</h2>
+    <p>A model is trained on a random sample, so the model itself is random: a different sample gives a different curve. Pick a point <i>x</i> and let <i>f</i>(<i>x</i>) be the true value, <i>f&#770;</i>(<i>x</i>) the fitted value, and &sigma;&sup2; the variance of the noise in the data. With the expectation taken over training samples and over new noise, the expected squared error at <i>x</i> splits into three parts:</p>
+    <p><span class="eq">E[(y &minus; f&#770;(x))&sup2;] = (E[f&#770;(x)] &minus; f(x))&sup2; + Var[f&#770;(x)] + &sigma;&sup2;</span></p>
+    <h3>Bias</h3>
+    <p>The gap between the average fitted curve (orange) and the truth (dark line). A model that is too simple to follow the truth is wrong in the same way on every sample, and that is bias.</p>
+    <h3>Variance</h3>
+    <p>How much the fitted curve changes from sample to sample (the spread of the blue curves). A very flexible model chases the noise in each sample, so its curves scatter.</p>
+    <h3>Noise</h3>
+    <p>The part no model can remove, because it is in the data. It sets the floor under the test error.</p>
+    <h3>The models</h3>
+    <ul>
+      <li><b>Polynomial:</b> least squares in a Legendre polynomial basis on [&minus;1, 1], with an optional ridge penalty of strength &lambda;n on every coefficient except the constant. Higher degree means a more flexible model.</li>
+      <li><b>k-nearest neighbours:</b> the prediction at <i>x</i> is the average of the <i>k</i> training targets closest to <i>x</i>. Small <i>k</i> is flexible, <i>k</i> = <i>n</i> predicts the overall mean.</li>
+      <li><b>Kernel smoother:</b> a Nadaraya&ndash;Watson average with Gaussian weights of bandwidth <i>h</i>. A small bandwidth is flexible.</li>
+    </ul>
+    <h3>How the numbers are computed</h3>
+    <p>The page keeps K training samples. At each x on a grid of 121 points it averages the K predictions and measures their spread (the unbiased sample variance). The squared gap between the average and the truth overstates bias&sup2; by about Var/K, because the average itself is noisy, so that amount is subtracted. Both are then averaged over the grid, which treats test points as uniform on [0, 1]. These are estimates from K samples, so with few fits they are noisy; use more fits to steady them. The &ldquo;measured&rdquo; test error is the average squared error against fresh noisy targets and should land close to the sum of the three parts. The curve below the plot repeats the calculation for every flexibility setting, using up to 50 of the samples.</p>
+    <h3>Things to try</h3>
+    <ul>
+      <li>Fit the sine wave with degree 0, 1, 3 and 9 and watch the average curve and the spread change.</li>
+      <li>Hold the model fixed and increase the noise or reduce the training points. Which of the two parts grows?</li>
+      <li>On the step function, compare a polynomial with k-NN. Where does each one lose?</li>
+      <li>On the Runge function, raise the polynomial degree and look at the bias and variance strip near x = 0 and x = 1.</li>
+      <li>Switch to a fixed grid of x positions. Only the noise changes between samples now.</li>
+      <li>Add a little ridge penalty to a high-degree polynomial and see which of the two parts it reduces.</li>
+      <li>Press play to keep drawing fresh samples and watch the curves flicker.</li>
+    </ul>
+  </section>
+
+  <section id="refs" class="prose">
+    <h2>References</h2>
+    <ul>
+      <li>S. Geman, E. Bienenstock and R. Doursat, <i>Neural Networks and the Bias/Variance Dilemma</i>, Neural Computation 4(1), 1992.</li>
+      <li>T. Hastie, R. Tibshirani and J. Friedman, <i>The Elements of Statistical Learning</i>, 2nd edition, Springer, 2009 (chapter 7).</li>
+      <li>M. Belkin, D. Hsu, S. Ma and S. Mandal, <i>Reconciling modern machine-learning practice and the classical bias&ndash;variance trade-off</i>, PNAS 116(32), 2019.</li>
+    </ul>
+    <p>This page is an independent implementation written for this site.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+const $ = s => document.querySelector(s);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+function hiDPI(cv, w, h){
+  const d = window.devicePixelRatio || 1;
+  cv.width = Math.round(w*d); cv.height = Math.round(h*d); cv.style.width = w+"px"; cv.style.height = h+"px";
+  const g = cv.getContext("2d"); g.setTransform(d,0,0,d,0,0); return g;
+}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){ const u = r() || 1e-12, v = r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+const fmt = v => !isFinite(v) ? "–" : v === 0 ? "0" : (Math.abs(v) >= 1e4 || Math.abs(v) < 1e-3) ? v.toExponential(2) : v.toPrecision(3);
+function niceTicks(lo, hi, n){
+  const raw = (hi-lo)/n, mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw/mag, st = (r<1.5?1:r<3.5?2:r<7.5?5:10)*mag, out = [];
+  for (let v = Math.ceil(lo/st-1e-9)*st; v <= hi+1e-9; v += st) out.push(+v.toFixed(10)); return out;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Truth functions (x in [0,1])
+ * ------------------------------------------------------------------ */
+const G = 121, GX = new Float64Array(G); for (let i=0;i<G;i++) GX[i] = i/(G-1);
+function normed(f){ let m = 0; for (let i=0;i<=400;i++) m = Math.max(m, Math.abs(f(i/400))); return x => f(x)/m; }
+const FN = {
+  sine:   {name:"Sine wave",     f:x=>Math.sin(2*Math.PI*x), desc:"One smooth period of a sine wave."},
+  fast:   {name:"Fast sine",     f:x=>Math.sin(6*Math.PI*x), desc:"Three periods. A model needs real flexibility to follow it."},
+  cubic:  {name:"Cubic",         f:normed(x=>(x-0.2)*(x-0.5)*(x-0.85)), desc:"A cubic polynomial, so a polynomial of degree 3 or more has no bias at all."},
+  runge:  {name:"Runge function",f:x=>1/(1+25*(2*x-1)*(2*x-1)), desc:"A smooth bump that is famously hard for high-degree polynomials near the ends."},
+  step:   {name:"Step",          f:x=>x<0.5?-1:1, desc:"A jump at x = 0.5. Smooth models have to blur it."},
+  linear: {name:"Line",          f:x=>2*x-1, desc:"A straight line, the simplest case."},
+};
+const FN_ORDER = ["sine","fast","cubic","runge","step","linear"];
+for (const k of FN_ORDER) { const f = FN[k].f; FN[k].g = new Float64Array(G).map((_,i)=>f(GX[i])); }
+
+/* ------------------------------------------------------------------ *
+ *  State
+ * ------------------------------------------------------------------ */
+const MAXDEG = 20, D = MAXDEG+1, KSW = 50;
+const S = {model:"poly", fn:"sine", sigma:0.3, n:30, K:30, design:"random", deg:3, lamExp:-7, k:10, h:0.1, seed:7,
+           show:{fits:true, mean:true, band:true, data:true, all:false, one:true}, x0:0.5};
+const lamOf = () => S.lamExp <= -7 ? 0 : Math.pow(10, S.lamExp);
+let datasets = [], nextId = 0, playing = false, testZ = null, SUM = null;
+
+/* ------------------------------------------------------------------ *
+ *  Data
+ * ------------------------------------------------------------------ */
+const PHI = new Float64Array(G*D);
+function legendre(u, out, o){ out[o] = 1; if (D>1) out[o+1] = u; for (let k=1;k<MAXDEG;k++) out[o+k+1] = ((2*k+1)*u*out[o+k] - k*out[o+k-1])/(k+1); }
+for (let g=0;g<G;g++) legendre(2*GX[g]-1, PHI, g*D);
+const LV = new Float64Array(D);
+
+function makeDataset(id){
+  const rng = mulberry32((S.seed*7919 + Math.imul(id+1, 2654435761)) >>> 0), n = S.n, f = FN[S.fn].f, pts = [];
+  for (let j=0;j<n;j++) { const u = rng(), z = gauss(rng), x = S.design === "fixed" ? (j+.5)/n : u; pts.push([x, f(x) + S.sigma*z]); }
+  if (S.design === "random") pts.sort((a,b) => a[0]-b[0]);
+  const d = {id, n, x:new Float64Array(n), y:new Float64Array(n), pre:new Float64Array(n+1), gram:new Float64Array(D*D), b:new Float64Array(D), yy:0,
+             pred:new Float32Array(G), train:0};
+  for (let j=0;j<n;j++) { d.x[j] = pts[j][0]; d.y[j] = pts[j][1]; d.pre[j+1] = d.pre[j] + d.y[j]; d.yy += d.y[j]*d.y[j]; }
+  for (let j=0;j<n;j++) {
+    legendre(2*d.x[j]-1, LV, 0);
+    for (let a=0;a<D;a++) { const pa = LV[a]; d.b[a] += pa*d.y[j]; for (let c=0;c<=a;c++) d.gram[a*D+c] += pa*LV[c]; }
+  }
+  for (let a=0;a<D;a++) for (let c=a+1;c<D;c++) d.gram[a*D+c] = d.gram[c*D+a];
+  return d;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Models: each fit fills `out` (length G) and returns the training MSE
+ * ------------------------------------------------------------------ */
+const LW = new Float64Array(D*D), TV = new Float64Array(D), AA = new Float64Array(D*D), BASE = new Float64Array(D*D), WW = new Float64Array(D);
+function solveSPD(A, m, b, w){
+  for (let i=0;i<m;i++) for (let j=0;j<=i;j++) {
+    let s = A[i*m+j]; for (let k=0;k<j;k++) s -= LW[i*m+k]*LW[j*m+k];
+    if (i === j) { if (!(s > 1e-300)) return false; LW[i*m+i] = Math.sqrt(s); } else LW[i*m+j] = s/LW[j*m+j];
+  }
+  for (let i=0;i<m;i++) { let s = b[i]; for (let k=0;k<i;k++) s -= LW[i*m+k]*TV[k]; TV[i] = s/LW[i*m+i]; }
+  for (let i=m-1;i>=0;i--) { let s = TV[i]; for (let k=i+1;k<m;k++) s -= LW[k*m+i]*w[k]; w[i] = s/LW[i*m+i]; }
+  return true;
+}
+function fitPoly(d, deg, lam, out){
+  const m = deg+1, w = WW; let tr = 0;
+  for (let i=0;i<m;i++) for (let j=0;j<m;j++) BASE[i*m+j] = d.gram[i*D+j];
+  for (let i=1;i<m;i++) BASE[i*m+i] += lam*d.n;
+  for (let i=0;i<m;i++) tr += BASE[i*m+i];
+  let jit = 1e-10*tr/m + 1e-12, ok = false;
+  for (let t=0;t<10 && !ok;t++, jit*=10) { AA.set(BASE.subarray(0, m*m)); for (let i=0;i<m;i++) AA[i*m+i] += jit; ok = solveSPD(AA, m, d.b, w); }
+  if (!ok) { out.fill(0); return d.yy/d.n; }
+  for (let g=0;g<G;g++) { let s = 0; for (let a=0;a<m;a++) s += w[a]*PHI[g*D+a]; out[g] = s; }
+  let sse = d.yy; for (let i=0;i<m;i++) { sse -= 2*w[i]*d.b[i]; for (let j=0;j<m;j++) sse += w[i]*d.gram[i*D+j]*w[j]; }
+  return Math.max(0, sse)/d.n;
+}
+function lowerBound(a, x){ let lo = 0, hi = a.length; while (lo<hi) { const mid = (lo+hi)>>1; if (a[mid] < x) lo = mid+1; else hi = mid; } return lo; }
+function knnAt(d, x, idx, k){
+  const xs = d.x, n = d.n; let l = idx-1, r = idx;
+  for (let t=0;t<k;t++) { if (l < 0) r++; else if (r >= n) l--; else if (x-xs[l] <= xs[r]-x) l--; else r++; }
+  return (d.pre[r] - d.pre[l+1])/k;
+}
+function fitKnn(d, k, lam, out){
+  k = clamp(Math.round(k), 1, d.n);
+  for (let g=0;g<G;g++) out[g] = knnAt(d, GX[g], lowerBound(d.x, GX[g]), k);
+  let sse = 0; for (let j=0;j<d.n;j++) { const e = knnAt(d, d.x[j], j, k) - d.y[j]; sse += e*e; } return sse/d.n;
+}
+function kernAt(d, x, h){
+  const xs = d.x, lo = lowerBound(xs, x-5*h), hi = lowerBound(xs, x+5*h), inv = -0.5/(h*h); let sw = 0, sy = 0;
+  for (let i=lo;i<hi;i++) { const dx = xs[i]-x, w = Math.exp(dx*dx*inv); sw += w; sy += w*d.y[i]; }
+  if (sw < 1e-12) { const i = lowerBound(xs, x); const j = i <= 0 ? 0 : i >= d.n ? d.n-1 : (x-xs[i-1] <= xs[i]-x ? i-1 : i); return d.y[j]; }
+  return sy/sw;
+}
+function fitKern(d, h, lam, out){
+  for (let g=0;g<G;g++) out[g] = kernAt(d, GX[g], h);
+  let sse = 0; for (let j=0;j<d.n;j++) { const e = kernAt(d, d.x[j], h) - d.y[j]; sse += e*e; } return sse/d.n;
+}
+const logSpace = (a, b, m) => Array.from({length:m}, (_,i) => a*Math.pow(b/a, i/(m-1)));
+const MODELS = {
+  poly: {name:"Polynomial regression", desc:"Least squares in a Legendre basis. Raise the degree to make it more flexible; the ridge penalty tames the coefficients.",
+         list: () => Array.from({length:D}, (_,i)=>i), cur: () => S.deg, setc: v => { S.deg = clamp(Math.round(v),0,MAXDEG); },
+         fit: (d,c,out) => fitPoly(d, c, lamOf(), out), label: v => "degree "+v,
+         pos: v => v/MAXDEG, inv: u => Math.round(u*MAXDEG), tick: v => String(v)},
+  knn:  {name:"k-nearest neighbours", desc:"Averages the k closest training targets. A small k is flexible; k = n always predicts the overall mean.",
+         list: () => { const n = S.n, a = []; for (let i=0;i<20;i++) { const v = Math.max(1, Math.round(Math.pow(n, 1-i/19))); if (!a.length || a[a.length-1] !== v) a.push(v); } return a; },
+         cur: () => S.k, setc: v => { S.k = clamp(Math.round(v),1,S.n); }, fit: (d,c,out) => fitKnn(d, c, 0, out), label: v => "k = "+v,
+         pos: v => S.n > 1 ? 1 - Math.log(Math.max(1,v))/Math.log(S.n) : 0, inv: u => clamp(Math.round(Math.pow(S.n, 1-u)),1,S.n), tick: v => String(v)},
+  kern: {name:"Kernel smoother", desc:"Gaussian-weighted local average (Nadaraya–Watson). A small bandwidth is flexible; a huge one predicts the overall mean.",
+         list: () => logSpace(0.5, 0.005, 24), cur: () => S.h, setc: v => { S.h = clamp(v,0.005,0.5); }, fit: (d,c,out) => fitKern(d, c, 0, out), label: v => "h = "+(+v.toPrecision(2)),
+         pos: v => Math.log(0.5/v)/Math.log(100), inv: u => 0.5*Math.pow(0.01, clamp(u,0,1)), tick: v => String(+v.toPrecision(1))},
+};
+const MODEL_ORDER = ["poly","knn","kern"];
+
+/* ------------------------------------------------------------------ *
+ *  Summary over the K fits
+ * ------------------------------------------------------------------ */
+function summarize(){
+  const K = datasets.length, f = FN[S.fn].g, mean = new Float64Array(G), vr = new Float64Array(G), bias = new Float64Array(G);
+  for (const d of datasets) for (let g=0;g<G;g++) mean[g] += d.pred[g];
+  for (let g=0;g<G;g++) mean[g] /= K;
+  for (const d of datasets) for (let g=0;g<G;g++) { const e = d.pred[g]-mean[g]; vr[g] += e*e; }
+  const b2pt = new Float64Array(G); let b2 = 0, v = 0, meas = 0, tr = 0;
+  // unbiased estimates: variance with divisor K-1, and bias² corrected for the sampling noise (variance/K) in the average
+  for (let g=0;g<G;g++) { vr[g] /= (K-1); bias[g] = mean[g]-f[g]; b2pt[g] = bias[g]*bias[g] - vr[g]/K; b2 += b2pt[g]; v += vr[g]; }
+  datasets.forEach((d,p) => { tr += d.train; for (let g=0;g<G;g++) { const e = d.pred[g] - f[g] - S.sigma*testZ[p*G+g]; meas += e*e; } });
+  SUM = {mean, vr, bias, b2pt, b2:Math.max(0,b2/G), v:v/G, noise:S.sigma*S.sigma, meas:meas/(K*G), train:tr/K};
+  SUM.total = SUM.b2 + SUM.v + SUM.noise;
+}
+function makeTestZ(){
+  const r = mulberry32((S.seed*104729 + 12345)>>>0), m = 100*G; testZ = new Float32Array(m);
+  for (let i=0;i<m;i++) testZ[i] = gauss(r);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Complexity sweep (progressive)
+ * ------------------------------------------------------------------ */
+const SW = {token:0, list:[], vals:[], t:0};
+function scheduleSweep(delay){
+  clearTimeout(SW.t); SW.token++; const tok = SW.token, M = MODELS[S.model]; SW.list = M.list(); SW.vals = []; drawSweep();
+  const f = FN[S.fn].g, K = Math.min(datasets.length, KSW), sets = datasets.slice(0, K), tmp = new Float32Array(G);
+  const step = i => {
+    if (tok !== SW.token) return;
+    if (i >= SW.list.length) { drawSweep(); return; }
+    const c = SW.list[i], sm = new Float64Array(G), sm2 = new Float64Array(G); let tr = 0;
+    for (const d of sets) { tr += M.fit(d, c, tmp); for (let g=0;g<G;g++) { sm[g] += tmp[g]; sm2[g] += tmp[g]*tmp[g]; } }
+    let b2 = 0, v = 0;
+    for (let g=0;g<G;g++) { const m = sm[g]/K, vp = Math.max(0, (sm2[g] - K*m*m)/(K-1)); b2 += (m-f[g])*(m-f[g]) - vp/K; v += vp; }
+    SW.vals.push({b2:Math.max(0,b2/G), v:v/G, train:tr/K});
+    drawSweep(); SW.t = setTimeout(() => step(i+1), 0);
+  };
+  SW.t = setTimeout(() => step(0), delay);
+}
+
+/* ------------------------------------------------------------------ *
+ *  Pipeline
+ * ------------------------------------------------------------------ */
+function fitDS(d){ const M = MODELS[S.model]; d.train = M.fit(d, M.cur(), d.pred); }
+function rebuild(){
+  datasets = []; for (let i=0;i<S.K;i++) { const d = makeDataset(i); fitDS(d); datasets.push(d); }
+  nextId = S.K; makeTestZ(); summarize(); drawAll(); updatePanel(); scheduleSweep(150); writeHash(); updateCount();
+}
+function refit(){ datasets.forEach(fitDS); summarize(); drawAll(); updatePanel(); drawSweep(); writeHash(); }
+function streamStep(){
+  const d = makeDataset(nextId++); fitDS(d); datasets.shift(); datasets.push(d); summarize(); drawAll(); updatePanel(); updateCount();
+}
+function updateCount(){ $("#cnt").textContent = String(nextId).padStart(6,"0").replace(/(\d{3})(\d{3})/, "$1,$2"); }
+function setPlaying(p){
+  playing = p; $("#play").innerHTML = p ? "&#10074;&#10074;" : "&#9654;";
+  if (p) { clearTimeout(SW.t); SW.token++; (function loop(){ if (!playing) return; streamStep(); setTimeout(loop, 110); })(); }
+  else { scheduleSweep(100); writeHash(); }
+}
+
+/* ------------------------------------------------------------------ *
+ *  Drawing
+ * ------------------------------------------------------------------ */
+const PW = 640, PH = 400, ML = 48, MT = 10, MR = 10, CW = ML+PW+MR, CH = MT+PH+34, YM = 2.5;
+const SH = 150, SWH = 290;
+let cx = null, cs = null, cw = null;
+const X = x => ML + x*PW, Y = y => MT + (YM-y)/(2*YM)*PH;
+function axes(g, ytop, ybot, yTicks, yfmt){
+  g.strokeStyle = "#999"; g.lineWidth = 1; g.strokeRect(ML-.5, ytop-.5, PW+1, ybot-ytop+1);
+  g.fillStyle = "#666"; g.font = "11px sans-serif"; g.textAlign = "center"; g.textBaseline = "top";
+  for (const t of [0,0.2,0.4,0.6,0.8,1]) { const px = Math.round(X(t))+.5; g.strokeStyle = "#ececec"; g.beginPath(); g.moveTo(px,ytop); g.lineTo(px,ybot); g.stroke();
+    g.strokeStyle = "#999"; g.beginPath(); g.moveTo(px,ybot); g.lineTo(px,ybot+4); g.stroke(); g.fillText(t.toFixed(1), px, ybot+7); }
+  g.textAlign = "right"; g.textBaseline = "middle";
+  for (const [v,py] of yTicks) { const p = Math.round(py)+.5; g.strokeStyle = "#ececec"; g.beginPath(); g.moveTo(ML,p); g.lineTo(ML+PW,p); g.stroke();
+    g.strokeStyle = "#999"; g.beginPath(); g.moveTo(ML-4,p); g.lineTo(ML,p); g.stroke(); g.fillText(yfmt(v), ML-7, py); }
+}
+function drawMain(){
+  const g = cx; g.clearRect(0,0,CW,CH);
+  axes(g, MT, MT+PH, [-2,-1,0,1,2].map(v => [v, Y(v)]), v => String(v));
+  g.save(); g.beginPath(); g.rect(ML, MT, PW, PH); g.clip();
+  const f = FN[S.fn].g, K = datasets.length, line = arr => { g.beginPath(); for (let i=0;i<G;i++) i ? g.lineTo(X(GX[i]), Y(arr[i])) : g.moveTo(X(GX[0]), Y(arr[0])); };
+  if (S.show.all) { g.fillStyle = "rgba(27,59,79,.10)"; for (const d of datasets) for (let j=0;j<d.n;j++) { g.beginPath(); g.arc(X(d.x[j]), Y(d.y[j]), 2, 0, 6.3); g.fill(); } }
+  if (S.show.band) {
+    g.beginPath(); for (let i=0;i<G;i++) { const y = SUM.mean[i] + Math.sqrt(SUM.vr[i]); i ? g.lineTo(X(GX[i]), Y(y)) : g.moveTo(X(GX[0]), Y(y)); }
+    for (let i=G-1;i>=0;i--) g.lineTo(X(GX[i]), Y(SUM.mean[i] - Math.sqrt(SUM.vr[i])));
+    g.closePath(); g.fillStyle = "rgba(245,147,34,.20)"; g.fill();
+  }
+  if (S.show.fits) {
+    const a = K <= 10 ? 0.55 : K <= 25 ? 0.36 : K <= 50 ? 0.24 : 0.15;
+    g.strokeStyle = `rgba(8,119,189,${a})`; g.lineWidth = 1.2; g.lineJoin = "round";
+    for (const d of datasets) { line(d.pred); g.stroke(); }
+  }
+  if (S.show.one && datasets.length) { const d = datasets[datasets.length-1]; line(d.pred); g.lineWidth = 2.4; g.strokeStyle = "#0877bd"; g.stroke(); }
+  if (S.show.data && datasets.length) {
+    const d = datasets[datasets.length-1];
+    for (let j=0;j<d.n;j++) { g.beginPath(); g.arc(X(d.x[j]), Y(d.y[j]), 3.6, 0, 6.3); g.fillStyle = "#1b3b4f"; g.fill(); g.lineWidth = 1.2; g.strokeStyle = "#fff"; g.stroke(); }
+  }
+  if (S.show.mean) { line(SUM.mean); g.lineWidth = 4.4; g.strokeStyle = "rgba(255,255,255,.9)"; g.stroke(); g.lineWidth = 2.6; g.strokeStyle = "#f59322"; g.stroke(); }
+  line(f); g.lineWidth = 4; g.strokeStyle = "rgba(255,255,255,.85)"; g.stroke(); g.lineWidth = 2.2; g.strokeStyle = "#1b3b4f"; g.stroke();
+  // pointer marker: bias gap and +-SD whiskers
+  const gi = Math.round(S.x0*(G-1)), px = X(GX[gi]);
+  g.setLineDash([3,3]); g.strokeStyle = "rgba(0,0,0,.35)"; g.lineWidth = 1; g.beginPath(); g.moveTo(px, MT); g.lineTo(px, MT+PH); g.stroke(); g.setLineDash([]);
+  const yt = Y(f[gi]), ym = Y(SUM.mean[gi]), sd = Math.sqrt(SUM.vr[gi]);
+  g.lineWidth = 3; g.strokeStyle = "#e8590c"; g.beginPath(); g.moveTo(px+5, yt); g.lineTo(px+5, ym); g.stroke();
+  g.lineWidth = 2.2; g.strokeStyle = "#0877bd"; g.beginPath(); g.moveTo(px-5, Y(SUM.mean[gi]+sd)); g.lineTo(px-5, Y(SUM.mean[gi]-sd)); g.stroke();
+  g.restore();
+  g.fillStyle = "#555"; g.font = "11.5px sans-serif"; g.textAlign = "center"; g.textBaseline = "top"; g.fillText("x", ML+PW/2, MT+PH+22);
+}
+function drawStrip(){
+  const g = cs; g.clearRect(0,0,CW,SH+34);
+  const top = 26, bot = SH+8; let mx = 0;
+  const b2c = Array.from(SUM.b2pt, b => Math.max(0,b)), per = []; for (let i=0;i<G;i++) per.push(Math.max(b2c[i], SUM.vr[i]));
+  mx = Math.max(...per); const q = per.slice().sort((a,b)=>a-b)[Math.floor(0.85*(G-1))], clipped = mx > 10*q && q > 0; if (clipped) mx = 10*q;
+  const noiseIn = SUM.noise > 0 && SUM.noise <= mx*3; if (noiseIn) mx = Math.max(mx, SUM.noise);
+  mx = mx*1.1 || 1; const ticks = niceTicks(0, mx, 3), Ys = v => bot - clamp(v/mx,0,1)*(bot-top);
+  axes(g, top, bot, ticks.map(v => [v, Ys(v)]), v => String(+v.toPrecision(2)));
+  g.save(); g.beginPath(); g.rect(ML, top, PW, bot-top); g.clip();
+  const area = (arr, col) => { g.beginPath(); g.moveTo(X(0), bot); for (let i=0;i<G;i++) g.lineTo(X(GX[i]), Ys(arr[i])); g.lineTo(X(1), bot); g.closePath(); g.fillStyle = col; g.fill(); };
+  const b2 = b2c;
+  area(b2, "rgba(232,89,12,.16)"); area(SUM.vr, "rgba(8,119,189,.16)");
+  const ln = (arr, col) => { g.beginPath(); for (let i=0;i<G;i++) i ? g.lineTo(X(GX[i]), Ys(arr[i])) : g.moveTo(X(0), Ys(arr[0])); g.strokeStyle = col; g.lineWidth = 2; g.stroke(); };
+  ln(b2, "#e8590c"); ln(SUM.vr, "#0877bd");
+  if (noiseIn) { g.setLineDash([5,4]); g.strokeStyle = "#8a959b"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(ML, Ys(SUM.noise)); g.lineTo(ML+PW, Ys(SUM.noise)); g.stroke(); g.setLineDash([]); }
+  const px = X(GX[Math.round(S.x0*(G-1))]); g.setLineDash([3,3]); g.strokeStyle = "rgba(0,0,0,.35)"; g.beginPath(); g.moveTo(px, top); g.lineTo(px, bot); g.stroke(); g.setLineDash([]);
+  g.restore();
+  g.font = "11px sans-serif"; g.textAlign = "left"; g.textBaseline = "top"; let lx = ML+8;
+  for (const [t,c] of [["bias²","#e8590c"],["variance","#0877bd"],[noiseIn ? "noise σ²" : "noise σ² = "+fmt(SUM.noise)+" (above this plot)","#8a959b"]].concat(clipped ? [["spikes clipped at the top","#bbb"]] : [])) { g.fillStyle = c; g.fillRect(lx, 12, 14, 3); g.fillStyle = "#555"; g.fillText(t, lx+19, 8); lx += 25 + g.measureText(t).width + 12; }
+  g.fillStyle = "#555"; g.textAlign = "center"; g.fillText("x", ML+PW/2, bot+22);
+}
+function sweepPosToX(u){ return ML + 6 + u*(PW-12); }
+function drawSweep(){
+  const g = cw, M = MODELS[S.model], H = SWH; g.clearRect(0,0,CW,H);
+  const top = 30, bot = H-42, vals = SW.vals, list = SW.list;
+  const all = []; for (const v of vals) { all.push(v.b2, v.v, v.train, v.b2+v.v+SUM.noise); } if (SUM.noise > 0) all.push(SUM.noise);
+  const pos = all.filter(v => v > 0 && isFinite(v)); let lo = pos.length ? Math.min(...pos) : 1e-3, hi = pos.length ? Math.max(...pos) : 10;
+  let l0 = Math.max(-5, Math.floor(Math.log10(lo))), l1 = Math.min(3, Math.ceil(Math.log10(hi))); if (l1 - l0 < 2) l1 = l0+2;
+  const Ys = v => bot - (clamp(Math.log10(Math.max(v,1e-12)), l0, l1) - l0)/(l1-l0)*(bot-top);
+  g.strokeStyle = "#999"; g.lineWidth = 1; g.strokeRect(ML-.5, top-.5, PW+1, bot-top+1);
+  g.font = "10.5px sans-serif"; g.fillStyle = "#666"; g.textAlign = "right"; g.textBaseline = "middle";
+  for (let l=l0; l<=l1; l++) { const y = Math.round(Ys(Math.pow(10,l)))+.5; g.strokeStyle = "#ececec"; g.beginPath(); g.moveTo(ML,y); g.lineTo(ML+PW,y); g.stroke(); g.fillText("1e"+l, ML-6, y); }
+  g.textAlign = "center"; g.textBaseline = "top";
+  const nt = list.length, step = Math.max(1, Math.ceil(nt/10));
+  list.forEach((c,i) => { if (i % step && i !== nt-1) return; const px = sweepPosToX(M.pos(c)); g.strokeStyle = "#999"; g.beginPath(); g.moveTo(px, bot); g.lineTo(px, bot+4); g.stroke(); g.fillStyle = "#666"; g.fillText(M.tick(c), px, bot+7); });
+  g.fillStyle = "#555"; g.font = "11.5px sans-serif";
+  g.fillText(S.model === "poly" ? "polynomial degree  (simple → flexible)" : S.model === "knn" ? "number of neighbours k  (simple → flexible)" : "bandwidth h  (simple → flexible)", ML+PW/2, bot+24);
+  g.save(); g.beginPath(); g.rect(ML, top, PW, bot-top); g.clip();
+  if (SUM.noise > 0) { g.setLineDash([5,4]); g.strokeStyle = "#8a959b"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(ML, Ys(SUM.noise)); g.lineTo(ML+PW, Ys(SUM.noise)); g.stroke(); g.setLineDash([]); }
+  const series = [["train","#2e9e5b",2,[5,3],v=>v.train],["b2","#e8590c",2,[],v=>v.b2],["v","#0877bd",2,[],v=>v.v],["tot","#1b3b4f",2.8,[],v=>v.b2+v.v+SUM.noise]];
+  for (const [,col,lw,dash,fn] of series) {
+    if (vals.length < 1) break; g.beginPath(); g.setLineDash(dash); vals.forEach((v,i) => { const px = sweepPosToX(M.pos(list[i])), py = Ys(fn(v)); i ? g.lineTo(px,py) : g.moveTo(px,py); });
+    g.strokeStyle = col; g.lineWidth = lw; g.lineJoin = "round"; g.stroke(); g.setLineDash([]);
+  }
+  const mx = sweepPosToX(clamp(M.pos(M.cur()), 0, 1)); g.strokeStyle = "rgba(0,0,0,.4)"; g.lineWidth = 1.4; g.beginPath(); g.moveTo(mx, top); g.lineTo(mx, bot); g.stroke();
+  g.restore();
+  g.font = "11px sans-serif"; g.textAlign = "left"; g.textBaseline = "top"; let lx = ML+8;
+  for (const [t,c,dash] of [["bias²","#e8590c"],["variance","#0877bd"],["bias² + variance + σ² (expected test error)","#1b3b4f"],["training error","#2e9e5b",1],["noise σ²","#8a959b",1]]) {
+    g.fillStyle = c; if (dash) { g.fillRect(lx, 9, 5, 3); g.fillRect(lx+8, 9, 5, 3); } else g.fillRect(lx, 9, 14, 3); g.fillStyle = "#555"; g.fillText(t, lx+19, 5); lx += 25 + g.measureText(t).width + 8; if (lx > CW-120) break; }
+  $("#sweepnote").textContent = (datasets.length > KSW ? "Curves use "+KSW+" of the "+datasets.length+" fits. " : "") + (vals.length < list.length ? "Computing…" : "Values above 1e3 or below 1e-5 are clipped at the edge of the plot.");
+}
+function drawAll(){ drawMain(); drawStrip(); drawSweep(); }
+
+/* ------------------------------------------------------------------ *
+ *  Panel
+ * ------------------------------------------------------------------ */
+function updatePanel(){
+  const parts = [["Bias²", SUM.b2, "#e8590c"], ["Variance", SUM.v, "#0877bd"], ["Noise σ²", SUM.noise, "#9aa5ab"]];
+  $("#stack").innerHTML = parts.map(([,v,c]) => `<div style="background:${c};flex-grow:${Math.max(v,0)}"></div>`).join("");
+  $("#nums").innerHTML = parts.map(([n,v,c]) => `<i class="sq" style="background:${c}"></i><span>${n}</span><b>${fmt(v)}</b>`).join("") +
+    `<hr><i></i><span class="tot">Expected test error</span><b class="tot">${fmt(SUM.total)}</b>` +
+    `<i></i><span>Measured on fresh data</span><b>${fmt(SUM.meas)}</b>` +
+    `<i></i><span>Training error</span><b>${fmt(SUM.train)}</b>`;
+  let v = "";
+  if (SUM.b2 + SUM.v < 1e-9) v = "The model fits perfectly on average and does not vary.";
+  else if (SUM.b2 > 2*SUM.v) v = "Bias dominates: the model is too simple for this function (underfitting).";
+  else if (SUM.v > 2*SUM.b2) v = "Variance dominates: the fits swing with each sample (overfitting).";
+  else v = "Bias and variance are of similar size.";
+  if (SUM.noise > 0 && SUM.b2 + SUM.v < SUM.noise*0.5) v += " The noise floor is now the main part of the error.";
+  $("#verdict").textContent = v;
+  updateAt();
+}
+function updateAt(){
+  const gi = Math.round(S.x0*(G-1)), f = FN[S.fn].g[gi], m = SUM.mean[gi], b = SUM.bias[gi], vr = SUM.vr[gi];
+  $("#atx").innerHTML = `x = <b>${GX[gi].toFixed(2)}</b><br>truth f(x) = <b>${fmt(f)}</b><br>average fit = <b>${fmt(m)}</b><br>bias² = <b>${fmt(Math.max(0,SUM.b2pt[gi]))}</b> &nbsp; variance = <b>${fmt(vr)}</b><br>spread (SD of fits) = <b>${fmt(Math.sqrt(vr))}</b>`;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Controls
+ * ------------------------------------------------------------------ */
+function fillSelect(el, items, cur){ el.innerHTML = ""; for (const [v,l] of items) { const o = document.createElement("option"); o.value = v; o.textContent = l; el.appendChild(o); } el.value = String(cur); }
+function buildCtrls(){
+  const box = $("#ctrls"); box.innerHTML = `
+    <div class="slider" id="s_deg"><div class="row"><span>Degree</span><b id="v_deg"></b></div><input type="range" id="r_deg" min="0" max="${MAXDEG}" step="1"></div>
+    <div class="slider" id="s_lam"><div class="row"><span>Ridge penalty λ</span><b id="v_lam"></b></div><input type="range" id="r_lam" min="-7" max="0" step="0.25"></div>
+    <div class="slider" id="s_k"><div class="row"><span>Neighbours k</span><b id="v_k"></b></div><input type="range" id="r_k" min="1" max="${S.n}" step="1"></div>
+    <div class="slider" id="s_h"><div class="row"><span>Bandwidth h</span><b id="v_h"></b></div><input type="range" id="r_h" min="-2.30103" max="-0.30103" step="0.01"></div>`;
+  $("#r_deg").oninput = e => { S.deg = +e.target.value; syncCtrls(); refit(); };
+  $("#r_lam").oninput = e => { S.lamExp = +e.target.value; syncCtrls(); refit(); scheduleSweep(200); };
+  $("#r_k").oninput = e => { S.k = +e.target.value; syncCtrls(); refit(); };
+  $("#r_h").oninput = e => { S.h = Math.pow(10, +e.target.value); syncCtrls(); refit(); };
+}
+function syncCtrls(){
+  const m = S.model;
+  $("#s_deg").style.display = $("#s_lam").style.display = m === "poly" ? "" : "none";
+  $("#s_k").style.display = m === "knn" ? "" : "none"; $("#s_h").style.display = m === "kern" ? "" : "none";
+  $("#r_deg").value = S.deg; $("#v_deg").textContent = S.deg;
+  $("#r_lam").value = S.lamExp; $("#v_lam").textContent = S.lamExp <= -7 ? "off" : "1e" + S.lamExp;
+  $("#r_k").max = S.n; $("#r_k").value = S.k; $("#v_k").textContent = S.k;
+  $("#r_h").value = Math.log10(S.h); $("#v_h").textContent = +S.h.toPrecision(2);
+  $("#mname").textContent = MODELS[m].name; $("#mdesc").textContent = MODELS[m].desc; $("#fdesc").textContent = FN[S.fn].name + ". " + FN[S.fn].desc;
+  $("#model").value = m; $("#fn").value = S.fn; $("#sigma").value = S.sigma; $("#nn").value = S.n; $("#kk").value = S.K; $("#design").value = S.design;
+}
+function readHash(){
+  const h = location.hash.replace(/^#/, ""); if (!h) return; const q = {};
+  h.split("&").forEach(kv => { const [k,v] = kv.split("="); q[k] = decodeURIComponent(v ?? ""); });
+  const num = (v, d) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+  if (MODELS[q.model]) S.model = q.model; if (FN[q.fn]) S.fn = q.fn;
+  if ("sigma" in q) S.sigma = clamp(num(q.sigma, S.sigma), 0, 2); if ("n" in q) S.n = clamp(Math.round(num(q.n, S.n)), 5, 200);
+  if ("K" in q) S.K = clamp(Math.round(num(q.K, S.K)), 3, 100); if (q.design === "fixed" || q.design === "random") S.design = q.design;
+  if ("deg" in q) S.deg = clamp(Math.round(num(q.deg, S.deg)), 0, MAXDEG); if ("lam" in q) S.lamExp = clamp(num(q.lam, S.lamExp), -7, 0);
+  if ("k" in q) S.k = clamp(Math.round(num(q.k, S.k)), 1, S.n); if ("h" in q) S.h = clamp(num(q.h, S.h), 0.005, 0.5);
+  if ("seed" in q) S.seed = Math.round(num(q.seed, S.seed));
+  S.k = Math.min(S.k, S.n);
+}
+function writeHash(){
+  const p = ["model="+S.model, "fn="+S.fn, "sigma="+S.sigma, "n="+S.n, "K="+S.K, "design="+S.design, "deg="+S.deg, "lam="+S.lamExp, "k="+S.k, "h="+(+S.h.toPrecision(3)), "seed="+S.seed];
+  try { history.replaceState(null, "", "#" + p.join("&")); } catch(e) {}
+}
+function initControls(){
+  fillSelect($("#model"), MODEL_ORDER.map(k => [k, MODELS[k].name]), S.model);
+  fillSelect($("#fn"), FN_ORDER.map(k => [k, FN[k].name]), S.fn);
+  fillSelect($("#sigma"), [0,0.1,0.2,0.3,0.5,0.8,1,1.5].map(v => [v, String(v)]), S.sigma);
+  if (![...$("#sigma").options].some(o => +o.value === S.sigma)) { const o = document.createElement("option"); o.value = S.sigma; o.textContent = S.sigma; $("#sigma").appendChild(o); $("#sigma").value = S.sigma; }
+  fillSelect($("#nn"), [10,15,20,30,50,100,200].map(v => [v, String(v)]), S.n);
+  if (![...$("#nn").options].some(o => +o.value === S.n)) { const o = document.createElement("option"); o.value = S.n; o.textContent = S.n; $("#nn").appendChild(o); $("#nn").value = S.n; }
+  fillSelect($("#kk"), [5,10,20,30,50,100].map(v => [v, String(v)]), S.K);
+  if (![...$("#kk").options].some(o => +o.value === S.K)) { const o = document.createElement("option"); o.value = S.K; o.textContent = S.K; $("#kk").appendChild(o); $("#kk").value = S.K; }
+  $("#model").onchange = e => { S.model = e.target.value; syncCtrls(); refit(); scheduleSweep(60); };
+  $("#fn").onchange = e => { S.fn = e.target.value; syncCtrls(); rebuild(); };
+  $("#sigma").onchange = e => { S.sigma = +e.target.value; rebuild(); };
+  $("#nn").onchange = e => { S.n = +e.target.value; S.k = Math.min(S.k, S.n); syncCtrls(); rebuild(); };
+  $("#kk").onchange = e => { S.K = +e.target.value; rebuild(); };
+  $("#design").onchange = e => { S.design = e.target.value; rebuild(); };
+  $("#resample").onclick = () => { setPlaying(false); S.seed = (Math.random()*1e6)|0; rebuild(); };
+  $("#play").onclick = () => setPlaying(!playing);
+  $("#down").onclick = () => $("#about").scrollIntoView({behavior:"smooth", block:"start"});
+  const checks = [["fits","Individual fits"],["mean","Average fit"],["band","±1 SD band around the average"],["one","Highlight one fit"],["data","Training points of that fit"],["all","Training points of every sample"]];
+  $("#checks").innerHTML = checks.map(([k,l]) => `<label><input type="checkbox" data-k="${k}" ${S.show[k] ? "checked" : ""}>${l}</label>`).join("");
+  document.querySelectorAll("#checks input").forEach(c => c.onchange = () => { S.show[c.dataset.k] = c.checked; drawMain(); });
+  $("#chips").innerHTML = `<span><i style="border-color:#1b3b4f"></i>True function</span><span><i style="border-color:rgba(8,119,189,.5)"></i>Fits from different samples</span><span><i style="border-color:#f59322"></i>Average fit</span><span><i class="band" style="background:#f59322"></i>±1 SD</span><span><i class="dot" style="background:#1b3b4f"></i>Training sample</span>`;
+  const hover = e => { const cv = e.currentTarget, r = cv.getBoundingClientRect(), k = CW/r.width, px = (e.clientX-r.left)*k; const x = (px-ML)/PW; if (x >= 0 && x <= 1) { S.x0 = x; drawMain(); drawStrip(); updateAt(); } };
+  $("#cv").addEventListener("pointermove", hover); $("#strip").addEventListener("pointermove", hover);
+  $("#sweep").addEventListener("pointerdown", e => {
+    const r = e.currentTarget.getBoundingClientRect(), k = CW/r.width, px = (e.clientX-r.left)*k, u = clamp((px-ML-6)/(PW-12), 0, 1), M = MODELS[S.model];
+    M.setc(M.inv(u)); syncCtrls(); refit();
+  });
+  $("#sweep").style.cursor = "pointer";
+}
+
+/* ------------------------------------------------------------------ *
+ *  Boot
+ * ------------------------------------------------------------------ */
+readHash();
+cx = hiDPI($("#cv"), CW, CH); cs = hiDPI($("#strip"), CW, SH+34); cw = hiDPI($("#sweep"), CW, SWH);
+initControls(); buildCtrls(); syncCtrls(); rebuild();
+
+window.__bv = {S, MODELS, FN, G, GX, datasets: () => datasets, SUM: () => SUM, rebuild, refit, setPlaying, makeDataset, sweep: () => SW, fitPoly, fitKnn, fitKern};
+})();
+</script>
+
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{drawAll();}catch(e){} });
+</script>
+</body>
+</html>

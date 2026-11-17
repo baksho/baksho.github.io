@@ -23,13 +23,6 @@ ninja.data = [{
           handler: () => {
             window.location.href = "/projects/";
           },
-        },{id: "nav-repositories",
-          title: "repositories",
-          description: "Selected repositories. Edit _data/repositories.yml to change this list.",
-          section: "Navigation",
-          handler: () => {
-            window.location.href = "/repositories/";
-          },
         },{id: "nav-cv",
           title: "cv",
           description: "The PDF download is the icon at the top right.",
@@ -58,12 +51,33 @@ ninja.data = [{
               handler: () => {
                 window.location.href = "/notes/";
               },
+            },{id: "dropdown-study-materials",
+              title: "study materials",
+              description: "",
+              section: "Dropdown",
+              handler: () => {
+                window.location.href = "/study/";
+              },
             },{id: "dropdown-bookshelf",
               title: "bookshelf",
               description: "",
               section: "Dropdown",
               handler: () => {
                 window.location.href = "/books/";
+              },
+            },{id: "dropdown-infographics",
+              title: "infographics",
+              description: "",
+              section: "Dropdown",
+              handler: () => {
+                window.location.href = "/infographics/";
+              },
+            },{id: "dropdown-playgrounds",
+              title: "playgrounds",
+              description: "",
+              section: "Dropdown",
+              handler: () => {
+                window.location.href = "/playgrounds/";
               },
             },{id: "post-rag-without-vectors-why-pageindex-might-be-the-architecture-we-ve-been-missing",
         
