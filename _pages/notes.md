@@ -6,9 +6,7 @@ description: Concise notes on papers and topics I study, written to be easy to r
 nav: false
 ---
 
-Each entry below links to a note (a PDF in `assets/pdf/`, a page on this site, or an external link). Equations are supported with `$$ ... $$`.
-
-## Paper notes
-
-- **Placeholder: paper or topic title.** One line on what the note covers and why it is useful. [Notes](#)
-- **Placeholder: another paper or topic title.** One line on what the note covers and why it is useful. [Notes](#)
+<div class="sb-soon">
+<span class="sb-soon-badge">Coming soon</span>
+<p>This page will be updated soon. Notes on papers and topics I study will appear here.</p>
+</div>

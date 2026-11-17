@@ -5,6 +5,7 @@ description: Neural networks, Gaussian processes and distribution shift. Compari
 importance: 2
 redirect: https://github.com/baksho/infinite-width-uq
 github: https://github.com/baksho/infinite-width-uq
+thumb: /assets/img/projects/uncertainty.webp
 ---
 
 Investigated uncertainty estimation in neural networks through the connection between finite-width networks and infinite-width Gaussian-process limits. Compared uncertainty estimates from Neural Network Gaussian Processes (NNGPs), deep ensembles, MC dropout and RBF Gaussian processes under distribution shift, and studied how the different methods behave when the test distribution differs from the training distribution.

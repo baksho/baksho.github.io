@@ -3,6 +3,7 @@ layout: page
 title: End-to-End Calibration of Neural Networks
 description: M.Sc. thesis. Theory and empirical evaluation in a biomedical context. TU Braunschweig, supervised by Prof. Dr. Nicole Mücke.
 importance: 1
+thumb: /assets/img/projects/thesis-calibration.webp
 ---
 
 Master's thesis at the Institute for Statistics and Foundations of Machine Learning, TU Braunschweig (supervisor: Prof. Dr. Nicole Mücke).

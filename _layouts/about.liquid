@@ -35,8 +35,22 @@ layout: default
           </svg>
         </a>
         <a class="sb-btn sb-btn-secondary" href="{{ links.cv_pdf | relative_url }}" download
-          ><i class="fa-solid fa-file-lines" aria-hidden="true"></i>Resume</a
-        >
+          >CV
+          <svg
+            class="sb-arrow"
+            width="9"
+            height="9"
+            viewBox="0 0 10 10"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="1.5"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            aria-hidden="true"
+          >
+            <path d="M5 1.5v6.5M2.2 5.4L5 8.2l2.8-2.8"/>
+          </svg>
+        </a>
       </div>
       <div class="sb-ph sb-ph-icons" id="sbPhIcons" aria-hidden="true"></div>
     </div>
@@ -51,6 +65,19 @@ layout: default
       <div class="sb-slot">
         <h1 class="post-title sb-trav sb-trav-name" data-kind="name" data-ph="sbPhName">
           <span class="first font-weight-bold">{{ site.first_name }}</span><span class="last"> {{ site.last_name }}</span>
+          {% assign fn = site.first_name %}
+          {% assign fn_head = fn | size | minus: 3 %}
+          <!-- hero-only version: serif, full stop, hand-drawn underline under the last letters -->
+          <span class="sb-serif" aria-hidden="true">
+            {{- fn | slice: 0, fn_head -}}
+            <span class="sb-ul">
+              {{- fn | slice: fn_head, 3 }}
+              <svg viewBox="0 0 100 16" preserveAspectRatio="none" focusable="false">
+                <path class="u1" pathLength="1" d="M1 9.5C14 5 30 4 48 6.5S82 8 99 3.2"/>
+                <path class="u2" pathLength="1" d="M7 14C26 9.5 52 10.5 70 12S90 10.5 96 9"/>
+              </svg></span
+            >.</span
+          >
         </h1>
       </div>
       <div class="sb-slot">
@@ -58,8 +85,8 @@ layout: default
           <span class="a">{{ hero.role }}</span><span class="b">{{ hero.role_short | default: hero.role }}</span>
         </p>
       </div>
-      <div class="sb-slot">
-        <div class="sb-trav sb-icons" data-kind="icons" data-ph="sbPhIcons">
+      <div class="sb-slot sb-slot-icons">
+        <div class="sb-trav sb-icons" data-kind="icons" data-ph="sbPhIcons" data-nav="sbNavIcons">
           <a href="mailto:{{ links.email }}" aria-label="Email" title="Email"><i class="fa-solid fa-envelope"></i></a>
           <a
             href="https://scholar.google.com/citations?user={{ links.scholar_userid }}"
@@ -123,6 +150,9 @@ layout: default
           <a href="{{ '/blog/' | relative_url }}" style="color: inherit">latest posts</a>
         </h2>
         {% include latest_posts.liquid %}
+        <p class="sb-seeall">
+          <a href="{{ '/blog/' | relative_url }}">See all posts <span aria-hidden="true">→</span></a>
+        </p>
       {% endif %}
 
       <!-- Selected papers -->
@@ -131,6 +161,9 @@ layout: default
           <a href="{{ '/publications/' | relative_url }}" style="color: inherit">selected publications</a>
         </h2>
         {% include selected_papers.liquid %}
+        <p class="sb-seeall">
+          <a href="{{ '/publications/' | relative_url }}">See all publications <span aria-hidden="true">→</span></a>
+        </p>
       {% endif %}
 
       <!-- Social -->

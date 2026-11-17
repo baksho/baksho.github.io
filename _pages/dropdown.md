@@ -9,7 +9,6 @@ children:
     permalink: /blog/
   - title: research notes
     permalink: /notes/
-  - title: divider
-  - title: bookshelf
-    permalink: /books/
+  - title: study materials
+    permalink: /study/
 ---

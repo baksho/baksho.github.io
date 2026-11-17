@@ -15,6 +15,8 @@
   year        = {2026},
   note        = {Accepted. To appear in ICDM 2026 Workshop Proceedings. Equal contribution.},
   arxiv       = {2603.00612},
+  preview     = {icdm-codhy.webp},
+  abstract    = {The rapid growth of biomedical evidence makes it difficult to translate biomarker mechanisms into actionable drug combination hypotheses. We present CoDHy, an interactive AI co-scientist for biomarker-guided hypothesis generation in oncology. CoDHy constructs task-specific knowledge graphs from curated databases and biomedical literature, then combines graph embeddings with agent-based reasoning to generate, validate, and rank evidence-grounded drug combinations. Through a web interface, researchers specify the biomarker, cancer context, and literature scope; inspect supporting evidence and intermediate results; and iteratively refine the generated hypotheses. The demonstration presents CoDHy's end-to-end workflow and shows how researchers can interactively explore and compare mechanistically supported drug combinations while remaining in control of hypothesis prioritization.},
   selected    = {true}
 }
 
@@ -28,5 +30,7 @@
   month       = sep,
   note        = {Oral presentation, Dresden, 23 September. To appear in GI-Edition Lecture Notes in Informatics (LNI).},
   arxiv       = {2608.14803},
+  preview     = {skill-grokking.webp},
+  abstract    = {A recent line of work recasts the post-memorization phase of grokking as constrained optimization: once a network interpolates the training set, weight decay drives a slow drift along the zero-loss manifold toward lower norm. In the language of dynamical systems, this is a fast–slow system in which the interpolation manifold plays the role of a slow manifold. We ask a question that this framing makes natural but the existing literature does not address: is the sharp generalization transition a loss of normal hyperbolicity of that manifold: a fold- or bifurcation-like event in which a normal restoring direction goes flat? Or does the manifold stay uniformly attracting while generalization happens by smooth drift? We propose a simple, optimizer-agnostic diagnostic: the smallest nonzero singular value σ⁺min(J) of the residual Jacobian, which, for the squared loss, equals the slowest normal restoring rate of the manifold. On a two-layer ReLU network trained to grok modular addition under squared loss, σ⁺min(J) does not collapse at the transition; it is near zero only before memorization and attains its largest values during the transition. The result holds across five seeds, and the six smallest singular values behave identically; there is no subspace-local collapse either. This is preliminary evidence against the bifurcation hypothesis and in favor of the smooth-contraction picture. We are explicit that a single-setting, gradual-transition experiment under Adam optimizer does not prove the absence of a bifurcation; it constrains where one could hide.},
   selected    = {true}
 }

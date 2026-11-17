@@ -11,4 +11,5 @@ external_source: Medium
 tags: deep-learning activation-functions math
 related_posts: false
 redirect: https://medium.com/@basak.suvinava2008/getting-active-the-math-that-makes-neural-networks-learn-e500d6d71568
+thumbnail: /assets/img/posts/getting-active.webp
 ---

@@ -1,0 +1,25 @@
+# Bookshelf (shown on /books/). Covers live in assets/img/books/.
+# ongoing: true shows an "Ongoing" badge. Remove the line once you have finished the book.
+- title: The Psychology of Money
+  author: Morgan Housel
+  cover: the-psychology-of-money.webp
+  ongoing: true
+- title: The Alchemist
+  author: Paulo Coelho
+  cover: the-alchemist.webp
+  ongoing: true
+- title: A Thousand Splendid Suns
+  author: Khaled Hosseini
+  cover: a-thousand-splendid-suns.webp
+- title: The Art of War
+  author: Sun Tzu
+  cover: the-art-of-war.webp
+- title: To Kill a Mockingbird
+  author: Harper Lee
+  cover: to-kill-a-mockingbird.webp
+- title: Man's Search for Meaning
+  author: Viktor E. Frankl
+  cover: mans-search-for-meaning.webp
+- title: Looking for Alaska
+  author: John Green
+  cover: looking-for-alaska.webp

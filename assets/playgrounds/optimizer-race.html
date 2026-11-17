@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Optimizer Race</title>
+<style>
+  :root{
+    --orange:#f59322; --blue:#0877bd; --navy:#1b3b4f;
+    --ink:#333; --muted:#777; --line:#ddd; --bg:#fff; --panel:#f7f7f7;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:780px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:96px}
+
+  /* control bar */
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 20px;
+       background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444;letter-spacing:.01em}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;
+       align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #stepcount{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+
+  /* layout */
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  #plotwrap{position:relative;width:fit-content;max-width:100%}
+  canvas{display:block}
+  #plot{cursor:crosshair;max-width:100%;touch-action:none}
+  .tog{display:flex;align-items:center;gap:12px;height:30px}
+  .sw2{position:relative;width:36px;height:20px;flex:none}
+  .sw2 input{position:absolute;opacity:0;inset:0;margin:0;cursor:pointer;width:100%;height:100%}
+  .sw2 i{position:absolute;inset:0;background:#c9cfd3;border-radius:10px;transition:background .15s;pointer-events:none}
+  .sw2 i:before{content:"";position:absolute;left:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff;transition:transform .15s;box-shadow:0 1px 2px rgba(0,0,0,.3)}
+  .sw2 input:checked + i{background:var(--navy)}
+  .sw2 input:checked + i:before{transform:translateX(16px)}
+  .linkbtn{border:0;background:none;color:var(--blue);cursor:pointer;padding:0;font-size:13px}
+  .linkbtn:hover{text-decoration:underline}
+  #rotgrp.hide{visibility:hidden}
+  #readout{position:absolute;left:52px;bottom:38px;font-size:11px;color:#333;background:rgba(255,255,255,.85);
+           padding:2px 7px;border-radius:3px;pointer-events:none;font-variant-numeric:tabular-nums}
+  .hint{font-size:12px;color:var(--muted);margin:8px 0 0 44px}
+  .chartbox{margin-top:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+
+  /* surface picker */
+  .surfs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+  .sbtn{border:2px solid transparent;border-radius:3px;padding:0;cursor:pointer;background:none;line-height:0;opacity:.45;transition:opacity .15s}
+  .sbtn:hover{opacity:.85}
+  .sbtn.on{border-color:#333;opacity:1}
+  .sbtn canvas{width:100%;height:auto;border-radius:2px}
+  #sname{font-weight:600;color:#222;margin:2px 0 2px}
+  #sformula{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px;color:#333;background:#f3f5f6;border-radius:4px;padding:5px 9px;margin:4px 0;display:inline-block}
+  #sdesc{font-size:12.5px;color:#666;margin:2px 0 0}
+  .opthead{margin:26px 0 10px}
+
+  /* optimizer cards */
+  .card{border:1px solid var(--line);border-radius:8px;padding:10px 14px 9px;margin-bottom:10px;background:#fff}
+  .card.off{background:#fafafa}
+  .card.off .body{display:none}
+  .ch{display:flex;justify-content:space-between;align-items:center}
+  .cb{display:flex;align-items:center;gap:8px;cursor:pointer;font-weight:600;color:#222}
+  .sw{display:inline-block;width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 1px #bbb}
+  .state{font-size:11px;color:#c62828;font-weight:600}
+  .slider{margin:7px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .live{font-size:12px;color:#555;margin-top:6px;font-variant-numeric:tabular-nums}
+  .live b{color:#222;font-weight:500}
+
+  /* sections */
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;
+       border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .divider button:hover{background:#f6f6f6}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px;scroll-margin-top:10px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:28px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px;white-space:nowrap}
+  #refs{padding-top:70px}
+  #refs li{font-size:14.5px}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Optimizer Race</h1>
+  <p class="blurb">Watch gradient-descent optimizers race across classic loss surfaces, as a contour map or a 3D landscape. Pick a surface, click the plot to choose a starting point, press play, and compare how each optimizer finds its way downhill. Every learning rate can be changed while the race runs.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="reset" title="Reset race">&#8635;</button>
+      <button class="btn" id="play" title="Run / pause">&#9654;</button>
+      <button class="btn" id="stepbtn" title="Step once">&#9197;</button>
+    </div>
+    <div class="grp"><label>Step</label><div id="stepcount">000,000</div></div>
+    <div class="grp"><label for="speed">Steps per frame</label><select id="speed"></select></div>
+    <div class="grp"><label for="noise">Gradient noise</label><select id="noise"></select></div>
+    <div class="grp"><label for="view">View</label><select id="view"><option value="2d">2D contour</option><option value="3d">3D surface</option></select></div>
+    <div class="grp hide" id="rotgrp"><label for="rot">Rotate</label><div class="tog"><span class="sw2"><input type="checkbox" id="rot" checked><i></i></span><button class="linkbtn" id="rotreset" type="button">Reset view</button></div></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div id="plotwrap">
+        <canvas id="plot"></canvas>
+        <div id="readout"></div>
+      </div>
+      <div class="hint" id="hint"></div>
+      <div class="chartbox">
+        <div class="ct">Distance from the minimum value over steps</div>
+        <div class="chartframe"><canvas id="chart"></canvas></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head">Loss surface</div>
+      <div class="surfs" id="surfs"></div>
+      <div id="sname"></div>
+      <div id="sformula"></div>
+      <div id="sdesc"></div>
+      <div class="head opthead">Optimizers</div>
+      <div id="cards"></div>
+    </div>
+  </div>
+
+  <div class="divider"><button id="down" aria-label="Scroll down"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#222" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 9l7 7 7-7"/></svg></button></div>
+
+  <section id="about" class="prose">
+    <h2>What is happening here?</h2>
+    <p>Every optimizer is trying to find the lowest point of a surface <i>f</i>(x, y). At each step it looks at the gradient &nabla;<i>f</i>, the direction of steepest ascent, and moves &theta; = (x, y) a little in the opposite direction. The optimizers differ in how they use that gradient. Below, <i>g</i> is the gradient at the current point, &eta; is the learning rate, and &epsilon; = 10<sup>&minus;8</sup>.</p>
+    <h3>SGD</h3>
+    <p><span class="eq">&theta; &larr; &theta; &minus; &eta; g</span><br>The plain step. It is cheap and simple, but it zigzags across narrow valleys and crawls along flat ones.</p>
+    <h3>Momentum</h3>
+    <p><span class="eq">v &larr; &beta; v + g,&nbsp; &theta; &larr; &theta; &minus; &eta; v</span><br>The velocity <i>v</i> remembers previous gradients, so steady directions build up speed and zigzags partly cancel. Too much momentum overshoots and swings around the minimum.</p>
+    <h3>Nesterov</h3>
+    <p><span class="eq">v &larr; &beta; v + &nabla;f(&theta; &minus; &eta;&beta;v),&nbsp; &theta; &larr; &theta; &minus; &eta; v</span><br>Momentum that measures the gradient at the point it is about to reach, which lets it brake earlier.</p>
+    <h3>AdaGrad</h3>
+    <p><span class="eq">G &larr; G + g&sup2;,&nbsp; &theta; &larr; &theta; &minus; &eta; g / (&radic;G + &epsilon;)</span><br>Each coordinate gets its own step size, shrinking as its squared gradients accumulate. Fast at first, but the steps only ever get smaller.</p>
+    <h3>RMSProp</h3>
+    <p><span class="eq">s &larr; &rho; s + (1&minus;&rho;) g&sup2;,&nbsp; &theta; &larr; &theta; &minus; &eta; g / (&radic;s + &epsilon;)</span><br>Like AdaGrad, but with a moving average, so old gradients are forgotten and the step size can recover.</p>
+    <h3>Adam</h3>
+    <p><span class="eq">m &larr; &beta;<sub>1</sub>m + (1&minus;&beta;<sub>1</sub>)g,&nbsp; v &larr; &beta;<sub>2</sub>v + (1&minus;&beta;<sub>2</sub>)g&sup2;</span><br><span class="eq">&theta; &larr; &theta; &minus; &eta; m&#770; / (&radic;v&#770; + &epsilon;)</span><br>Momentum on the gradient (<i>m</i>) combined with RMSProp-style scaling (<i>v</i>), where m&#770; and v&#770; are bias-corrected by dividing by 1&minus;&beta;<sup>t</sup>.</p>
+    <h3>The surfaces</h3>
+    <ul>
+      <li><b>Rosenbrock valley:</b> a long curved valley. Finding the valley is easy; following it to the minimum at (1, 1) is hard.</li>
+      <li><b>Beale:</b> flat plateaus with steep walls and a minimum at (3, 0.5). Gradients differ by orders of magnitude across the plot.</li>
+      <li><b>Saddle:</b> a saddle point at the origin with two minima beyond it. Starting near the ridge shows how quickly each optimizer escapes.</li>
+      <li><b>Narrow valley:</b> a tilted quadratic bowl with one direction 50 times steeper than the other, a standard example of an ill-conditioned problem.</li>
+      <li><b>Himmelblau:</b> four separate minima. Which one an optimizer reaches depends on the start and on the optimizer.</li>
+      <li><b>Rastrigin:</b> a regular grid of small dips around one global minimum at (0, 0). Which dip an optimizer settles in depends on where it starts and on its settings.</li>
+      <li><b>Ackley:</b> a nearly flat outer plain, many small dips, and one deep hole at (0, 0). The gradient far from the centre is tiny, so the choice of optimizer matters a lot.</li>
+      <li><b>Styblinski&ndash;Tang:</b> four minima of different depth. The global one is near (&minus;2.90, &minus;2.90); the other three are shallower local minima.</li>
+    </ul>
+    <h3>The 3D view</h3>
+    <p>The <i>View</i> menu switches between the contour map and a 3D landscape of the same function. In 3D, both height and colour show f&minus;f* on a logarithmic scale, so steep walls do not hide the shape of the valley (heights are therefore not proportional to the loss). A trail is drawn faintly where the surface hides it. With <i>Rotate</i> on, drag to turn the surface and scroll to zoom; with <i>Rotate</i> off, click the surface to choose the starting point.</p>
+    <h3>Things to try</h3>
+    <ul>
+      <li>On the narrow valley, raise the SGD learning rate until it zigzags, then watch how Momentum smooths the same path.</li>
+      <li>On the saddle, start very close to the ridge (y near 0) and compare how long each optimizer takes to leave it.</li>
+      <li>On Himmelblau, click several starting points and see whether all optimizers choose the same minimum.</li>
+      <li>On Rastrigin or Styblinski&ndash;Tang, change the starting point slightly and see which minimum each optimizer ends in.</li>
+      <li>Switch to the 3D view and rotate it to look along a valley from the side.</li>
+      <li>Turn on gradient noise to imitate mini-batch SGD and see which optimizers stay on course.</li>
+      <li>Raise a learning rate until an optimizer diverges, then lower it again without resetting.</li>
+    </ul>
+    <p>Gradient noise adds the same random vector to every optimizer's gradient at each step, so the comparison stays fair. All optimizers start from the same point, and each runs with its own learning rate because a good value for one is rarely good for another.</p>
+  </section>
+
+  <section id="refs" class="prose">
+    <h2>References</h2>
+    <ul>
+      <li>D. P. Kingma and J. Ba, <i>Adam: A Method for Stochastic Optimization</i>, ICLR 2015 (arXiv 2014).</li>
+      <li>J. Duchi, E. Hazan and Y. Singer, <i>Adaptive Subgradient Methods for Online Learning and Stochastic Optimization</i>, JMLR 2011 (AdaGrad).</li>
+      <li>T. Tieleman and G. Hinton, <i>Lecture 6.5 &ndash; RMSProp</i>, Coursera: Neural Networks for Machine Learning, 2012.</li>
+      <li>Y. Nesterov, <i>A method for solving the convex programming problem with convergence rate O(1/k&sup2;)</i>, 1983.</li>
+      <li>H. H. Rosenbrock, <i>An automatic method for finding the greatest or least value of a function</i>, The Computer Journal, 1960.</li>
+    </ul>
+    <p>The Beale, Himmelblau and saddle functions are standard optimization test problems. This page is an independent implementation written for this site.</p>
+  </section>
+</div>
+
+<script>
+(() => {
+"use strict";
+
+/* ------------------------------------------------------------------ *
+ *  Helpers
+ * ------------------------------------------------------------------ */
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+function hiDPI(cv, w, h){
+  const d = window.devicePixelRatio || 1;
+  cv.width = Math.round(w*d); cv.height = Math.round(h*d);
+  cv.style.width = w + "px"; cv.style.height = h + "px";
+  const g = cv.getContext("2d"); g.setTransform(d,0,0,d,0,0); return g;
+}
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function noiseAt(seed, t){                       // same N(0,1) pair for every optimizer at step t
+  const r = mulberry32((seed ^ Math.imul(t, 0x9E3779B1)) >>> 0);
+  const u = r() || 1e-12, v = r(), rad = Math.sqrt(-2*Math.log(u));
+  return [rad*Math.cos(2*Math.PI*v), rad*Math.sin(2*Math.PI*v)];
+}
+const fmt = v => !isFinite(v) ? "diverged" : v === 0 ? "0" : (Math.abs(v) >= 1e4 || Math.abs(v) < 1e-3) ? v.toExponential(2) : v.toPrecision(3);
+
+/* ------------------------------------------------------------------ *
+ *  Loss surfaces: f, gradient, view window (cx, cy, h = half height)
+ *  lr = tuned default learning rate per optimizer; s = scale of the log colour map
+ * ------------------------------------------------------------------ */
+const SURF = {
+  rosenbrock: {
+    name:"Rosenbrock valley", formula:"f = (1 − x)² + 100 (y − x²)²",
+    desc:"A long, curved, narrow valley. The minimum at (1, 1) is easy to find but hard to reach.",
+    f:(x,y)=>(1-x)*(1-x)+100*(y-x*x)*(y-x*x),
+    g:(x,y)=>[-2*(1-x)-400*x*(y-x*x), 200*(y-x*x)],
+    cx:0, cy:1, h:2.2, minima:[[1,1]], fmin:0, s:1, start:[-1.5,2], speed:25,
+    lr:{sgd:0.0005, momentum:0.0002, nesterov:0.0002, adagrad:0.5, rmsprop:0.001, adam:0.03}
+  },
+  beale: {
+    name:"Beale", formula:"f = (1.5 − x + xy)² + (2.25 − x + xy²)² + (2.625 − x + xy³)²",
+    desc:"Flat plateaus with steep walls. The minimum is at (3, 0.5).",
+    f:(x,y)=>{const a=1.5-x+x*y,b=2.25-x+x*y*y,c=2.625-x+x*y*y*y;return a*a+b*b+c*c;},
+    g:(x,y)=>{const a=1.5-x+x*y,b=2.25-x+x*y*y,c=2.625-x+x*y*y*y;
+      return [2*a*(y-1)+2*b*(y*y-1)+2*c*(y*y*y-1), 2*a*x+4*b*x*y+6*c*x*y*y];},
+    cx:0, cy:0, h:4.5, minima:[[3,0.5]], fmin:0, s:1, start:[-2,3], speed:25,
+    lr:{sgd:0.001, momentum:0.0001, nesterov:0.0001, adagrad:3, rmsprop:0.01, adam:0.3}
+  },
+  saddle: {
+    name:"Saddle", formula:"f = x² − y² + 0.25 y⁴",
+    desc:"A saddle point at the origin between two minima at (0, ±1.41). Start near y = 0 to see who escapes first.",
+    f:(x,y)=>x*x-y*y+0.25*y*y*y*y,
+    g:(x,y)=>[2*x, -2*y+y*y*y],
+    cx:0, cy:0, h:2.4, minima:[[0,Math.SQRT2],[0,-Math.SQRT2]], fmin:-1, s:0.3, start:[1.8,0.005], speed:1,
+    lr:{sgd:0.01, momentum:0.005, nesterov:0.005, adagrad:0.1, rmsprop:0.01, adam:0.02}
+  },
+  narrow: {
+    name:"Narrow valley", formula:"f = ½ (0.1 u² + 5 v²), (u, v) = rotation of (x, y) by 35°",
+    desc:"A tilted bowl with one direction 50 times steeper than the other: the classic ill-conditioned problem. Minimum at (0, 0).",
+    f:(x,y)=>{const c=Math.cos(0.6109),s=Math.sin(0.6109),u=x*c+y*s,v=-x*s+y*c;return 0.5*(0.1*u*u+5*v*v);},
+    g:(x,y)=>{const c=Math.cos(0.6109),s=Math.sin(0.6109),u=x*c+y*s,v=-x*s+y*c,a=0.1*u,b=5*v;return [a*c-b*s, a*s+b*c];},
+    cx:0, cy:0, h:6, minima:[[0,0]], fmin:0, s:0.5, start:[-6,3.5], speed:2,
+    lr:{sgd:0.35, momentum:0.03, nesterov:0.03, adagrad:2, rmsprop:0.03, adam:0.3}
+  },
+  himmelblau: {
+    name:"Himmelblau", formula:"f = (x² + y − 11)² + (x + y² − 7)²",
+    desc:"Four separate minima. Which one an optimizer reaches depends on the start and on the optimizer.",
+    f:(x,y)=>{const a=x*x+y-11,b=x+y*y-7;return a*a+b*b;},
+    g:(x,y)=>{const a=x*x+y-11,b=x+y*y-7;return [4*x*a+2*b, 2*a+4*y*b];},
+    cx:0, cy:0, h:6, minima:[[3,2],[-2.805118,3.131312],[-3.77931,-3.283186],[3.584428,-1.848126]], fmin:0, s:5, start:[0.5,-0.5], speed:2,
+    lr:{sgd:0.01, momentum:0.004, nesterov:0.004, adagrad:1, rmsprop:0.03, adam:0.1}
+  },
+  rastrigin: {
+    name:"Rastrigin", formula:"f = 20 + x² − 10 cos 2πx + y² − 10 cos 2πy",
+    desc:"A regular grid of small dips around one global minimum at (0, 0). Most of the dips are traps.",
+    f:(x,y)=>20+x*x-10*Math.cos(2*Math.PI*x)+y*y-10*Math.cos(2*Math.PI*y),
+    g:(x,y)=>[2*x+20*Math.PI*Math.sin(2*Math.PI*x), 2*y+20*Math.PI*Math.sin(2*Math.PI*y)],
+    cx:0, cy:0, h:4, minima:[[0,0]], fmin:0, s:5, start:[1.4,1.1], speed:5,
+    lr:{sgd:0.004, momentum:0.006, nesterov:0.006, adagrad:0.1, rmsprop:0.05, adam:0.1}
+  },
+  ackley: {
+    name:"Ackley", formula:"f = −20 e^(−0.2 √(½(x²+y²))) − e^(½(cos 2πx + cos 2πy)) + e + 20",
+    desc:"A nearly flat outer plain with many small dips and one deep hole at (0, 0).",
+    f:(x,y)=>{const r=Math.sqrt(0.5*(x*x+y*y));return -20*Math.exp(-0.2*r)-Math.exp(0.5*(Math.cos(2*Math.PI*x)+Math.cos(2*Math.PI*y)))+Math.E+20;},
+    g:(x,y)=>{const r=Math.sqrt(0.5*(x*x+y*y)),e1=r>1e-12?2*Math.exp(-0.2*r)/r:0,e2=Math.exp(0.5*(Math.cos(2*Math.PI*x)+Math.cos(2*Math.PI*y)));
+      return [e1*x+Math.PI*Math.sin(2*Math.PI*x)*e2, e1*y+Math.PI*Math.sin(2*Math.PI*y)*e2];},
+    cx:0, cy:0, h:4, minima:[[0,0]], fmin:0, s:1, start:[3.2,1.1], speed:5,
+    lr:{sgd:0.1, momentum:0.03, nesterov:0.03, adagrad:1, rmsprop:0.1, adam:0.5}
+  },
+  styblinski: {
+    name:"Styblinski–Tang", formula:"f = ½ Σ (xᵢ⁴ − 16 xᵢ² + 5 xᵢ)",
+    desc:"Four minima of different depth. The global one is near (−2.90, −2.90); the other three are shallower.",
+    f:(x,y)=>0.5*(x*x*x*x-16*x*x+5*x+y*y*y*y-16*y*y+5*y),
+    g:(x,y)=>[2*x*x*x-16*x+2.5, 2*y*y*y-16*y+2.5],
+    cx:0, cy:0, h:4, minima:[[-2.903534,-2.903534]], fmin:-78.332331, s:20, start:[0.5,0.1], speed:2,
+    lr:{sgd:0.01, momentum:0.003, nesterov:0.003, adagrad:0.5, rmsprop:0.05, adam:0.1}
+  }
+};
+const SURF_ORDER = ["rosenbrock","beale","saddle","narrow","himmelblau","rastrigin","ackley","styblinski"];
+const ASPECT = 1.28;
+
+/* ------------------------------------------------------------------ *
+ *  Optimizers
+ * ------------------------------------------------------------------ */
+const OPTS = {
+  sgd:      {name:"SGD",      color:"#e53935", params:[]},
+  momentum: {name:"Momentum", color:"#f59322", params:[{k:"beta",  label:"Momentum β", min:0,   max:0.99,   step:0.01,  def:0.9}]},
+  nesterov: {name:"Nesterov", color:"#8e44ad", params:[{k:"beta",  label:"Momentum β", min:0,   max:0.99,   step:0.01,  def:0.9}]},
+  adagrad:  {name:"AdaGrad",  color:"#795548", params:[]},
+  rmsprop:  {name:"RMSProp",  color:"#2e9e5b", params:[{k:"rho",   label:"Decay ρ",    min:0.5, max:0.999,  step:0.001, def:0.9}]},
+  adam:     {name:"Adam",     color:"#0877bd", params:[{k:"beta1", label:"β₁",    min:0,   max:0.99,   step:0.01,  def:0.9},
+                                                       {k:"beta2", label:"β₂",    min:0.9, max:0.9999, step:0.0001,def:0.999}]},
+};
+const OPT_ORDER = ["sgd","momentum","nesterov","adagrad","rmsprop","adam"];
+const EPS = 1e-8;
+
+function newState(x, y){ return {x, y, t:0, v:[0,0], s:[0,0], m:[0,0], dead:false, path:[[x,y]], hist:[]}; }
+
+// one optimizer step; P = {lr, beta, rho, beta1, beta2}; grad(x,y) -> [gx, gy]; nz = noise vector added to the gradient
+function stepState(key, st, P, grad, nz){
+  const lr = P.lr;
+  let g = key === "nesterov" ? grad(st.x - lr*P.beta*st.v[0], st.y - lr*P.beta*st.v[1]) : grad(st.x, st.y);
+  const g0 = g[0] + nz[0], g1 = g[1] + nz[1];
+  st.t++;
+  switch (key) {
+    case "sgd":
+      st.x -= lr*g0; st.y -= lr*g1; break;
+    case "momentum": case "nesterov":
+      st.v[0] = P.beta*st.v[0] + g0; st.v[1] = P.beta*st.v[1] + g1;
+      st.x -= lr*st.v[0]; st.y -= lr*st.v[1]; break;
+    case "adagrad":
+      st.s[0] += g0*g0; st.s[1] += g1*g1;
+      st.x -= lr*g0/(Math.sqrt(st.s[0])+EPS); st.y -= lr*g1/(Math.sqrt(st.s[1])+EPS); break;
+    case "rmsprop":
+      st.s[0] = P.rho*st.s[0] + (1-P.rho)*g0*g0; st.s[1] = P.rho*st.s[1] + (1-P.rho)*g1*g1;
+      st.x -= lr*g0/(Math.sqrt(st.s[0])+EPS); st.y -= lr*g1/(Math.sqrt(st.s[1])+EPS); break;
+    case "adam": {
+      st.m[0] = P.beta1*st.m[0] + (1-P.beta1)*g0; st.m[1] = P.beta1*st.m[1] + (1-P.beta1)*g1;
+      st.s[0] = P.beta2*st.s[0] + (1-P.beta2)*g0*g0; st.s[1] = P.beta2*st.s[1] + (1-P.beta2)*g1*g1;
+      const c1 = 1 - Math.pow(P.beta1, st.t), c2 = 1 - Math.pow(P.beta2, st.t);
+      st.x -= lr*(st.m[0]/c1)/(Math.sqrt(st.s[0]/c2)+EPS); st.y -= lr*(st.m[1]/c1)/(Math.sqrt(st.s[1]/c2)+EPS); break; }
+  }
+}
+const isBad = st => !isFinite(st.x) || !isFinite(st.y) || Math.abs(st.x) > 1e4 || Math.abs(st.y) > 1e4;
+
+/* ------------------------------------------------------------------ *
+ *  State
+ * ------------------------------------------------------------------ */
+const DEF = {surface:"rosenbrock", noise:0, speed:null, opts:["sgd","momentum","rmsprop","adam"]};
+const S = {surface:"rosenbrock", x0:null, y0:null, noise:0, speed:null, enabled:{}, P:{}, view:"2d", rot:true, az:-0.7, el:0.78, zoom:1};
+let stepNo = 0, playing = false, seed = 1, st = {}, noiseScale = 1;
+const MAX_STEPS = 60000;
+
+function presetFor(sk){ return SURF[sk]; }
+function applySurfacePreset(sk, keepStart){
+  const p = presetFor(sk);
+  S.surface = sk;
+  if (!keepStart) { S.x0 = p.start[0]; S.y0 = p.start[1]; }
+  S.speed = p.speed;
+  for (const k of OPT_ORDER) {
+    S.P[k] = {lr:p.lr[k]};
+    for (const q of OPTS[k].params) S.P[k][q.k] = q.def;
+  }
+}
+function initState(){
+  for (const k of OPT_ORDER) S.enabled[k] = DEF.opts.includes(k);
+  applySurfacePreset("rosenbrock", false);
+}
+function readHash(){
+  initState();
+  const h = location.hash.replace(/^#/, ""); if (!h) return;
+  const q = {}; h.split("&").forEach(kv => { const [k,v] = kv.split("="); q[k] = decodeURIComponent(v ?? ""); });
+  if (SURF[q.surface]) applySurfacePreset(q.surface, false);
+  const num = (v, d) => { const n = parseFloat(v); return isFinite(n) ? n : d; };
+  if ("x0" in q && "y0" in q) { S.x0 = num(q.x0, S.x0); S.y0 = num(q.y0, S.y0); }
+  if (q.view === "3d") S.view = "3d";
+  if ("rot" in q) S.rot = q.rot !== "0";
+  if ("az" in q) S.az = num(q.az, S.az);
+  if ("el" in q) S.el = clamp(num(q.el, S.el), 0.08, 1.5);
+  if ("zoom" in q) S.zoom = clamp(num(q.zoom, 1), 0.5, 2.5);
+  if ("noise" in q) S.noise = num(q.noise, 0);
+  if ("speed" in q) S.speed = num(q.speed, S.speed);
+  if ("opts" in q) for (const k of OPT_ORDER) S.enabled[k] = q.opts.split(",").includes(k);
+  for (const k of OPT_ORDER) {
+    if (("lr_"+k) in q) S.P[k].lr = clamp(num(q["lr_"+k], S.P[k].lr), 1e-6, 10);
+    for (const p of OPTS[k].params) if ((p.k+"_"+k) in q) S.P[k][p.k] = clamp(num(q[p.k+"_"+k], p.def), p.min, p.max);
+  }
+}
+function writeHash(){
+  const parts = ["surface="+S.surface, "x0="+(+S.x0.toFixed(3)), "y0="+(+S.y0.toFixed(3)), "noise="+S.noise, "speed="+S.speed,
+                 "opts="+OPT_ORDER.filter(k=>S.enabled[k]).join(",")];
+  if (S.view === "3d") parts.push("view=3d", "rot="+(S.rot?1:0), "az="+(+S.az.toFixed(3)), "el="+(+S.el.toFixed(3)), "zoom="+(+S.zoom.toFixed(2)));
+  for (const k of OPT_ORDER) { parts.push("lr_"+k+"="+(+S.P[k].lr.toPrecision(3))); for (const p of OPTS[k].params) parts.push(p.k+"_"+k+"="+S.P[k][p.k]); }
+  try { history.replaceState(null, "", "#" + parts.join("&")); } catch(e) {}
+}
+
+/* ------------------------------------------------------------------ *
+ *  Geometry of the plot
+ * ------------------------------------------------------------------ */
+const CHH = 260;
+const PW = 640, PH = 500, MX = 46, MY = 10, CW = MX + PW + 12, CH = MY + PH + 30;
+const view = sf => { const w = sf.h*ASPECT; return {xmin:sf.cx-w, xmax:sf.cx+w, ymin:sf.cy-sf.h, ymax:sf.cy+sf.h}; };
+let V = null, bg = null, plotCtx = null, chartCtx = null;
+const toPx = (x,y) => [MX + (x-V.xmin)/(V.xmax-V.xmin)*PW, MY + (V.ymax-y)/(V.ymax-V.ymin)*PH];
+const fromPx = (px,py) => [V.xmin + (px-MX)/PW*(V.xmax-V.xmin), V.ymax - (py-MY)/PH*(V.ymax-V.ymin)];
+
+/* ------------------------------------------------------------------ *
+ *  Surface image: smooth log-scaled shading with contour edges
+ * ------------------------------------------------------------------ */
+let C0 = [244,249,252], C1 = [118,148,168]; const LEVELS = 18;
+if (window.SBT && SBT.dark) { C0 = [14,21,30]; C1 = [88,122,150]; }
+function fieldImage(sf, W, H, pal){
+  const v = view(sf), vals = new Float32Array(W*H), img = new ImageData(W, H);
+  for (let j=0;j<H;j++) for (let i=0;i<W;i++) {
+    const x = v.xmin + (i+.5)/W*(v.xmax-v.xmin), y = v.ymax - (j+.5)/H*(v.ymax-v.ymin);
+    vals[j*W+i] = Math.max(0, sf.f(x,y) - sf.fmin);
+  }
+  const sample = []; for (let k=0;k<vals.length;k+=Math.max(1,Math.floor(vals.length/4000))) sample.push(vals[k]);
+  sample.sort((a,b)=>a-b);
+  const vmax = Math.max(sample[Math.floor(sample.length*0.97)], 1e-9), den = Math.log1p(vmax/sf.s);
+  const band = new Uint8Array(W*H);
+  for (let k=0;k<vals.length;k++) {
+    const t = clamp(Math.log1p(vals[k]/sf.s)/den, 0, 1);
+    band[k] = Math.min(LEVELS-1, Math.floor(t*LEVELS));
+    const p = 4*k;
+    if (pal) { const c = viridis(t); img.data[p] = c[0]; img.data[p+1] = c[1]; img.data[p+2] = c[2]; }
+    else {
+      img.data[p]   = C0[0] + (C1[0]-C0[0])*t;
+      img.data[p+1] = C0[1] + (C1[1]-C0[1])*t;
+      img.data[p+2] = C0[2] + (C1[2]-C0[2])*t;
+    }
+    img.data[p+3] = 255;
+  }
+  for (let j=0;j<H-1;j++) for (let i=0;i<W-1;i++) {            // contour lines where the band index changes
+    const k = j*W+i;
+    if (band[k] !== band[k+1] || band[k] !== band[k+W]) {
+      const p = 4*k; if (window.SBT && SBT.dark) { img.data[p] *= 1.5; img.data[p+1] *= 1.45; img.data[p+2] *= 1.35; } else { img.data[p] *= 0.82; img.data[p+1] *= 0.84; img.data[p+2] *= 0.88; }
+    }
+  }
+  return img;
+}
+function niceStep(range, target){
+  const raw = range/target, mag = Math.pow(10, Math.floor(Math.log10(raw))), r = raw/mag;
+  return (r < 1.5 ? 1 : r < 3.5 ? 2 : r < 7.5 ? 5 : 10) * mag;
+}
+function buildBackground(){
+  const sf = SURF[S.surface], d = window.devicePixelRatio || 1;
+  V = view(sf);
+  bg = document.createElement("canvas"); bg.width = Math.round(CW*d); bg.height = Math.round(CH*d);
+  const g = bg.getContext("2d");
+  g.fillStyle = "#fff"; g.fillRect(0, 0, bg.width, bg.height);
+  g.putImageData(fieldImage(sf, Math.round(PW*d), Math.round(PH*d)), Math.round(MX*d), Math.round(MY*d));
+  g.setTransform(d,0,0,d,0,0);
+  g.strokeStyle = "#999"; g.lineWidth = 1; g.strokeRect(MX-.5, MY-.5, PW+1, PH+1);
+  g.fillStyle = "#666"; g.strokeStyle = "#999"; g.font = "11px sans-serif";
+  const sx = niceStep(V.xmax-V.xmin, 9), sy = niceStep(V.ymax-V.ymin, 7);
+  g.textAlign = "center"; g.textBaseline = "top";
+  for (let x = Math.ceil(V.xmin/sx)*sx; x <= V.xmax+1e-9; x += sx) {
+    const [px] = toPx(x,0); g.beginPath(); g.moveTo(Math.round(px)+.5, MY+PH); g.lineTo(Math.round(px)+.5, MY+PH+4); g.stroke();
+    g.fillText(String(+x.toFixed(6)), px, MY+PH+7);
+  }
+  g.textAlign = "right"; g.textBaseline = "middle";
+  for (let y = Math.ceil(V.ymin/sy)*sy; y <= V.ymax+1e-9; y += sy) {
+    const [,py] = toPx(0,y); g.beginPath(); g.moveTo(MX-4, Math.round(py)+.5); g.lineTo(MX, Math.round(py)+.5); g.stroke();
+    g.fillText(String(+y.toFixed(6)), MX-7, py);
+  }
+  noiseScale = medianGrad(sf);
+}
+function medianGrad(sf){
+  const a = [], v = view(sf);
+  for (let j=0;j<30;j++) for (let i=0;i<40;i++) {
+    const g = sf.g(v.xmin+(i+.5)/40*(v.xmax-v.xmin), v.ymax-(j+.5)/30*(v.ymax-v.ymin)); a.push(Math.hypot(g[0],g[1]));
+  }
+  a.sort((p,q)=>p-q); return a[Math.floor(a.length/2)] || 1;
+}
+
+/* ------------------------------------------------------------------ *
+ *  Race control
+ * ------------------------------------------------------------------ */
+function resetRace(){
+  setPlaying(false);
+  stepNo = 0; seed = (Math.random()*4294967296)>>>0;
+  st = {};
+  for (const k of OPT_ORDER) if (S.enabled[k]) { st[k] = newState(S.x0, S.y0); st[k].hist.push(Math.max(SURF[S.surface].f(S.x0,S.y0) - SURF[S.surface].fmin, 0)); }
+  refreshCards(); draw();
+}
+function stepRace(n){
+  const sf = SURF[S.surface], sigma = S.noise * noiseScale * 0.2;
+  for (let i=0;i<n;i++) {
+    if (stepNo >= MAX_STEPS) { setPlaying(false); break; }
+    stepNo++;
+    const nz = sigma > 0 ? (z => [z[0]*sigma, z[1]*sigma])(noiseAt(seed, stepNo)) : [0,0];
+    for (const k of OPT_ORDER) {
+      const s = st[k]; if (!s || s.dead) continue;
+      stepState(k, s, S.P[k], sf.g, nz);
+      if (isBad(s)) { s.dead = true; continue; }
+      s.path.push([s.x, s.y]);
+      s.hist.push(Math.max(sf.f(s.x, s.y) - sf.fmin, 0));
+    }
+  }
+}
+function setPlaying(p){ playing = p; $("#play").innerHTML = p ? "&#10074;&#10074;" : "&#9654;"; if (p) requestAnimationFrame(tick); }
+function tick(){ if (!playing) return; stepRace(S.speed); draw(); if (playing) requestAnimationFrame(tick); }
+
+/* ------------------------------------------------------------------ *
+ *  Drawing
+ * ------------------------------------------------------------------ */
+function star(g, cx, cy, r){
+  g.beginPath();
+  for (let i=0;i<10;i++){ const a = -Math.PI/2 + i*Math.PI/5, rr = i%2 ? r*0.45 : r; g.lineTo(cx+rr*Math.cos(a), cy+rr*Math.sin(a)); }
+  g.closePath();
+}
+function draw(){
+  if (S.view === "3d") drawPlot3D(); else drawPlot2D();
+  $("#stepcount").textContent = String(stepNo).padStart(6,"0").replace(/(\d{3})(\d{3})/, "$1,$2");
+  updateLive(); drawChart();
+}
+let drawQueued = false;
+function requestDraw(){ if (drawQueued) return; drawQueued = true; requestAnimationFrame(() => { drawQueued = false; draw(); }); }
+function drawPlot2D(){
+  const g = plotCtx, sf = SURF[S.surface];
+  g.clearRect(0,0,CW,CH); g.drawImage(bg, 0, 0, CW, CH);
+  g.save(); g.beginPath(); g.rect(MX, MY, PW, PH); g.clip();
+  for (const [mx,my] of sf.minima) { const [px,py] = toPx(mx,my); star(g,px,py,9); g.fillStyle = "#1b3b4f"; g.fill(); g.lineWidth = 1.5; g.strokeStyle = "#fff"; g.stroke(); }
+  for (const k of OPT_ORDER) {                                         // trails
+    const s = st[k]; if (!s) continue;
+    const n = s.path.length, stride = Math.max(1, Math.ceil(n/3000));
+    g.beginPath();
+    for (let i=0;i<n;i+=stride) { const [px,py] = toPx(s.path[i][0], s.path[i][1]); i ? g.lineTo(px,py) : g.moveTo(px,py); }
+    const [lx,ly] = toPx(s.path[n-1][0], s.path[n-1][1]); g.lineTo(lx,ly);
+    g.lineJoin = "round"; g.lineWidth = 3.4; g.strokeStyle = "rgba(255,255,255,.85)"; g.stroke();
+    g.lineWidth = 1.9; g.strokeStyle = OPTS[k].color; g.stroke();
+  }
+  const [sx,sy] = toPx(S.x0, S.y0);                                      // start marker
+  g.beginPath(); g.arc(sx,sy,6,0,6.3); g.fillStyle = "#fff"; g.fill(); g.lineWidth = 2; g.strokeStyle = "#1b3b4f"; g.stroke();
+  for (const k of OPT_ORDER) {                                           // heads
+    const s = st[k]; if (!s) continue;
+    const [px,py] = toPx(s.x, s.y); if (s.dead) { const e = s.path[s.path.length-1], [ex,ey] = toPx(e[0],e[1]);
+      g.strokeStyle = OPTS[k].color; g.lineWidth = 3; g.beginPath(); g.moveTo(ex-6,ey-6); g.lineTo(ex+6,ey+6); g.moveTo(ex+6,ey-6); g.lineTo(ex-6,ey+6); g.stroke(); continue; }
+    g.beginPath(); g.arc(px,py,5.5,0,6.3); g.fillStyle = OPTS[k].color; g.fill(); g.lineWidth = 2; g.strokeStyle = "#fff"; g.stroke();
+  }
+  g.restore();
+}
+
+/* ------------------------------------------------------------------ *
+ *  3D view: painter's-algorithm mesh with a depth buffer for hidden-trail tests
+ * ------------------------------------------------------------------ */
+const NXG = 150, NYG = 117, ZH = 0.9, ZCAP = 1.12, EPSD = 0.045;
+let ss3 = 2, zb = null, zbW = 0, zbH = 0, colBuf = null;
+const VIR = ["#440154","#482878","#3e4a89","#31688e","#26828e","#1f9e89","#35b779","#6ece58","#b5de2b","#fde725"]
+  .map(h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]);
+function viridis(t){
+  t = clamp(t,0,1)*(VIR.length-1); const i = Math.min(VIR.length-2, Math.floor(t)), f = t-i, a = VIR[i], b = VIR[i+1];
+  return [a[0]+(b[0]-a[0])*f, a[1]+(b[1]-a[1])*f, a[2]+(b[2]-a[2])*f];
+}
+const rgb = (c, k) => `rgb(${Math.min(255,c[0]*k)|0},${Math.min(255,c[1]*k)|0},${Math.min(255,c[2]*k)|0})`;
+const scaleCache = {};
+function scaleFor(sk){
+  if (scaleCache[sk]) return scaleCache[sk];
+  const sf = SURF[sk], v = view(sf), a = [];
+  for (let j=0;j<94;j++) for (let i=0;i<120;i++) a.push(Math.max(0, sf.f(v.xmin+(i+.5)/120*(v.xmax-v.xmin), v.ymax-(j+.5)/94*(v.ymax-v.ymin)) - sf.fmin));
+  a.sort((p,q)=>p-q);
+  const vmax = Math.max(a[Math.floor(a.length*0.97)], 1e-9);
+  return scaleCache[sk] = {vmax, den: Math.log1p(vmax/sf.s)};
+}
+const tOfF = (sf, sc, d) => Math.log1p(Math.max(0,d)/sf.s)/sc.den;      // d = f - fmin
+let bg3 = null, mesh = null, dirty3 = true;
+const K3 = (CW-90)/3.5, CX3 = (CW-80)/2, CY3 = CH/2 - 6, P3 = [0,0,0];
+function proj(X, Y, Z){                       // world (X,Y,Z) -> [px, py, depth]; larger depth = farther from the camera
+  const ca = Math.cos(S.az), sa = Math.sin(S.az), ce = Math.cos(S.el), se = Math.sin(S.el), k = K3*S.zoom;
+  const x1 = X*ca - Y*sa, y1 = X*sa + Y*ca, z1 = Z - ZH*0.35;
+  P3[0] = CX3 + k*x1; P3[1] = CY3 - k*(z1*ce + y1*se); P3[2] = y1*ce - z1*se; return P3;
+}
+function buildMesh(){
+  if (mesh && mesh.sk === S.surface) return mesh;
+  const sk = S.surface, sf = SURF[sk], sc = scaleFor(sk), v = view(sf), W1 = NXG+1, n = W1*(NYG+1);
+  const m = {sk, T:new Float32Array(n), Z:new Float32Array(n), WX:new Float32Array(n), WY:new Float32Array(n),
+             px:new Float32Array(n), py:new Float32Array(n), pd:new Float32Array(n), C:new Float32Array(n*3)};
+  for (let j=0;j<=NYG;j++) { const y = v.ymax - j/NYG*(v.ymax-v.ymin);
+    for (let i=0;i<=NXG;i++) { const x = v.xmin + i/NXG*(v.xmax-v.xmin), k = j*W1+i;
+      const t = tOfF(sf, sc, sf.f(x,y) - sf.fmin);
+      m.T[k] = t; m.Z[k] = Math.min(t, ZCAP)*ZH; m.WX[k] = (x-sf.cx)/sf.h; m.WY[k] = (y-sf.cy)/sf.h; } }
+  const L = [-0.45,-0.55,0.7], ll = Math.hypot(L[0],L[1],L[2]), cdx = 2*ASPECT/NXG, cdy = 2/NYG;   // fixed world light -> per-vertex shading
+  for (let j=0;j<=NYG;j++) for (let i=0;i<=NXG;i++) {
+    const k = j*W1+i, il = Math.max(i-1,0), ir = Math.min(i+1,NXG), ju = Math.max(j-1,0), jd = Math.min(j+1,NYG);
+    const dzx = (m.Z[j*W1+ir]-m.Z[j*W1+il])/((ir-il)*cdx), dzy = (m.Z[ju*W1+i]-m.Z[jd*W1+i])/((jd-ju)*cdy);
+    const dot = (-dzx*L[0] - dzy*L[1] + L[2])/(ll*Math.hypot(dzx,dzy,1)), c = viridis(m.T[k]), f = 0.62 + 0.55*Math.max(0,dot);
+    m.C[3*k] = Math.min(255,c[0]*f); m.C[3*k+1] = Math.min(255,c[1]*f); m.C[3*k+2] = Math.min(255,c[2]*f);
+  }
+  return mesh = m;
+}
+function rasTri(ax,ay,ad,ar,ag,ab, bx,by,bd,br,bg,bb, cx,cy,cd,cr,cg,cb){     // z-buffered Gouraud triangle in buffer pixels
+  const den = (by-cy)*(ax-cx) + (cx-bx)*(ay-cy); if (Math.abs(den) < 1e-9) return;
+  const x0 = Math.max(0, Math.floor(Math.min(ax,bx,cx))), x1 = Math.min(zbW-1, Math.ceil(Math.max(ax,bx,cx)));
+  const y0 = Math.max(0, Math.floor(Math.min(ay,by,cy))), y1 = Math.min(zbH-1, Math.ceil(Math.max(ay,by,cy)));
+  const i1 = 1/den, a1 = (by-cy)*i1, b1 = (cx-bx)*i1, a2 = (cy-ay)*i1, b2 = (ax-cx)*i1;
+  for (let y=y0;y<=y1;y++) {
+    const py = y+.5; let l1 = a1*(x0+.5-cx) + b1*(py-cy), l2 = a2*(x0+.5-cx) + b2*(py-cy);
+    for (let x=x0;x<=x1;x++, l1 += a1, l2 += a2) {
+      const l3 = 1-l1-l2; if (l1 < -0.01 || l2 < -0.01 || l3 < -0.01) continue;
+      const d = l1*ad + l2*bd + l3*cd, id = y*zbW+x; if (d >= zb[id]) continue;
+      zb[id] = d; const o = id*4;
+      colBuf[o] = l1*ar + l2*br + l3*cr; colBuf[o+1] = l1*ag + l2*bg + l3*cg; colBuf[o+2] = l1*ab + l2*bb + l3*cb; colBuf[o+3] = 255;
+    }
+  }
+}
+function visAt(px, py, d){
+  const ix = Math.floor(px*ss3), iy = Math.floor(py*ss3);
+  if (!zb || ix < 0 || iy < 0 || ix >= zbW || iy >= zbH) return true;
+  return d <= zb[iy*zbW+ix] + EPSD;
+}
+const shortNum = v => v === 0 ? "0" : (v >= 1000 || v < 0.01) ? v.toExponential(0).replace("e+","e") : v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v.toFixed(2);
+function render3D(){
+  const sf = SURF[S.surface], sc = scaleFor(S.surface), m = buildMesh(), v = view(sf), d = window.devicePixelRatio || 1;
+  if (!bg3 || bg3.width !== Math.round(CW*d) || bg3.height !== Math.round(CH*d)) { bg3 = document.createElement("canvas"); bg3.width = Math.round(CW*d); bg3.height = Math.round(CH*d); }
+  zbW = Math.ceil(CW*ss3); zbH = Math.ceil(CH*ss3);
+  if (!zb || zb.length !== zbW*zbH) { zb = new Float32Array(zbW*zbH); colBuf = new Uint8ClampedArray(zbW*zbH*4); }
+  zb.fill(Infinity); colBuf.fill(0);
+  const g = bg3.getContext("2d"); g.setTransform(d,0,0,d,0,0); g.fillStyle = "#fff"; g.fillRect(0,0,CW,CH);
+  const W1 = NXG+1, n = m.T.length;
+  for (let k=0;k<n;k++) { const p = proj(m.WX[k], m.WY[k], m.Z[k]); m.px[k] = p[0]; m.py[k] = p[1]; m.pd[k] = p[2]; }
+
+  // floor with grid
+  const FZ = -0.03, cn = [[-ASPECT,-1],[ASPECT,-1],[ASPECT,1],[-ASPECT,1]].map(([X,Y]) => { const p = proj(X,Y,FZ); return [p[0],p[1],p[2],X,Y]; });
+  g.beginPath(); cn.forEach((c,i) => i ? g.lineTo(c[0],c[1]) : g.moveTo(c[0],c[1])); g.closePath();
+  g.fillStyle = "#f3f5f6"; g.fill(); g.strokeStyle = "#c3cacf"; g.lineWidth = 1; g.stroke();
+  const sx = niceStep(v.xmax-v.xmin, 6), sy = niceStep(v.ymax-v.ymin, 5), xt = [], yt = [];
+  for (let x = Math.ceil(v.xmin/sx)*sx; x <= v.xmax+1e-9; x += sx) xt.push(x);
+  for (let y = Math.ceil(v.ymin/sy)*sy; y <= v.ymax+1e-9; y += sy) yt.push(y);
+  g.strokeStyle = "#dfe3e6"; g.beginPath();
+  for (const x of xt) { const X = (x-sf.cx)/sf.h, a = proj(X,-1,FZ), ax = a[0], ay = a[1], b = proj(X,1,FZ); g.moveTo(ax,ay); g.lineTo(b[0],b[1]); }
+  for (const y of yt) { const Y = (y-sf.cy)/sf.h, a = proj(-ASPECT,Y,FZ), ax = a[0], ay = a[1], b = proj(ASPECT,Y,FZ); g.moveTo(ax,ay); g.lineTo(b[0],b[1]); }
+  g.stroke();
+
+  // surface: z-buffered Gouraud triangles, composited onto the floor
+  const C = m.C, S3 = ss3;
+  for (let j=0;j<NYG;j++) for (let i=0;i<NXG;i++) {
+    const a = j*W1+i, b = a+1, c = a+W1+1, e = a+W1;
+    rasTri(m.px[a]*S3,m.py[a]*S3,m.pd[a],C[3*a],C[3*a+1],C[3*a+2], m.px[b]*S3,m.py[b]*S3,m.pd[b],C[3*b],C[3*b+1],C[3*b+2], m.px[c]*S3,m.py[c]*S3,m.pd[c],C[3*c],C[3*c+1],C[3*c+2]);
+    rasTri(m.px[a]*S3,m.py[a]*S3,m.pd[a],C[3*a],C[3*a+1],C[3*a+2], m.px[c]*S3,m.py[c]*S3,m.pd[c],C[3*c],C[3*c+1],C[3*c+2], m.px[e]*S3,m.py[e]*S3,m.pd[e],C[3*e],C[3*e+1],C[3*e+2]);
+  }
+  if (!render3D.tmp) render3D.tmp = document.createElement("canvas");
+  const tmp = render3D.tmp; tmp.width = zbW; tmp.height = zbH;
+  tmp.getContext("2d").putImageData(new ImageData(colBuf, zbW, zbH), 0, 0);
+  g.imageSmoothingEnabled = true; g.imageSmoothingQuality = "high"; g.drawImage(tmp, 0, 0, CW, CH);
+
+  // axis ticks along the two front edges
+  let near = cn[0]; for (const c of cn) if (c[2] < near[2]) near = c;
+  const ctr = proj(0,0,FZ), mx = ctr[0], my = ctr[1];
+  g.font = "10.5px sans-serif"; g.fillStyle = "#666"; g.textAlign = "center"; g.textBaseline = "middle";
+  const lab = (X, Y, txt, off) => { const p = proj(X,Y,FZ), dx = p[0]-mx, dy = p[1]-my, l = Math.hypot(dx,dy) || 1; g.fillText(txt, p[0]+dx/l*off, p[1]+dy/l*off); };
+  for (const x of xt) lab((x-sf.cx)/sf.h, near[4], String(+x.toFixed(6)), 13);
+  for (const y of yt) lab(near[3], (y-sf.cy)/sf.h, String(+y.toFixed(6)), 13);
+  g.font = "italic 12px sans-serif"; g.fillStyle = "#333";
+  lab(0, near[4], "x", 32); lab(near[3], 0, "y", 32);
+
+  // colour bar
+  const bx = CW-58, by = 70, bw = 12, bh = 200;
+  for (let r=0;r<bh;r++) { g.fillStyle = rgb(viridis(1-r/(bh-1)), 1); g.fillRect(bx, by+r, bw, 1.5); }
+  g.strokeStyle = "#aaa"; g.strokeRect(bx-.5, by-.5, bw+1, bh+1);
+  g.font = "10.5px sans-serif"; g.textAlign = "left"; g.fillStyle = "#555";
+  for (const t of [0,0.25,0.5,0.75,1]) { const y = by + (1-t)*(bh-1); g.beginPath(); g.moveTo(bx+bw,y); g.lineTo(bx+bw+3,y); g.stroke();
+    g.fillText(shortNum(sf.s*(Math.exp(t*sc.den)-1)), bx+bw+6, y); }
+  g.textAlign = "center"; g.fillStyle = "#333"; g.font = "11px sans-serif"; g.fillText("f − f*", bx+bw/2+8, by-30);
+  g.fillStyle = "#888"; g.font = "9.5px sans-serif"; g.fillText("log scale", bx+bw/2+8, by-18);
+}
+function drawPlot3D(){
+  if (dirty3) { render3D(); dirty3 = false; }
+  const g = plotCtx, sf = SURF[S.surface], sc = scaleFor(S.surface);
+  g.clearRect(0,0,CW,CH); g.drawImage(bg3, 0, 0, CW, CH);
+  const pointAt = (x, y, df) => {
+    const X = (x-sf.cx)/sf.h, Y = (y-sf.cy)/sf.h; if (Math.abs(X) > ASPECT || Math.abs(Y) > 1) return null;
+    const p = proj(X, Y, Math.min(tOfF(sf,sc,df), ZCAP)*ZH + 0.012); return [p[0], p[1], visAt(p[0],p[1],p[2])];
+  };
+  for (const k of OPT_ORDER) {                                           // trails, split into visible / hidden runs
+    const s = st[k]; if (!s) continue;
+    const n = s.path.length, stride = Math.max(1, Math.ceil(n/3000)), runs = []; let cur = null;
+    const add = i => {
+      const q = pointAt(s.path[i][0], s.path[i][1], s.hist[i]); if (!q) { cur = null; return; }
+      if (!cur || cur.vis !== q[2]) { const prev = cur; cur = {vis:q[2], pts:[]}; if (prev) cur.pts.push(prev.pts[prev.pts.length-1]); runs.push(cur); }
+      cur.pts.push(q);
+    };
+    for (let i=0;i<n;i+=stride) add(i);
+    if ((n-1) % stride) add(n-1);
+    g.lineJoin = "round"; g.lineCap = "round";
+    for (const r of runs) {
+      if (r.pts.length < 2) continue;
+      g.beginPath(); r.pts.forEach((q,i) => i ? g.lineTo(q[0],q[1]) : g.moveTo(q[0],q[1]));
+      if (r.vis) { g.lineWidth = 3.4; g.strokeStyle = "rgba(255,255,255,.85)"; g.stroke(); g.lineWidth = 1.9; g.strokeStyle = OPTS[k].color; g.stroke(); }
+      else { g.globalAlpha = 0.3; g.lineWidth = 1.6; g.strokeStyle = OPTS[k].color; g.stroke(); g.globalAlpha = 1; }
+    }
+  }
+  for (const [mx,my] of sf.minima) { const q = pointAt(mx,my,0); if (!q) continue;
+    g.globalAlpha = q[2] ? 1 : 0.4; star(g,q[0],q[1],9); g.fillStyle = "#1b3b4f"; g.fill(); g.lineWidth = 1.5; g.strokeStyle = "#fff"; g.stroke(); g.globalAlpha = 1; }
+  const q0 = pointAt(S.x0, S.y0, Math.max(sf.f(S.x0,S.y0)-sf.fmin,0));
+  if (q0) { g.globalAlpha = q0[2] ? 1 : 0.45; g.beginPath(); g.arc(q0[0],q0[1],6,0,6.3); g.fillStyle = "#fff"; g.fill(); g.lineWidth = 2; g.strokeStyle = "#1b3b4f"; g.stroke(); g.globalAlpha = 1; }
+  for (const k of OPT_ORDER) {
+    const s = st[k]; if (!s) continue;
+    const e = s.path[s.path.length-1], q = pointAt(e[0], e[1], s.hist[s.hist.length-1]); if (!q) continue;
+    g.globalAlpha = q[2] ? 1 : 0.45;
+    if (s.dead) { g.strokeStyle = OPTS[k].color; g.lineWidth = 3; g.beginPath(); g.moveTo(q[0]-6,q[1]-6); g.lineTo(q[0]+6,q[1]+6); g.moveTo(q[0]+6,q[1]-6); g.lineTo(q[0]-6,q[1]+6); g.stroke(); }
+    else { g.beginPath(); g.arc(q[0],q[1],5.5,0,6.3); g.fillStyle = OPTS[k].color; g.fill(); g.lineWidth = 2; g.strokeStyle = "#fff"; g.stroke(); }
+    g.globalAlpha = 1;
+  }
+}
+function pick3D(cx, cy){                          // canvas point -> nearest visible surface point (x, y) or null
+  if (dirty3) { render3D(); dirty3 = false; }
+  const sf = SURF[S.surface], sc = scaleFor(S.surface), m = mesh, v = view(sf), W1 = NXG+1;
+  let best = -1, bd = 1e18;
+  for (let k=0;k<m.px.length;k++) { const dx = m.px[k]-cx, dy = m.py[k]-cy, dd = dx*dx+dy*dy;
+    if (dd < bd && visAt(m.px[k], m.py[k], m.pd[k])) { bd = dd; best = k; } }
+  if (best < 0 || bd > 45*45) return null;
+  const bi = best % W1, bj = (best/W1)|0, cdx = (v.xmax-v.xmin)/NXG, cdy = (v.ymax-v.ymin)/NYG;
+  const x0 = v.xmin + bi*cdx, y0 = v.ymax - bj*cdy;
+  let bx = x0, by = y0, b2 = 1e18;
+  for (let a=-8;a<=8;a++) for (let b=-8;b<=8;b++) {
+    const x = x0 + a/8*cdx, y = y0 + b/8*cdy; if (x < v.xmin || x > v.xmax || y < v.ymin || y > v.ymax) continue;
+    const p = proj((x-sf.cx)/sf.h, (y-sf.cy)/sf.h, Math.min(tOfF(sf,sc,sf.f(x,y)-sf.fmin), ZCAP)*ZH);
+    const d2 = (p[0]-cx)*(p[0]-cx) + (p[1]-cy)*(p[1]-cy); if (d2 < b2) { b2 = d2; bx = x; by = y; }
+  }
+  return [bx, by];
+}
+
+function drawChart(){
+  const g = chartCtx, W = PW + 20, H = CHH, L = 50, R = 12, T = 8, B = 28;
+  g.clearRect(0,0,W,H);
+  let lo = Infinity, hi = -Infinity, nmax = 1;
+  for (const k of OPT_ORDER) { const s = st[k]; if (!s) continue; nmax = Math.max(nmax, s.hist.length-1);
+    for (const v of s.hist) { const l = Math.log10(Math.max(v,1e-12)); if (l<lo) lo=l; if (l>hi) hi=l; } }
+  if (!isFinite(lo)) { lo = -6; hi = 2; }
+  lo = Math.floor(lo); hi = Math.ceil(hi); if (hi - lo < 2) hi = lo + 2;
+  const X = i => L + (W-L-R)*i/nmax, Y = l => T + (H-T-B)*(1-(l-lo)/(hi-lo));
+  g.font = "10px sans-serif"; g.lineWidth = 1; g.textBaseline = "middle"; g.textAlign = "right";
+  const dec = Math.max(1, Math.ceil((hi-lo)/6));
+  for (let l=lo; l<=hi; l+=dec) { const y = Y(l); g.strokeStyle = "#e6e6e6"; g.beginPath(); g.moveTo(L,y+.5); g.lineTo(W-R,y+.5); g.stroke();
+    g.fillStyle = "#777"; g.fillText("1e"+l, L-5, y); }
+  g.strokeStyle = "#999"; g.beginPath(); g.moveTo(L+.5,T); g.lineTo(L+.5,H-B); g.lineTo(W-R,H-B); g.stroke();
+  g.fillStyle = "#777"; g.textBaseline = "top"; g.textAlign = "left"; g.fillText("0", L, H-B+5);
+  g.textAlign = "right"; g.fillText(String(nmax), W-R, H-B+5); g.textAlign = "center"; g.fillText("step", (L+W-R)/2, H-B+14);
+  for (const k of OPT_ORDER) {
+    const s = st[k]; if (!s) continue;
+    const n = s.hist.length, stride = Math.max(1, Math.ceil(n/700));
+    g.beginPath();
+    for (let i=0;i<n;i+=stride) { const x = X(i), y = Y(Math.log10(Math.max(s.hist[i],1e-12))); i ? g.lineTo(x,y) : g.moveTo(x,y); }
+    g.lineTo(X(n-1), Y(Math.log10(Math.max(s.hist[n-1],1e-12))));
+    g.strokeStyle = OPTS[k].color; g.lineWidth = 1.8; g.stroke();
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ *  UI: surface picker, optimizer cards, controls
+ * ------------------------------------------------------------------ */
+function buildSurfacePicker(){
+  const box = $("#surfs"); box.innerHTML = "";
+  for (const sk of SURF_ORDER) {
+    const b = document.createElement("button"); b.className = "sbtn" + (sk === S.surface ? " on" : ""); b.title = SURF[sk].name; b.setAttribute("aria-label", SURF[sk].name);
+    const c = document.createElement("canvas"), W = 86, H = 56; c.width = W; c.height = H;
+    c.getContext("2d").putImageData(fieldImage(SURF[sk], W, H, S.view === "3d"), 0, 0);
+    b.appendChild(c);
+    b.onclick = () => { applySurfacePreset(sk, false); onSurfaceChanged(); };
+    box.appendChild(b);
+  }
+}
+function describeSurface(){
+  const sf = SURF[S.surface];
+  $("#sname").textContent = sf.name; $("#sformula").textContent = sf.formula; $("#sdesc").textContent = sf.desc + (S.view === "3d" ? " Height and colour use a logarithmic scale." : "");
+  document.querySelectorAll(".sbtn").forEach((b,i) => b.classList.toggle("on", SURF_ORDER[i] === S.surface));
+}
+function onSurfaceChanged(){
+  dirty3 = true; describeSurface(); buildBackground(); buildCards(); syncControls(); writeHash(); resetRace();
+}
+const lrFromSlider = v => Math.pow(10, v);
+function buildCards(){
+  const box = $("#cards"); box.innerHTML = "";
+  for (const k of OPT_ORDER) {
+    const o = OPTS[k], card = document.createElement("div"); card.className = "card" + (S.enabled[k] ? "" : " off"); card.dataset.k = k;
+    let html = `<div class="ch"><label class="cb"><input type="checkbox" ${S.enabled[k] ? "checked" : ""}><i class="sw" style="background:${o.color}"></i>${o.name}</label><span class="state"></span></div><div class="body">
+      <div class="slider"><div class="row"><span>Learning rate</span><b class="lrv"></b></div><input type="range" class="lr" min="-5" max="1" step="0.05"></div>`;
+    for (const p of o.params) html += `<div class="slider"><div class="row"><span>${p.label}</span><b class="pv" data-p="${p.k}"></b></div><input type="range" class="pr" data-p="${p.k}" min="${p.min}" max="${p.max}" step="${p.step}"></div>`;
+    html += `<div class="live"></div></div>`;
+    card.innerHTML = html; box.appendChild(card);
+    const P = S.P[k], lr = card.querySelector(".lr"), lrv = card.querySelector(".lrv");
+    lr.value = Math.log10(P.lr); lrv.textContent = +P.lr.toPrecision(2);
+    lr.oninput = () => { P.lr = lrFromSlider(+lr.value); lrv.textContent = +P.lr.toPrecision(2); writeHash(); };
+    card.querySelectorAll(".pr").forEach(r => {
+      const key = r.dataset.p, out = card.querySelector(`.pv[data-p="${key}"]`);
+      r.value = P[key]; out.textContent = P[key];
+      r.oninput = () => { P[key] = +r.value; out.textContent = P[key]; writeHash(); };
+    });
+    card.querySelector("input[type=checkbox]").onchange = e => { S.enabled[k] = e.target.checked; card.classList.toggle("off", !e.target.checked); writeHash(); resetRace(); };
+  }
+}
+function refreshCards(){ document.querySelectorAll(".card").forEach(c => { const s = st[c.dataset.k]; if (!s) { c.querySelector(".live").textContent = ""; c.querySelector(".state").textContent = ""; } }); }
+function updateLive(){
+  const sf = SURF[S.surface];
+  document.querySelectorAll(".card").forEach(c => {
+    const s = st[c.dataset.k]; if (!s) return;
+    const last = s.hist[s.hist.length-1];
+    c.querySelector(".live").innerHTML = `f − f* = <b>${fmt(last)}</b>` + (s.dead ? "" : ` &nbsp;·&nbsp; (${s.x.toFixed(3)}, ${s.y.toFixed(3)})`);
+    c.querySelector(".state").textContent = s.dead ? "diverged" : "";
+  });
+}
+function syncControls(){
+  const sp = $("#speed"); if (![...sp.options].some(o => +o.value === S.speed)) { const o = document.createElement("option"); o.value = S.speed; o.textContent = S.speed; sp.appendChild(o); }
+  sp.value = S.speed; $("#noise").value = S.noise;
+  const is3 = S.view === "3d";
+  $("#view").value = S.view; $("#rot").checked = S.rot; $("#rotgrp").classList.toggle("hide", !is3);
+  $("#hint").textContent = !is3 ? "Click or drag on the plot to set the starting point. The stars mark the global minima."
+    : S.rot ? "Drag to rotate, scroll to zoom. Turn Rotate off to click a starting point on the surface."
+            : "Click or drag on the surface to set the starting point. Turn Rotate on to move the camera.";
+  $("#plot").style.cursor = !is3 || !S.rot ? "crosshair" : "grab";
+  $("#readout").style.display = "none";
+}
+function initControls(){
+  const sp = $("#speed"); [1,2,5,10,25,50,100,250].forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sp.appendChild(o); });
+  sp.onchange = () => { S.speed = +sp.value; writeHash(); };
+  const nz = $("#noise"); [[0,"None"],[0.25,"Low"],[0.5,"Medium"],[1,"High"],[2,"Very high"]].forEach(([v,l]) => { const o = document.createElement("option"); o.value = v; o.textContent = l; nz.appendChild(o); });
+  nz.onchange = () => { S.noise = +nz.value; writeHash(); resetRace(); };
+  $("#reset").onclick = () => resetRace();
+  $("#play").onclick = () => setPlaying(!playing);
+  $("#stepbtn").onclick = () => { setPlaying(false); stepRace(1); draw(); };
+  $("#down").onclick = () => $("#about").scrollIntoView({behavior:"smooth", block:"start"});
+
+  $("#view").onchange = e => { S.view = e.target.value; dirty3 = true; buildSurfacePicker(); describeSurface(); syncControls(); writeHash(); draw(); };
+  $("#rot").onchange = e => { S.rot = e.target.checked; syncControls(); writeHash(); };
+  $("#rotreset").onclick = () => { S.az = -0.7; S.el = 0.78; S.zoom = 1; dirty3 = true; writeHash(); draw(); };
+
+  const plot = $("#plot"); let dragging = false, rotating = false, last = null, wheelT = 0;
+  const canvasXY = e => { const r = plot.getBoundingClientRect(), k = CW / r.width; return [(e.clientX - r.left)*k, (e.clientY - r.top)*k]; };
+  const place = e => {
+    const [px,py] = canvasXY(e);
+    if (S.view === "3d") { const p = pick3D(px,py); if (!p) return false; S.x0 = p[0]; S.y0 = p[1]; return true; }
+    if (px < MX || px > MX+PW || py < MY || py > MY+PH) return false;
+    const [x,y] = fromPx(px,py); S.x0 = x; S.y0 = y; return true;
+  };
+  plot.addEventListener("pointerdown", e => {
+    if (S.view === "3d" && S.rot) { rotating = true; last = [e.clientX, e.clientY]; plot.setPointerCapture(e.pointerId); plot.style.cursor = "grabbing"; return; }
+    if (place(e)) { dragging = true; plot.setPointerCapture(e.pointerId); resetRace(); }
+  });
+  plot.addEventListener("pointermove", e => {
+    if (rotating) {
+      ss3 = 1; S.az += (e.clientX - last[0])*0.01; S.el = clamp(S.el + (e.clientY - last[1])*0.008, 0.08, 1.5); last = [e.clientX, e.clientY];
+      dirty3 = true; requestDraw(); return;
+    }
+    const [px,py] = canvasXY(e), sf = SURF[S.surface], ro = $("#readout");
+    if (S.view === "3d") {
+      const p = S.rot ? null : pick3D(px,py);
+      if (p) { ro.textContent = `x = ${p[0].toFixed(2)}, y = ${p[1].toFixed(2)}, f − f* = ${fmt(sf.f(p[0],p[1])-sf.fmin)}`; ro.style.display = "block"; } else ro.style.display = "none";
+    } else if (px >= MX && px <= MX+PW && py >= MY && py <= MY+PH) { const [x,y] = fromPx(px,py);
+      ro.textContent = `x = ${x.toFixed(2)}, y = ${y.toFixed(2)}, f − f* = ${fmt(sf.f(x,y)-sf.fmin)}`; ro.style.display = "block"; }
+    else ro.style.display = "none";
+    if (dragging && place(e)) resetRace();
+  });
+  plot.addEventListener("pointerup", () => {
+    if (rotating) { rotating = false; plot.style.cursor = "grab"; ss3 = 2; dirty3 = true; writeHash(); draw(); return; }
+    if (dragging) { dragging = false; writeHash(); setPlaying(true); }
+  });
+  plot.addEventListener("pointerleave", () => { $("#readout").style.display = "none"; });
+  plot.addEventListener("wheel", e => {
+    if (S.view !== "3d" || !S.rot) return;
+    e.preventDefault(); S.zoom = clamp(S.zoom*Math.exp(-e.deltaY*0.001), 0.5, 2.5); ss3 = 1; dirty3 = true; requestDraw(); writeHash();
+    clearTimeout(wheelT); wheelT = setTimeout(() => { ss3 = 2; dirty3 = true; draw(); }, 180);
+  }, {passive:false});
+}
+
+/* ------------------------------------------------------------------ *
+ *  Boot
+ * ------------------------------------------------------------------ */
+readHash();
+plotCtx = hiDPI($("#plot"), CW, CH);
+chartCtx = hiDPI($("#chart"), PW + 20, CHH);
+initControls();
+buildSurfacePicker();
+describeSurface();
+buildBackground();
+buildCards();
+syncControls();
+resetRace();
+
+window.__race = { setView: v => { S.view = v; dirty3 = true; buildSurfacePicker(); describeSurface(); syncControls(); draw(); }, pick3D, proj, render3D, mesh: () => mesh, visAt, tOfF, scaleFor, S, SURF, OPTS, OPT_ORDER, stepState, newState, isBad, noiseAt, run: n => { stepRace(n); draw(); }, state: () => st, stepNo: () => stepNo, reset: resetRace, setSurface: sk => { applySurfacePreset(sk,false); onSurfaceChanged(); }, noiseScale: () => noiseScale };
+})();
+</script>
+
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{if(SBT.dark){C0=[14,21,30];C1=[88,122,150];}else{C0=[244,249,252];C1=[118,148,168];} buildBackground(); dirty3 = true; draw();}catch(e){} });
+</script>
+</body>
+</html>

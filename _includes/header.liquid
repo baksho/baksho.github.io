@@ -2,23 +2,28 @@
   <!-- Nav Bar -->
   <nav id="navbar" class="navbar navbar-light navbar-expand-lg {% if site.navbar_fixed %}fixed-top{% else %}sticky-top{% endif %}" role="navigation">
     <div class="container-fluid sb-nav-inner">
-      <!-- SB logo + name: always links back to the About page -->
-      <a class="navbar-brand sb-brand" href="{{ '/' | relative_url }}" aria-label="{{ site.first_name }} {{ site.last_name }}, home">
-        <svg class="sb-logo" viewBox="0 0 40 40" width="34" height="34" aria-hidden="true" focusable="false">
-          <defs>
-            <linearGradient id="sbRing" x1="0" y1="0" x2="1" y2="1">
-              <stop offset="0" style="stop-color: var(--sb-c1, #5af0b8)"></stop>
-              <stop offset="1" style="stop-color: var(--sb-c2, #8a6cff)"></stop>
-            </linearGradient>
-          </defs>
-          <circle cx="20" cy="20" r="18" fill="none" stroke="url(#sbRing)" stroke-width="2.2"></circle>
-          <text x="20" y="25.4" text-anchor="middle" class="sb-logo-text">SB</text>
-        </svg>
-        <span class="sb-name">
-          {{- site.first_name }}
-          {{ site.last_name -}}
-        </span>
-      </a>
+      <div class="sb-left">
+        <!-- SB logo + name: always links back to the About page -->
+        <a class="navbar-brand sb-brand" href="{{ '/' | relative_url }}" aria-label="{{ site.first_name }} {{ site.last_name }}, home">
+          <svg class="sb-logo" viewBox="0 0 40 40" width="34" height="34" aria-hidden="true" focusable="false">
+            <defs>
+              <linearGradient id="sbRing" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" style="stop-color: var(--sb-c1, #5af0b8)"></stop>
+                <stop offset="1" style="stop-color: var(--sb-c2, #8a6cff)"></stop>
+              </linearGradient>
+            </defs>
+            <circle cx="20" cy="20" r="18" fill="none" stroke="url(#sbRing)" stroke-width="2.2"></circle>
+            <text x="20" y="25.4" text-anchor="middle" class="sb-logo-text">SB</text>
+          </svg>
+          <span class="sb-name">
+            {{- site.first_name }}
+            {{ site.last_name -}}
+            <span class="sb-dot" aria-hidden="true"></span>
+          </span>
+        </a>
+        <!-- the social icons dock here on wide screens (About page, assets/js/stage.js) -->
+        <div class="sb-nav-icons" id="sbNavIcons"></div>
+      </div>
       <!-- Search + theme (always visible, also on phones) -->
       <div class="sb-tools">
         {% if site.search_enabled %}
@@ -107,7 +112,7 @@
                   <a
                     class="nav-link dropdown-toggle"
                     href="#"
-                    id="navbarDropdown"
+                    id="navbarDropdown-{{ p.title | slugify }}"
                     role="button"
                     data-toggle="dropdown"
                     aria-haspopup="true"
@@ -118,7 +123,7 @@
                       <span class="sr-only">(current)</span>
                     {% endif %}
                   </a>
-                  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
+                  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown-{{ p.title | slugify }}">
                     {% for child in p.children %}
                       {% if child.title == 'divider' %}
                         <div class="dropdown-divider"></div>

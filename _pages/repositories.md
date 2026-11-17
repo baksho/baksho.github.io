@@ -1,47 +1,20 @@
 ---
-layout: page
+layout: none
 permalink: /repositories/
 title: repositories
-description: Selected repositories. Edit _data/repositories.yml to change this list.
-nav: true
-nav_order: 4
+nav: false
+sitemap: false
 ---
 
-{% if site.data.repositories.github_users %}
-
-## GitHub users
-
-<div class="repositories d-flex flex-wrap flex-md-row flex-column justify-content-between align-items-center">
-  {% for user in site.data.repositories.github_users %}
-    {% include repository/repo_user.liquid username=user %}
-  {% endfor %}
-</div>
-
----
-
-{% if site.repo_trophies.enabled %}
-{% for user in site.data.repositories.github_users %}
-{% if site.data.repositories.github_users.size > 1 %}
-
-  <h4>{{ user }}</h4>
-  {% endif %}
-  <div class="repositories d-flex flex-wrap flex-md-row flex-column justify-content-between align-items-center">
-  {% include repository/repo_trophies.liquid username=user %}
-  </div>
-
----
-
-{% endfor %}
-{% endif %}
-{% endif %}
-
-{% if site.data.repositories.github_repos %}
-
-## GitHub Repositories
-
-<div class="repositories d-flex flex-wrap flex-md-row flex-column justify-content-between align-items-center">
-  {% for repo in site.data.repositories.github_repos %}
-    {% include repository/repo.liquid repository=repo %}
-  {% endfor %}
-</div>
-{% endif %}
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>Redirecting to projects</title>
+    <meta http-equiv="refresh" content="0; url={{ '/projects/' | relative_url }}">
+    <link rel="canonical" href="{{ '/projects/' | relative_url }}">
+  </head>
+  <body>
+    <p>The repositories now live on the <a href="{{ '/projects/' | relative_url }}">projects</a> page.</p>
+  </body>
+</html>

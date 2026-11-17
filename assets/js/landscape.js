@@ -283,35 +283,241 @@
     if (!window.matchMedia || !window.matchMedia("(prefers-reduced-motion: reduce)").matches) setInterval(tick, 120);
   }
 
-  // ---------- faint static backdrop for the secondary pages ----------
+  // ---------- backdrop for the secondary pages: fixed, follows the cursor over the whole page ----------
+  // The mesh is painted once to an off-screen canvas; each frame only copies it and draws the
+  // steepest-descent / ascent path through the point under the cursor (same idea as the About hero).
   function startBackdrop() {
     var cv = document.getElementById("sb-backdrop");
     if (!cv) return;
-    var timer = 0;
-    function paint() {
-      var dpr = Math.min(window.devicePixelRatio || 1, 1.5);
-      var W = Math.floor(innerWidth * dpr),
-        H = Math.floor(innerHeight * dpr);
-      if (cv.width !== W || cv.height !== H) {
-        cv.width = W;
-        cv.height = H;
-      }
-      var ctx = cv.getContext("2d");
-      ctx.clearRect(0, 0, W, H);
-      var light = document.documentElement.getAttribute("data-theme") === "light";
-      var seed = getSeed(true),
-        surf = makeSurface(seed),
-        view = makeView(W, H, dpr, seed);
-      drawMesh(ctx, surf, view, { light: light, alpha: 1, n: 44 });
+    var ctx = cv.getContext("2d"),
+      mesh = document.createElement("canvas"),
+      reduce = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    var surf = null,
+      view = null,
+      dpr = 1,
+      W = 0,
+      H = 0,
+      light = false;
+    var GRID = 40,
+      VX = new Float32Array((GRID + 1) * (GRID + 1)),
+      VY = new Float32Array((GRID + 1) * (GRID + 1));
+    var mx = 0,
+      my = 0,
+      active = false,
+      pt = null,
+      pathAlpha = 0,
+      path = null,
+      pathPts = [],
+      lastKey = "",
+      raf = 0,
+      timer = 0,
+      tp = [0, 0];
+
+    function build() {
+      dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      W = Math.floor(innerWidth * dpr);
+      H = Math.floor(innerHeight * dpr);
+      cv.width = mesh.width = W;
+      cv.height = mesh.height = H;
+      light = document.documentElement.getAttribute("data-theme") === "light";
+      var seed = getSeed(true);
+      surf = makeSurface(seed);
+      view = makeView(W, H, dpr, seed);
+      var mctx = mesh.getContext("2d");
+      mctx.clearRect(0, 0, W, H);
+      drawMesh(mctx, surf, view, { light: light, alpha: 1, n: 44, nodes: 0.25 });
+      var cell = (2 * HALF) / GRID,
+        a,
+        b,
+        k = 0;
+      for (a = 0; a <= GRID; a++)
+        for (b = 0; b <= GRID; b++, k++) {
+          var x = -HALF + cell * a,
+            y = -HALF + cell * b;
+          view.proj(x, y, surf.f(x, y), tp);
+          VX[k] = tp[0];
+          VY[k] = tp[1];
+        }
+      path = null;
+      pathPts = [];
+      lastKey = "";
+      pathAlpha = 0;
+      paint();
     }
-    paint();
+
+    function pick(px, py) {
+      var best = -1,
+        bd = Infinity,
+        n = VX.length,
+        i;
+      for (i = 0; i < n; i++) {
+        var dx = VX[i] - px,
+          dy = VY[i] - py,
+          d = dx * dx + dy * dy;
+        if (d < bd) {
+          bd = d;
+          best = i;
+        }
+      }
+      if (best < 0) return null;
+      var cell = (2 * HALF) / GRID,
+        x = -HALF + cell * Math.floor(best / (GRID + 1)),
+        y = -HALF + cell * (best % (GRID + 1)),
+        step = cell * 0.6,
+        bestD = bd;
+      for (var it = 0; it < 7; it++) {
+        var improved = false;
+        for (var k = 0; k < 8; k++) {
+          var ang = k * 0.7853982,
+            nx = x + Math.cos(ang) * step,
+            ny = y + Math.sin(ang) * step;
+          if (nx < -HALF || nx > HALF || ny < -HALF || ny > HALF) continue;
+          view.proj(nx, ny, surf.f(nx, ny), tp);
+          var d2 = (tp[0] - px) * (tp[0] - px) + (tp[1] - py) * (tp[1] - py);
+          if (d2 < bestD) {
+            bestD = d2;
+            x = nx;
+            y = ny;
+            improved = true;
+          }
+        }
+        if (!improved) step *= 0.5;
+      }
+      var reach = 90 * dpr; // the cursor has to be near the surface
+      return bestD < reach * reach ? { x: x, y: y } : null;
+    }
+
+    function step() {
+      var target = active ? pick(mx * dpr, my * dpr) : null;
+      if (target) {
+        if (!pt) pt = { x: target.x, y: target.y };
+        else {
+          pt.x += (target.x - pt.x) * 0.3;
+          pt.y += (target.y - pt.y) * 0.3;
+        }
+        pathAlpha += (1 - pathAlpha) * 0.2;
+        var key = pt.x.toFixed(3) + "," + pt.y.toFixed(3);
+        if (key !== lastKey) {
+          lastKey = key;
+          path = tracePath(surf, pt.x, pt.y);
+          pathPts = path.pts.map(function (q) {
+            view.proj(q[0], q[1], q[2], tp);
+            return [tp[0], tp[1], surf.h01(q[0], q[1])];
+          });
+        }
+      } else {
+        pathAlpha *= 0.86;
+        if (pathAlpha < 0.01) {
+          pathAlpha = 0;
+          pt = null;
+          path = null;
+          pathPts = [];
+          lastKey = "";
+        }
+      }
+      paint();
+      raf = active || pathAlpha > 0 ? requestAnimationFrame(step) : 0;
+    }
+
+    function paint() {
+      ctx.clearRect(0, 0, W, H);
+      ctx.drawImage(mesh, 0, 0);
+      if (!path || pathPts.length < 2 || pathAlpha <= 0.003) return;
+      var n = pathPts.length,
+        i,
+        hc = cycleHue(performance.now());
+      ctx.save();
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.globalAlpha = pathAlpha * (light ? 0.5 : 0.65);
+      ctx.shadowColor = "hsla(" + hc.toFixed(0) + ",100%," + (light ? 42 : 60) + "%,0.95)";
+      ctx.shadowBlur = (light ? 14 : 22) * dpr;
+      ctx.strokeStyle = "hsla(" + hc.toFixed(0) + ",100%," + (light ? 42 : 62) + "%,0.9)";
+      ctx.lineWidth = 3.4 * dpr;
+      ctx.beginPath();
+      ctx.moveTo(pathPts[0][0], pathPts[0][1]);
+      for (i = 1; i < n; i++) ctx.lineTo(pathPts[i][0], pathPts[i][1]);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+      ctx.shadowColor = "transparent";
+      ctx.globalAlpha = pathAlpha;
+      ctx.lineWidth = 2.1 * dpr;
+      for (i = 1; i < n; i++) {
+        var h = hueFor((pathPts[i][2] + pathPts[i - 1][2]) * 0.5);
+        ctx.strokeStyle = light ? "hsl(" + h.toFixed(0) + ",92%,34%)" : "hsl(" + h.toFixed(0) + ",100%,72%)";
+        ctx.beginPath();
+        ctx.moveTo(pathPts[i - 1][0], pathPts[i - 1][1]);
+        ctx.lineTo(pathPts[i][0], pathPts[i][1]);
+        ctx.stroke();
+      }
+      function dot(q, hue) {
+        ctx.fillStyle = light ? "hsl(" + hue + ",92%,36%)" : "hsl(" + hue + ",100%,70%)";
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 3.6 * dpr, 0, 6.2832);
+        ctx.fill();
+        ctx.strokeStyle = light ? "hsla(" + hue + ",92%,36%,.55)" : "hsla(" + hue + ",100%,75%,.6)";
+        ctx.lineWidth = 1.2 * dpr;
+        ctx.beginPath();
+        ctx.arc(q[0], q[1], 7.6 * dpr, 0, 6.2832);
+        ctx.stroke();
+      }
+      dot(pathPts[0], 150);
+      dot(pathPts[n - 1], 275);
+      var mid = pathPts[path.iStart] || pathPts[0];
+      ctx.fillStyle = light ? "#0a0e14" : "#ffffff";
+      ctx.beginPath();
+      ctx.arc(mid[0], mid[1], 3.2 * dpr, 0, 6.2832);
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function kick() {
+      if (!raf && !reduce) raf = requestAnimationFrame(step);
+    }
+    window.addEventListener(
+      "pointermove",
+      function (e) {
+        if (e.pointerType === "touch") return;
+        mx = e.clientX;
+        my = e.clientY;
+        active = true;
+        kick();
+      },
+      { passive: true }
+    );
+    document.addEventListener("pointerleave", function () {
+      active = false;
+      kick();
+    });
+    window.addEventListener(
+      "touchmove",
+      function (e) {
+        if (!e.touches[0]) return;
+        mx = e.touches[0].clientX;
+        my = e.touches[0].clientY;
+        active = true;
+        kick();
+      },
+      { passive: true }
+    );
+    window.addEventListener(
+      "touchend",
+      function () {
+        setTimeout(function () {
+          active = false;
+          kick();
+        }, 900);
+      },
+      { passive: true }
+    );
+    build();
     window.addEventListener("resize", function () {
       clearTimeout(timer);
-      timer = setTimeout(paint, 150);
+      timer = setTimeout(build, 150);
     });
     new MutationObserver(function () {
       clearTimeout(timer);
-      timer = setTimeout(paint, 30);
+      timer = setTimeout(build, 30);
     }).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
   }
 

@@ -195,7 +195,7 @@
         </a>
       {% endif %}
       {% if entry.abstract %}
-        <a class="abstract btn btn-sm z-depth-0" role="button">Abs</a>
+        <a class="sb-abs-open btn btn-sm z-depth-0" role="button" href="#abs-{{ entry.key }}" data-abs="abs-{{ entry.key }}">Abstract</a>
       {% endif %}
       {% if entry.doi %}
         <a href="https://doi.org/{{ entry.doi }}" class="btn btn-sm z-depth-0" role="button">DOI</a>
@@ -370,10 +370,8 @@
     {% endif %}
 
     {% if entry.abstract %}
-      <!-- Hidden abstract block -->
-      <div class="abstract hidden">
-        <p>{{ entry.abstract }}</p>
-      </div>
+      <!-- Abstract text, shown in the pop-up (assets/js/sb-ui.js) -->
+      <div class="sb-abs-src" id="abs-{{ entry.key }}" data-title="{{ entry.title | strip_html | escape }}" hidden>{{ entry.abstract }}</div>
     {% endif %}
 
     {% if entry.bibtex_show %}

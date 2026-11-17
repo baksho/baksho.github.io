@@ -10,4 +10,5 @@ external_source: Towards AI
 tags: deep-learning activation-functions
 related_posts: false
 redirect: https://pub.towardsai.net/to-relu-or-not-to-relu-a-practitioners-guide-to-solve-the-zombie-neuron-problem-in-deep-89a050a6b25b
+thumbnail: /assets/img/posts/relu-dead-zone.webp
 ---

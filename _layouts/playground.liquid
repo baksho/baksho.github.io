@@ -1,0 +1,23 @@
+---
+layout: default
+---
+{% assign pg = site.data.playgrounds | where: 'slug', page.app | first %}
+<div class="sb-pg-wrap">
+  <a class="sb-pg-back" href="{{ '/playgrounds/' | relative_url }}"><span aria-hidden="true">←</span> Back to playgrounds</a>
+  <h1 class="sb-pg-title">{{ pg.title | default: page.title }}</h1>
+  <p class="sb-pg-desc">{{ pg.description }}</p>
+  <iframe
+    id="sbPgFrame"
+    class="sb-pg-frame"
+    src="{{ '/assets/playgrounds/' | append: page.app | append: '.html' | relative_url }}"
+    title="{{ pg.title | default: page.title }}"
+    loading="lazy"
+  ></iframe>
+</div>
+<script>
+  // the playground tells us how tall it is (assets/playgrounds/sb-theme.js), so the frame grows with it
+  window.addEventListener('message', function (e) {
+    var f = document.getElementById('sbPgFrame');
+    if (f && e.source === f.contentWindow && e.data && e.data.sbPlayground && e.data.height) f.style.height = e.data.height + 'px';
+  });
+</script>

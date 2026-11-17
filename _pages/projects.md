@@ -5,61 +5,27 @@ permalink: /projects/
 description: Research and course projects.
 nav: true
 nav_order: 3
-display_categories: [] # categories are switched off in _config.yml (enable_project_categories)
-horizontal: true
 ---
 
-<!-- pages/projects.md -->
-<div class="projects">
-{% if site.enable_project_categories and page.display_categories %}
-  <!-- Display categorized projects -->
-  {% for category in page.display_categories %}
-  <a id="{{ category }}" href=".#{{ category }}">
-    <h2 class="category">{{ category }}</h2>
-  </a>
-  {% assign categorized_projects = site.projects | where: "category", category %}
-  {% assign sorted_projects = categorized_projects | sort: "importance" %}
-  <!-- Generate cards for each project -->
-  {% if page.horizontal %}
-  <div class="container">
-    <div class="row row-cols-1 row-cols-md-2">
-    {% for project in sorted_projects %}
-      {% include projects_horizontal.liquid %}
-    {% endfor %}
-    </div>
-  </div>
-  {% else %}
-  <div class="row row-cols-1 row-cols-md-3">
-    {% for project in sorted_projects %}
-      {% include projects.liquid %}
-    {% endfor %}
-  </div>
-  {% endif %}
-  {% endfor %}
-
-{% else %}
-
-<!-- Display projects without categories -->
-
+<!-- Image cards: picture on top, then title, description and the GitHub link. Add a project as a file in _projects/ (front matter: title, description, importance, thumb, github). -->
+<div class="sb-cards">
 {% assign sorted_projects = site.projects | sort: "importance" %}
-
-  <!-- Generate cards for each project -->
-
-{% if page.horizontal %}
-
-  <div class="container">
-    <div class="row row-cols-1 row-cols-md-2">
-    {% for project in sorted_projects %}
-      {% include projects_horizontal.liquid %}
-    {% endfor %}
-    </div>
-  </div>
-  {% else %}
-  <div class="row row-cols-1 row-cols-md-3">
-    {% for project in sorted_projects %}
-      {% include projects.liquid %}
-    {% endfor %}
-  </div>
-  {% endif %}
+{% for project in sorted_projects %}
+<article class="sb-card">
+{% if project.github %}<a class="sb-card-img" href="{{ project.github }}" target="_blank" rel="noopener" tabindex="-1" aria-hidden="true">{% else %}<a class="sb-card-img" href="{{ project.url | relative_url }}" tabindex="-1" aria-hidden="true">{% endif %}
+{% if project.thumb %}<img src="{{ project.thumb | relative_url }}" alt="" loading="lazy">{% endif %}
+</a>
+<div class="sb-card-body">
+<h3 class="sb-card-title">
+{% if project.github %}<a href="{{ project.github }}" target="_blank" rel="noopener">{{ project.title }}</a>{% else %}<a href="{{ project.url | relative_url }}">{{ project.title }}</a>{% endif %}
+</h3>
+<p class="sb-card-text">{{ project.description }}</p>
+{% if project.github %}
+<a class="sb-card-link" href="{{ project.github }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> View on GitHub</a>
+{% else %}
+<a class="sb-card-link" href="{{ project.url | relative_url }}">Read more <span aria-hidden="true">→</span></a>
 {% endif %}
+</div>
+</article>
+{% endfor %}
 </div>

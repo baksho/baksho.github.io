@@ -10,4 +10,5 @@ external_source: Towards AI
 tags: rag pageindex retrieval
 related_posts: false
 redirect: https://pub.towardsai.net/rag-without-vectors-why-pageindex-might-be-the-architecture-weve-been-missing-4563adf8fe09
+thumbnail: /assets/img/posts/pageindex.webp
 ---

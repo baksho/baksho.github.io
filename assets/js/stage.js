@@ -1242,7 +1242,8 @@
       return t.ph;
     });
   var fades = [].slice.call(document.querySelectorAll(".sb-fade"));
-  var navName = document.querySelector(".sb-brand .sb-name");
+  var navSlot = document.getElementById("sbNavIcons");
+  var navDock = false; // wide screens: the icons dock into the navbar
   var scrollHint = document.querySelector(".sb-scroll");
   var header = document.getElementById("navbar");
   var A = 0,
@@ -1254,17 +1255,31 @@
   function measure() {
     var y = window.pageYOffset || 0;
     var navH = header ? header.getBoundingClientRect().height : 60;
+    navDock = !!navSlot && innerWidth >= 1360;
+    root.classList.toggle("sb-nav-dock", navDock);
+    if (navSlot && !navDock) navSlot.style.width = "0px";
     travs.forEach(function (t) {
       // measure in the docked (static) state
-      t.el.classList.remove("flying");
+      t.el.classList.remove("flying", "sb-in-nav");
       t.el.style.cssText = "";
       t.slot.style.height = "";
+      t.nav = false;
     });
     travs.forEach(function (t) {
       var nat = t.el.getBoundingClientRect(),
         slotR = t.slot.getBoundingClientRect(),
         phR = t.ph.getBoundingClientRect();
       t.slot.style.height = nat.height + "px";
+      if (t.kind === "icons" && navDock) {
+        var kids = t.el.children,
+          iw = kids.length ? kids[kids.length - 1].getBoundingClientRect().right - kids[0].getBoundingClientRect().left : nat.width;
+        navSlot.style.width = Math.ceil(iw) + "px";
+        var nr = navSlot.getBoundingClientRect();
+        t.nav = true;
+        t.navX = nr.left + (window.pageXOffset || 0);
+        t.navY = nr.top + (nr.height - nat.height) / 2;
+        t.slot.style.height = "";
+      }
       t.sx = slotR.left + (window.pageXOffset || 0);
       t.sy = slotR.top + y;
       t.x0 = phR.left + (window.pageXOffset || 0);
@@ -1294,6 +1309,17 @@
       el.style.setProperty("--o-last", Math.min(1, Math.max(0, (p - 0.55) * 3)).toFixed(4));
       el.style.setProperty("--o-a", Math.min(1, Math.max(0, 1 - p * 2.4)).toFixed(4));
       el.style.setProperty("--o-b", Math.min(1, Math.max(0, (p - 0.35) * 2.2)).toFixed(4));
+      if (t.nav) {
+        // lives in the navbar once docked: stays "flying" (fixed) but ends on the navbar slot
+        el.classList.add("flying");
+        el.classList.toggle("sb-in-nav", isDocked);
+        var nx = lerp(t.x0, t.navX, e),
+          ny = lerp(t.y0, t.navY, e);
+        el.style.left = "0px";
+        el.style.top = "0px";
+        el.style.transform = "translate(" + nx.toFixed(2) + "px," + ny.toFixed(2) + "px)";
+        return;
+      }
       if (isDocked) {
         if (el.classList.contains("flying")) {
           el.classList.remove("flying");
@@ -1318,11 +1344,6 @@
       f.style.visibility = fo <= 0.01 ? "hidden" : "";
     });
     if (scrollHint) scrollHint.style.setProperty("--sb-scroll-o", Math.max(0, 1 - y / 90).toFixed(3));
-    if (navName) {
-      var slot0 = travs[0] ? travs[0].slot.getBoundingClientRect() : null;
-      var headVisible = slot0 ? slot0.bottom > (header ? header.getBoundingClientRect().height : 60) : false;
-      navName.style.opacity = (headVisible ? 1 - p : 1).toFixed(3);
-    }
     if (header) header.classList.toggle("sb-scrolled", y > 8);
     root.classList.toggle("sb-past-hero", y > innerHeight * 0.6);
     docked = isDocked;
@@ -1344,7 +1365,13 @@
     clearTimeout(rt);
     rt = setTimeout(measure, 120);
   });
-  window.addEventListener("load", measure);
+  window.addEventListener("load", function () {
+    measure();
+    setTimeout(measure, 400);
+  });
+  window.addEventListener("pageshow", function (e) {
+    if (e.persisted) measure();
+  });
   if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
   measure();
 })();

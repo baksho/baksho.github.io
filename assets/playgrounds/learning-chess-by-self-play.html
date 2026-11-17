@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Learning Chess by Self-Play</title>
+<style>
+  :root{--orange:#f59322;--blue:#0877bd;--navy:#1b3b4f;--red:#e8590c;--green:#2e9e5b;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1100px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:780px}
+  select,button{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px}
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 20px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #cnt{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  canvas{display:block}
+  .chartbox{margin-bottom:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+  .chartframe canvas{max-width:100%}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0 4px;font-size:12px;color:#555}
+  .chips span{display:inline-flex;align-items:center;gap:6px}
+  .chips i{display:inline-block;width:22px;height:0;border-top:3px solid}
+  #bd{width:100%;max-width:400px;height:auto;border-radius:4px;cursor:pointer}
+  #status{margin:8px 0 6px;font-size:13px;padding:6px 9px;border-radius:5px;background:#f3f5f6;color:#333;min-height:32px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .row2 label{font-size:12.5px;color:#555}
+  .sbtn{border:1px solid #ccc;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12.5px}
+  .sbtn:hover{background:#f0f0f0}
+  #moves{font-size:12px;color:#555;max-height:76px;overflow:auto;border:1px solid #eee;border-radius:5px;padding:5px 8px;background:#fcfcfc;line-height:1.6}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Learning Chess by Self-Play</h1>
+  <p class="blurb">The agent starts knowing the rules of chess and nothing else: it thinks every piece is worth zero. It plays full games against itself, learns from who wins, and slowly works out how much each piece is worth. Watch the values settle, then play it yourself.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="reset" title="Start over from zero">&#8635;</button>
+      <button class="btn" id="play" title="Pause / resume">&#10074;&#10074;</button>
+    </div>
+    <div class="grp"><label>Self-play games</label><div id="cnt">0</div></div>
+    <div class="grp"><label>Wins against a random mover</label><div id="vsr" style="font-size:24px;font-weight:300">…</div></div>
+    <div class="grp"><label for="speed">Speed</label><select id="speed"><option value="slow">Slow (watch)</option><option value="normal">Normal</option><option value="max" selected>Fast</option></select></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="chartbox">
+        <div class="ct">What the agent thinks each piece is worth (a pawn = 1)</div>
+        <div class="chartframe"><canvas id="bars"></canvas></div>
+        <div class="note">Bars show the learned values now. The dashed marks are the values chess players usually quote (3, 3, 5, 9); the agent is never told them.</div>
+      </div>
+      <div class="chartbox">
+        <div class="ct">How the values changed while it learned</div>
+        <div class="chartframe"><canvas id="hist"></canvas></div>
+        <div class="chips" id="chips"></div>
+        <div class="note">The lines keep wobbling because every game nudges the numbers, so the ratios hover around typical values instead of settling exactly. The pawn is the reference, so its wobble moves all the other lines.</div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head">Play against it</div>
+      <canvas id="bd"></canvas>
+      <div id="status"></div>
+      <div class="row2">
+        <label>You play <select id="mycol" style="min-width:70px"><option value="w">White</option><option value="b">Black</option></select></label>
+        <label>Its search depth <select id="pdepth" style="min-width:60px"><option>1</option><option selected>2</option><option>3</option></select></label>
+        <button class="sbtn" id="newgame">New game</button>
+        <button class="sbtn" id="undo">Undo</button>
+      </div>
+      <div id="moves"></div>
+      <p class="note">It plays with whatever it has learned so far, so give it a minute of training first. Pawns promote to queens.</p>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>Honest expectations.</b> This is a small learner in a browser tab. It learns sensible piece values and gets clearly better than a random mover, but it stays a weak chess player. It does not learn strategy.</div>
+    <h3>What is learned</h3>
+    <p>Five numbers: the value of a pawn, knight, bishop, rook and queen. A position's score is your pieces' values minus the opponent's. The agent picks moves with a short look-ahead search that uses this score.</p>
+    <h3>How it learns</h3>
+    <p>It plays itself. After each game it nudges its five numbers so that the score of each position agrees better with the score of the next one, and ultimately with how the game ended (a method called TD-leaf(λ)). Pieces that tend to be on the winning side get a higher value.</p>
+    <h3>One shortcut you should know about</h3>
+    <p>Early games between a clueless agent rarely end in checkmate. Games that run past 120 moves are therefore scored by who is ahead in material instead of as a draw. That is a hint built in by me, not something the agent discovered, and it nudges it towards valuing material.</p>
+    <h3>What the bars mean</h3>
+    <p>Only the ratios matter, so the values are shown with a pawn as 1. Early on the pawn's value is near zero and the ratios jump around; they settle as games accumulate. They will not match 3, 3, 5, 9 exactly.</p>
+    <h3>The "wins against a random mover" number</h3>
+    <p>Every 200 games the agent plays 30 games against a mover that picks random legal moves, alternating colours, learning off. The figure is wins plus half the draws, out of 30, so it is noisy by roughly ±0.09.</p>
+    <h3>References</h3>
+    <ul>
+      <li>R. S. Sutton and A. G. Barto, <i>Reinforcement Learning: An Introduction</i>, 2nd edition, MIT Press, 2018. ISBN 978-0-262-03924-6.</li>
+      <li>J. Baxter, A. Tridgell and L. Weaver, "TDLeaf(λ): Combining Temporal Difference Learning with Game-Tree Search", <i>Australian Journal of Intelligent Information Processing Systems</i>, 5(1), 39–43, 1998. arXiv:cs/9901001.</li>
+      <li>J. Baxter, A. Tridgell and L. Weaver, "Learning to Play Chess Using Temporal Differences", <i>Machine Learning</i>, 40(3), 2000. The longer account of the same method, applied in their chess program KnightCap.</li>
+    </ul>
+  </div>
+</div>
+
+<script id="eng">/* Chess rules engine (0x88 board). Plain JS, no dependencies.
+ * Pieces: white +1..+6, black -1..-6 (P N B R Q K). Squares: rank*16+file, a1 = 0, h8 = 119.
+ * Moves are ints: from | to<<7 | promo<<14 | flags (capture 1<<17, en passant 1<<18, castle 1<<19, double push 1<<20). */
+(function (root) {
+"use strict";
+const P = 1, N = 2, B = 3, R = 4, Q = 5, K = 6, WHITE = 1, BLACK = -1;
+const F_CAP = 1 << 17, F_EP = 1 << 18, F_CASTLE = 1 << 19, F_DBL = 1 << 20;
+const KN = [33, 31, 18, 14, -33, -31, -18, -14], BI = [17, 15, -17, -15], RO = [16, -16, 1, -1], KI = [17, 15, -17, -15, 16, -16, 1, -1];
+const KEEP = new Uint8Array(128).fill(15);
+KEEP[4] = 12; KEEP[0] = 13; KEEP[7] = 14; KEEP[116] = 3; KEEP[112] = 7; KEEP[119] = 11;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+const rng = mulberry32(20241111), rk = () => (rng()*4294967296)|0;
+const ZP1 = new Int32Array(13*128), ZP2 = new Int32Array(13*128), ZC1 = new Int32Array(16), ZC2 = new Int32Array(16), ZE1 = new Int32Array(8), ZE2 = new Int32Array(8);
+for (let i=0;i<ZP1.length;i++) { ZP1[i] = rk(); ZP2[i] = rk(); }
+for (let i=0;i<16;i++) { ZC1[i] = rk(); ZC2[i] = rk(); }
+for (let i=0;i<8;i++) { ZE1[i] = rk(); ZE2[i] = rk(); }
+const ZS1 = rk(), ZS2 = rk();
+const MAXPLY = 1024;
+
+function Position() {
+  this.b = new Int8Array(128); this.side = WHITE; this.castle = 0; this.ep = -1; this.half = 0; this.full = 1;
+  this.ksq = [4, 116]; this.h1 = 0; this.h2 = 0; this.p = 0;
+  this.sCap = new Int8Array(MAXPLY); this.sCastle = new Uint8Array(MAXPLY); this.sEp = new Int16Array(MAXPLY); this.sHalf = new Int16Array(MAXPLY);
+  this.sH1 = new Int32Array(MAXPLY); this.sH2 = new Int32Array(MAXPLY);
+  this.hist1 = new Int32Array(MAXPLY); this.hist2 = new Int32Array(MAXPLY);
+}
+const PP = Position.prototype;
+const isSq = s => (s & 0x88) === 0;
+const sqName = s => String.fromCharCode(97 + (s & 7)) + String.fromCharCode(49 + (s >> 4));
+const sqFrom = str => (str.charCodeAt(0) - 97) + (str.charCodeAt(1) - 49)*16;
+
+PP.computeHash = function () {
+  let a = 0, c = 0;
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++) { const s = r*16+f, p = this.b[s]; if (p) { a ^= ZP1[(p+6)*128+s]; c ^= ZP2[(p+6)*128+s]; } }
+  if (this.side === BLACK) { a ^= ZS1; c ^= ZS2; }
+  a ^= ZC1[this.castle]; c ^= ZC2[this.castle];
+  if (this.ep >= 0) { a ^= ZE1[this.ep & 7]; c ^= ZE2[this.ep & 7]; }
+  this.h1 = a; this.h2 = c;
+};
+PP.setFEN = function (fen) {
+  const parts = fen.trim().split(/\s+/); this.b.fill(0);
+  let r = 7, f = 0; const map = {p:1,n:2,b:3,r:4,q:5,k:6};
+  for (const ch of parts[0]) {
+    if (ch === "/") { r--; f = 0; }
+    else if (ch >= "1" && ch <= "8") f += +ch;
+    else { const lc = ch.toLowerCase(), v = map[lc]; const s = r*16+f; this.b[s] = ch === lc ? -v : v; if (v === 6) this.ksq[ch === lc ? 1 : 0] = s; f++; }
+  }
+  this.side = (parts[1] || "w") === "w" ? WHITE : BLACK; this.castle = 0;
+  const cs = parts[2] || "-";
+  if (cs.includes("K")) this.castle |= 1; if (cs.includes("Q")) this.castle |= 2; if (cs.includes("k")) this.castle |= 4; if (cs.includes("q")) this.castle |= 8;
+  this.ep = parts[3] && parts[3] !== "-" ? sqFrom(parts[3]) : -1; this.half = +(parts[4] || 0); this.full = +(parts[5] || 1);
+  this.p = 0; this.computeHash(); this.hist1[0] = this.h1; this.hist2[0] = this.h2; return this;
+};
+PP.getFEN = function () {
+  const sym = ".PNBRQK"; let out = "";
+  for (let r=7;r>=0;r--) { let e = 0; for (let f=0;f<8;f++) { const p = this.b[r*16+f]; if (!p) { e++; continue; } if (e) { out += e; e = 0; } const c = sym[Math.abs(p)]; out += p > 0 ? c : c.toLowerCase(); } if (e) out += e; if (r) out += "/"; }
+  const cs = (this.castle & 1 ? "K" : "") + (this.castle & 2 ? "Q" : "") + (this.castle & 4 ? "k" : "") + (this.castle & 8 ? "q" : "");
+  return `${out} ${this.side === WHITE ? "w" : "b"} ${cs || "-"} ${this.ep >= 0 ? sqName(this.ep) : "-"} ${this.half} ${this.full}`;
+};
+const START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+PP.reset = function () { return this.setFEN(START); };
+PP.copyFrom = function (o) { this.b.set(o.b); this.side = o.side; this.castle = o.castle; this.ep = o.ep; this.half = o.half; this.full = o.full; this.ksq = [o.ksq[0], o.ksq[1]]; this.h1 = o.h1; this.h2 = o.h2; this.p = 0; this.hist1[0] = this.h1; this.hist2[0] = this.h2; return this; };
+
+PP.attacked = function (sq, by) {                     // is `sq` attacked by side `by` (+1 white, -1 black)?
+  const b = this.b;
+  const pa = by === WHITE ? [sq-15, sq-17] : [sq+15, sq+17];
+  for (const s of pa) if (isSq(s) && b[s] === by*P) return true;
+  for (const o of KN) { const s = sq+o; if (isSq(s) && b[s] === by*N) return true; }
+  for (const o of KI) { const s = sq+o; if (isSq(s) && b[s] === by*K) return true; }
+  for (const o of BI) { let s = sq+o; while (isSq(s)) { const c = b[s]; if (c) { if (c === by*B || c === by*Q) return true; break; } s += o; } }
+  for (const o of RO) { let s = sq+o; while (isSq(s)) { const c = b[s]; if (c) { if (c === by*R || c === by*Q) return true; break; } s += o; } }
+  return false;
+};
+PP.inCheck = function () { return this.attacked(this.ksq[this.side === WHITE ? 0 : 1], -this.side); };
+
+/* pseudo-legal moves into list; caps = captures (and queen promotions) only. returns count */
+PP.gen = function (list, caps) {
+  const b = this.b, side = this.side; let n = 0;
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++) {
+    const sq = r*16+f, piece = b[sq], t = piece*side; if (t <= 0) continue;
+    if (t === P) {
+      const dir = side*16, startRank = side === 1 ? 1 : 6, lastRank = side === 1 ? 6 : 1;
+      let to = sq+dir;
+      if (b[to] === 0) {
+        if (r === lastRank) { if (caps) list[n++] = sq | to<<7 | Q<<14; else { list[n++] = sq | to<<7 | Q<<14; list[n++] = sq | to<<7 | R<<14; list[n++] = sq | to<<7 | B<<14; list[n++] = sq | to<<7 | N<<14; } }
+        else if (!caps) { list[n++] = sq | to<<7; if (r === startRank && b[to+dir] === 0) list[n++] = sq | (to+dir)<<7 | F_DBL; }
+      }
+      for (const d of [dir-1, dir+1]) {
+        to = sq+d; if (!isSq(to)) continue; const c = b[to];
+        if (c*side < 0) {
+          if (r === lastRank) { list[n++] = sq | to<<7 | Q<<14 | F_CAP; if (!caps) { list[n++] = sq | to<<7 | R<<14 | F_CAP; list[n++] = sq | to<<7 | B<<14 | F_CAP; list[n++] = sq | to<<7 | N<<14 | F_CAP; } }
+          else list[n++] = sq | to<<7 | F_CAP;
+        } else if (c === 0 && to === this.ep) list[n++] = sq | to<<7 | F_EP | F_CAP;
+      }
+    } else if (t === N || t === K) {
+      const offs = t === N ? KN : KI;
+      for (const o of offs) { const to = sq+o; if (!isSq(to)) continue; const c = b[to]; if (c === 0) { if (!caps) list[n++] = sq | to<<7; } else if (c*side < 0) list[n++] = sq | to<<7 | F_CAP; }
+    } else {
+      const offs = t === B ? BI : t === R ? RO : KI;
+      for (const o of offs) { let to = sq+o; while (isSq(to)) { const c = b[to]; if (c === 0) { if (!caps) list[n++] = sq | to<<7; } else { if (c*side < 0) list[n++] = sq | to<<7 | F_CAP; break; } to += o; } }
+    }
+  }
+  if (!caps) {
+    if (side === WHITE && this.ksq[0] === 4) {
+      if ((this.castle & 1) && !b[5] && !b[6] && b[7] === R && !this.attacked(4,-1) && !this.attacked(5,-1) && !this.attacked(6,-1)) list[n++] = 4 | 6<<7 | F_CASTLE;
+      if ((this.castle & 2) && !b[3] && !b[2] && !b[1] && b[0] === R && !this.attacked(4,-1) && !this.attacked(3,-1) && !this.attacked(2,-1)) list[n++] = 4 | 2<<7 | F_CASTLE;
+    } else if (side === BLACK && this.ksq[1] === 116) {
+      if ((this.castle & 4) && !b[117] && !b[118] && b[119] === -R && !this.attacked(116,1) && !this.attacked(117,1) && !this.attacked(118,1)) list[n++] = 116 | 118<<7 | F_CASTLE;
+      if ((this.castle & 8) && !b[115] && !b[114] && !b[113] && b[112] === -R && !this.attacked(116,1) && !this.attacked(115,1) && !this.attacked(114,1)) list[n++] = 116 | 114<<7 | F_CASTLE;
+    }
+  }
+  return n;
+};
+
+PP.make = function (m) {
+  const b = this.b, side = this.side, from = m & 127, to = (m >> 7) & 127, promo = (m >> 14) & 7, p = this.p;
+  const piece = b[from]; let cap = b[to], capSq = to, h1 = this.h1, h2 = this.h2;
+  this.sCastle[p] = this.castle; this.sEp[p] = this.ep; this.sHalf[p] = this.half; this.sH1[p] = h1; this.sH2[p] = h2;
+  if (m & F_EP) { capSq = to - side*16; cap = b[capSq]; b[capSq] = 0; }
+  this.sCap[p] = cap;
+  const np = promo ? side*promo : piece;
+  b[to] = np; b[from] = 0;
+  h1 ^= ZP1[(piece+6)*128+from] ^ ZP1[(np+6)*128+to]; h2 ^= ZP2[(piece+6)*128+from] ^ ZP2[(np+6)*128+to];
+  if (cap) { h1 ^= ZP1[(cap+6)*128+capSq]; h2 ^= ZP2[(cap+6)*128+capSq]; }
+  if (m & F_CASTLE) {
+    const rf = to > from ? to+1 : to-2, rt = to > from ? to-1 : to+1, rook = b[rf];
+    b[rt] = rook; b[rf] = 0; h1 ^= ZP1[(rook+6)*128+rf] ^ ZP1[(rook+6)*128+rt]; h2 ^= ZP2[(rook+6)*128+rf] ^ ZP2[(rook+6)*128+rt];
+  }
+  if (Math.abs(piece) === K) this.ksq[side === WHITE ? 0 : 1] = to;
+  const oc = this.castle; this.castle &= KEEP[from] & KEEP[to];
+  h1 ^= ZC1[oc] ^ ZC1[this.castle]; h2 ^= ZC2[oc] ^ ZC2[this.castle];
+  if (this.ep >= 0) { h1 ^= ZE1[this.ep & 7]; h2 ^= ZE2[this.ep & 7]; }
+  this.ep = (m & F_DBL) ? from + side*16 : -1;
+  if (this.ep >= 0) { h1 ^= ZE1[this.ep & 7]; h2 ^= ZE2[this.ep & 7]; }
+  this.half = (Math.abs(piece) === P || cap) ? 0 : this.half + 1;
+  if (side === BLACK) this.full++;
+  this.side = -side; h1 ^= ZS1; h2 ^= ZS2; this.h1 = h1; this.h2 = h2;
+  this.p = p + 1; this.hist1[this.p] = h1; this.hist2[this.p] = h2;
+};
+PP.unmake = function (m) {
+  const b = this.b, from = m & 127, to = (m >> 7) & 127, promo = (m >> 14) & 7, p = this.p - 1; this.p = p;
+  const side = -this.side; this.side = side;
+  const cap = this.sCap[p], moved = promo ? side*P : b[to];
+  b[from] = moved;
+  if (m & F_EP) { b[to] = 0; b[to - side*16] = cap; } else b[to] = cap;
+  if (m & F_CASTLE) { const rf = to > from ? to+1 : to-2, rt = to > from ? to-1 : to+1; b[rf] = b[rt]; b[rt] = 0; }
+  if (Math.abs(moved) === K) this.ksq[side === WHITE ? 0 : 1] = from;
+  this.castle = this.sCastle[p]; this.ep = this.sEp[p]; this.half = this.sHalf[p]; this.h1 = this.sH1[p]; this.h2 = this.sH2[p];
+  if (side === BLACK) this.full--;
+};
+PP.legal = function (list) {
+  const n = this.gen(list, false), me = this.side; let j = 0;
+  for (let i=0;i<n;i++) { const m = list[i]; this.make(m); if (!this.attacked(this.ksq[me === WHITE ? 0 : 1], -me)) list[j++] = m; this.unmake(m); }
+  return j;
+};
+PP.isLegalMove = function (m) { const me = this.side; this.make(m); const ok = !this.attacked(this.ksq[me === WHITE ? 0 : 1], -me); this.unmake(m); return ok; };
+
+/* draws */
+PP.repetitions = function () {
+  let c = 1; const lim = Math.max(0, this.p - this.half);
+  for (let i = this.p - 2; i >= lim; i -= 2) if (this.hist1[i] === this.h1 && this.hist2[i] === this.h2) c++;
+  return c;
+};
+PP.insufficient = function () {
+  let minors = 0, bishopsSq = [], other = false;
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++) { const t = Math.abs(this.b[r*16+f]); if (t === P || t === R || t === Q) other = true; else if (t === N) minors++; else if (t === B) { minors++; bishopsSq.push((r+f)&1); } }
+  if (other) return false;
+  if (minors <= 1) return true;
+  if (minors === bishopsSq.length && bishopsSq.every(c => c === bishopsSq[0])) return true;   // only same-coloured bishops
+  return false;
+};
+const LISTS = [new Int32Array(256)];
+/* game status after the position: "ongoing" | "checkmate" (side to move is mated) | "stalemate" | "fifty" | "repetition" | "insufficient" */
+PP.status = function () {
+  const l = LISTS[0], n = this.legal(l);
+  if (n === 0) return this.inCheck() ? "checkmate" : "stalemate";
+  if (this.insufficient()) return "insufficient";
+  if (this.half >= 100) return "fifty";
+  if (this.repetitions() >= 3) return "repetition";
+  return "ongoing";
+};
+
+function mstr(m) { const pr = (m >> 14) & 7; return sqName(m & 127) + sqName((m >> 7) & 127) + (pr ? " pnbrqk"[pr] : ""); }
+PP.parseMove = function (s) {
+  const l = new Int32Array(256), n = this.legal(l);
+  for (let i=0;i<n;i++) if (mstr(l[i]) === s) return l[i];
+  return 0;
+};
+function perft(pos, depth, lists) {
+  if (depth === 0) return 1;
+  const l = lists[depth], n = pos.gen(l, false), me = pos.side; let nodes = 0;
+  for (let i=0;i<n;i++) { const m = l[i]; pos.make(m); if (!pos.attacked(pos.ksq[me === WHITE ? 0 : 1], -me)) nodes += depth === 1 ? 1 : perft(pos, depth-1, lists); pos.unmake(m); }
+  return nodes;
+}
+const perftRun = (pos, d) => perft(pos, d, Array.from({length:d+1}, () => new Int32Array(256)));
+
+const api = {Position, START, P, N, B, R, Q, K, WHITE, BLACK, F_CAP, F_EP, F_CASTLE, F_DBL, sqName, sqFrom, mstr, perft: perftRun, KN, BI, RO, KI};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.Chess = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
+<script type="text/plain" id="rlsrc">/* Learning agents for chess: evaluation functions trained by TD-leaf(lambda) self-play.
+ * Evaluations are scored from the point of view of the side to move, in "pawn" units. Needs engine.js (global Chess). */
+(function (root) {
+"use strict";
+const C = root.Chess || require("./engine.js");
+const {Position, WHITE, BLACK, P, N, B, R, Q, K} = C;
+const MATE = 100, SQUASH = 4;
+const squash = s => Math.tanh(s / SQUASH);
+const PVAL = [0, 1, 3, 3, 5, 9, 0];
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gaussian(r){ const u = r() || 1e-12, v = r(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+
+/* ---------- sparse feature extraction (relative to the side to move) ---------- */
+const FI = new Int16Array(80), FV = new Int8Array(80);
+function exMat(pos) {                      // 5 material features: own minus opponent count of P N B R Q
+  const b = pos.b, side = pos.side; let n = 0;
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++) { const p = b[r*16+f]; if (!p) continue; const t = p < 0 ? -p : p; if (t === 6) continue; FI[n] = t-1; FV[n] = p*side > 0 ? 1 : -1; n++; }
+  return n;
+}
+function exPST(pos) {                      // material + piece-square: 5 + 6*64 features
+  const b = pos.b, side = pos.side; let n = 0;
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++) {
+    const p = b[r*16+f]; if (!p) continue; const t = p < 0 ? -p : p, v = p*side > 0 ? 1 : -1, rr = p > 0 ? r : 7-r;
+    if (t !== 6) { FI[n] = t-1; FV[n] = v; n++; }
+    FI[n] = 5 + (t-1)*64 + rr*8 + f; FV[n] = v; n++;
+  }
+  return n;
+}
+function exNN(pos) {                       // 768 binary inputs: own / opponent pieces, board seen from the side to move
+  const b = pos.b, side = pos.side; let n = 0;
+  for (let r=0;r<8;r++) for (let f=0;f<8;f++) {
+    const p = b[r*16+f]; if (!p) continue; const t = p < 0 ? -p : p, own = p*side > 0, rr = side === WHITE ? r : 7-r;
+    FI[n] = ((own ? 0 : 6) + t-1)*64 + rr*8 + f; FV[n] = 1; n++;
+  }
+  return n;
+}
+
+/* ---------- agents ---------- */
+function LinearAgent(kind, seed) {
+  this.kind = kind; this.nf = kind === "mat" ? 5 : 389; this.w = new Float64Array(this.nf); this.ex = kind === "mat" ? exMat : exPST;
+}
+LinearAgent.prototype.score = function (pos) { const n = this.ex(pos), w = this.w; let s = 0; for (let i=0;i<n;i++) s += w[FI[i]]*FV[i]; return s; };
+LinearAgent.prototype.train = function (pos, coef) { const n = this.ex(pos), w = this.w; for (let i=0;i<n;i++) w[FI[i]] += coef*FV[i]; };
+LinearAgent.prototype.getWeights = function () { return this.w.slice(); };
+LinearAgent.prototype.setWeights = function (w) { this.w.set(w); };
+LinearAgent.prototype.paramCount = function () { return this.nf; };
+
+function NNAgent(H, seed) {
+  this.kind = "nn"; this.H = H; const r = mulberry32(seed || 1);
+  this.W1 = new Float32Array(768*H); this.b1 = new Float32Array(H); this.w2 = new Float32Array(H); this.b2 = 0; this.a = new Float32Array(H); this.z = new Float32Array(H);
+  const s1 = 0.25, s2 = 0.1;
+  for (let i=0;i<this.W1.length;i++) this.W1[i] = gaussian(r)*s1/Math.sqrt(16);
+  for (let i=0;i<H;i++) this.w2[i] = gaussian(r)*s2;
+}
+NNAgent.prototype.fwd = function (pos) {
+  const n = exNN(pos), H = this.H, W1 = this.W1, a = this.a; let s = this.b2;
+  for (let h=0;h<H;h++) { let z = this.b1[h]; for (let i=0;i<n;i++) z += W1[FI[i]*H+h]; const t = Math.tanh(z); a[h] = t; s += this.w2[h]*t; }
+  return {s, n};
+};
+NNAgent.prototype.score = function (pos) { return this.fwd(pos).s; };
+NNAgent.prototype.train = function (pos, coef) {
+  const {n} = this.fwd(pos), H = this.H, W1 = this.W1, a = this.a;
+  for (let h=0;h<H;h++) {
+    const dz = coef*this.w2[h]*(1 - a[h]*a[h]);
+    this.w2[h] += coef*a[h];
+    this.b1[h] += dz;
+    for (let i=0;i<n;i++) W1[FI[i]*H+h] += dz;
+  }
+  this.b2 += coef;
+};
+NNAgent.prototype.getWeights = function () { return {W1:this.W1.slice(), b1:this.b1.slice(), w2:this.w2.slice(), b2:this.b2}; };
+NNAgent.prototype.paramCount = function () { return 768*this.H + 2*this.H + 1; };
+
+/* ---------- search: alpha-beta + capture quiescence, with a principal variation ---------- */
+const MAXD = 16, QMAX = 10;
+function Searcher() {
+  this.lists = Array.from({length: MAXD+40}, () => new Int32Array(256));
+  this.sc = Array.from({length: MAXD+40}, () => new Int32Array(256));
+  this.pv = Array.from({length: MAXD+40}, () => new Int32Array(MAXD+40)); this.pvLen = new Int32Array(MAXD+40);
+  this.nodes = 0; this.nodeLimit = 4000; this.agent = null; this.pos = null; this.rnd = Math.random;
+}
+function order(list, sc, n, pos, rnd) {
+  for (let i=0;i<n;i++) {
+    const m = list[i]; let s = rnd ? rnd()*0.5 : 0;
+    if (m & C.F_CAP) { const v = (m & C.F_EP) ? 1 : Math.abs(pos.b[(m >> 7) & 127]); s += 1000 + v*10 - Math.abs(pos.b[m & 127]); }
+    if ((m >> 14) & 7) s += 900;
+    sc[i] = s*8 | 0;
+  }
+  for (let i=1;i<n;i++) { const m = list[i], s = sc[i]; let j = i-1; while (j >= 0 && sc[j] < s) { list[j+1] = list[j]; sc[j+1] = sc[j]; j--; } list[j+1] = m; sc[j+1] = s; }
+}
+Searcher.prototype.qs = function (alpha, beta, ply, qd) {
+  const pos = this.pos; this.nodes++; this.pvLen[ply] = ply;
+  const stand = this.agent.score(pos); if (qd >= QMAX || this.nodes > this.nodeLimit || stand >= beta) return stand;
+  let best = stand; if (stand > alpha) alpha = stand;
+  const list = this.lists[ply], n = pos.gen(list, true); order(list, this.sc[ply], n, pos, null); const me = pos.side;
+  for (let i=0;i<n;i++) {
+    const m = list[i]; pos.make(m);
+    if (pos.attacked(pos.ksq[me === WHITE ? 0 : 1], -me)) { pos.unmake(m); continue; }
+    const s = -this.qs(-beta, -alpha, ply+1, qd+1); pos.unmake(m);
+    if (s > best) { best = s; if (s > alpha) { alpha = s; const pv = this.pv[ply]; pv[ply] = m; const nx = this.pv[ply+1], L = this.pvLen[ply+1]; for (let k=ply+1;k<L;k++) pv[k] = nx[k]; this.pvLen[ply] = L; if (s >= beta) break; } }
+  }
+  return best;
+};
+Searcher.prototype.ab = function (depth, alpha, beta, ply, root) {
+  const pos = this.pos; this.pvLen[ply] = ply;
+  if (depth <= 0) return this.qs(alpha, beta, ply, 0);
+  this.nodes++;
+  const list = this.lists[ply], n = pos.gen(list, false); order(list, this.sc[ply], n, pos, root ? this.rnd : null); const me = pos.side;
+  let best = -1e9, any = false;
+  for (let i=0;i<n;i++) {
+    const m = list[i]; pos.make(m);
+    if (pos.attacked(pos.ksq[me === WHITE ? 0 : 1], -me)) { pos.unmake(m); continue; }
+    any = true; const s = -this.ab(depth-1, -beta, -alpha, ply+1, false); pos.unmake(m);
+    if (s > best) { best = s; if (s > alpha) { alpha = s; const pv = this.pv[ply]; pv[ply] = m; const nx = this.pv[ply+1], L = this.pvLen[ply+1]; for (let k=ply+1;k<L;k++) pv[k] = nx[k]; this.pvLen[ply] = L; if (s >= beta) break; } }
+  }
+  if (!any) { this.pvLen[ply] = ply; return pos.inCheck() ? -MATE + ply : 0; }
+  return best;
+};
+/* returns {move, score, pv:[...]} ; score is from the side to move's point of view */
+Searcher.prototype.search = function (pos, agent, depth, rnd) {
+  this.pos = pos; this.agent = agent; this.nodes = 0; this.rnd = rnd || Math.random;
+  const score = this.ab(depth, -1e9, 1e9, 0, true), L = this.pvLen[0], pv = [];
+  for (let i=0;i<L;i++) pv.push(this.pv[0][i]);
+  return {move: pv.length ? pv[0] : 0, score, pv};
+};
+
+/* ---------- games ---------- */
+const material = pos => { let s = 0; for (let r=0;r<8;r++) for (let f=0;f<8;f++) { const p = pos.b[r*16+f]; if (p) s += (p > 0 ? 1 : -1)*PVAL[p < 0 ? -p : p]; } return s; };
+const RESULT = {checkmate: null, stalemate: 0, fifty: 0, repetition: 0, insufficient: 0};
+
+/* plays one game; if learn, returns TD-leaf records. agents: {w, b} (may be the same object). */
+function playGame(agents, cfg, rnd, record) {
+  const pos = new Position().reset(), searcher = cfg.searcher || new Searcher(), recs = [], list = new Int32Array(256), mvs = [];
+  let result = 0, reason = "cap", ply = 0;
+  const depths = cfg.depths || {w: cfg.depth, b: cfg.depth};
+  for (; ply < cfg.maxPlies; ply++) {
+    const st = pos.status();
+    if (st !== "ongoing") { reason = st; result = st === "checkmate" ? (pos.side === WHITE ? -1 : 1) : 0; break; }
+    const ag = pos.side === WHITE ? agents.w : agents.b, dp = pos.side === WHITE ? depths.w : depths.b, eps = pos.side === WHITE ? (cfg.epsW ?? cfg.eps ?? 0) : (cfg.epsB ?? cfg.eps ?? 0);
+    let mv;
+    if (ag === "random") { const n = pos.legal(list); mv = list[(rnd()*n)|0]; }
+    else {
+      const res = searcher.search(pos, ag, dp, rnd);
+      mv = res.move;
+      if (record) {
+        let sc = res.score; const rootSide = pos.side, fixed = Math.abs(sc) > MATE - 50;
+        const tmp = pos; let k = 0; for (const m of res.pv) { tmp.make(m); k++; }
+        const leafB = tmp.b.slice(), leafSide = tmp.side; for (let i=k-1;i>=0;i--) tmp.unmake(res.pv[i]);
+        recs.push({b: leafB, side: leafSide, rW: rootSide*squash(sc), fixed, rootScore: sc});
+      }
+      if (eps > 0 && rnd() < eps) { const n = pos.legal(list); mv = list[(rnd()*n)|0]; }
+    }
+    pos.make(mv); if (cfg.keepMoves) mvs.push(mv);
+  }
+  let z = result;
+  if (reason === "cap") { const adj = cfg.adjudicate || 0; z = adj > 0 ? adj*Math.tanh(material(pos)/3) : 0; }
+  return {result, z, plies: ply, reason, recs, final: pos.getFEN(), mat: material(pos), moves: mvs};
+}
+
+/* TD-leaf(lambda) update from a finished game's records */
+function tdUpdate(agent, game, cfg) {
+  const recs = game.recs, T = recs.length; if (!T) return 0;
+  const lam = cfg.lambda, lr = cfg.lr; let e = 0, sumAbs = 0;
+  for (let t=T-1;t>=0;t--) {
+    const next = t === T-1 ? game.z : recs[t+1].rW, d = next - recs[t].rW;
+    e = d + lam*e; sumAbs += Math.abs(d);
+    if (recs[t].fixed || e === 0) continue;
+    const leaf = recs[t]; const s = agent.score(leaf), th = Math.tanh(s/SQUASH), dr = leaf.side*(1 - th*th)/SQUASH;
+    agent.train(leaf, lr*e*dr);
+  }
+  return sumAbs/T;
+}
+
+function makeAgent(kind, seed, hidden) {
+  if (kind === "mat" || kind === "pst") return new LinearAgent(kind, seed);
+  return new NNAgent(hidden || 32, seed);
+}
+function handcrafted() { const a = new LinearAgent("mat"); a.w.set([1,3,3,5,9]); return a; }
+
+/* match against a benchmark opponent; returns {score, w, d, l} from the agent's side */
+function playMatch(agent, opp, games, cfg, rnd) {
+  let w = 0, d = 0, l = 0; const searcher = new Searcher();
+  for (let g=0;g<games;g++) {
+    const white = g % 2 === 0;
+    const ag = white ? {w: agent, b: opp.agent} : {w: opp.agent, b: agent}, dep = white ? {w: cfg.depth, b: opp.depth} : {w: opp.depth, b: cfg.depth};
+    const r = playGame(ag, {depth: cfg.depth, depths: dep, maxPlies: cfg.evalPlies || 200, eps: 0, searcher}, rnd, false);
+    const mine = white ? r.result : -r.result; if (mine > 0) w++; else if (mine < 0) l++; else d++;
+  }
+  return {score: (w + 0.5*d)/games, w, d, l};
+}
+
+const api = {Searcher, LinearAgent, NNAgent, makeAgent, handcrafted, playGame, tdUpdate, playMatch, material, mulberry32, squash, MATE, exMat, exPST, exNN, FI, FV};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.RL = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
+<script type="text/plain" id="wksrc">/* ---- worker: one per learning agent ---- */
+const {Position, WHITE, mstr} = Chess;
+let kind = "mat", agent, rnd, cfg, running = false, speed = "normal", seed = 1;
+let st, ev, timer = null, lastPost = 0, lastW = 0, searcher = new RL.Searcher(), tsearch = new RL.Searcher();
+let OPPS = ["random", "hand1", "hand2"], WEVERY = 2000;
+const hand = RL.handcrafted();
+function opp(k) { return k === "random" ? {agent: "random", depth: 1} : {agent: hand, depth: k === "hand1" ? 1 : 2}; }
+
+function fresh(k, s) {
+  kind = k; seed = s; rnd = RL.mulberry32(seed * 7919 + 13); agent = RL.makeAgent(kind, seed, 32); searcher = new RL.Searcher();
+  st = {games: 0, plies: 0, mates: 0, ema: {plies: 100, mate: 0, d: 0.01, cap: 0.5}, t0: 0, tRun: 0, lastGame: null};
+  ev = {job: null, queue: [], every: 250, n: 40, next: 0, doneAt: -1};
+}
+function cfgSet(c) { cfg = Object.assign({}, cfg || {}, c); cfg.searcher = searcher; }
+function post(m, tr) { self.postMessage(m, tr || []); }
+function weightsMsg() {
+  const w = agent.getWeights();
+  if (kind === "nn") post({type: "weights", kind, W1: w.W1, b1: w.b1, w2: w.w2, b2: w.b2, H: agent.H}, [w.W1.buffer, w.b1.buffer, w.w2.buffer]);
+  else post({type: "weights", kind, w}, [w.buffer]);
+}
+function progress(force) {
+  const now = performance.now(); if (!force && now - lastPost < 250) return; lastPost = now;
+  const run = st.tRun + (running ? now - st.t0 : 0);
+  post({type: "prog", games: st.games, gps: run > 0 ? st.games / (run / 1000) : 0, avgPlies: st.ema.plies, mateRate: st.ema.mate, capRate: st.ema.cap, td: st.ema.d, evalBusy: !!ev.job, evalDone: ev.job ? ev.job.done : 0});
+  if (now - lastW > WEVERY) { lastW = now; weightsMsg(); }
+}
+function trainOne() {
+  const watch = st.games - ((st.games) % 1) >= 0 && (performance.now() - (st.lastGameAt || 0) > 2500);
+  const c = Object.assign({}, cfg, {keepMoves: watch});
+  const g = RL.playGame({w: agent, b: agent}, c, rnd, true);
+  const d = RL.tdUpdate(agent, g, cfg);
+  st.games++; st.plies += g.plies;
+  const a = 0.02, e = st.ema; e.plies += a * (g.plies - e.plies); e.mate += a * ((g.reason === "checkmate" ? 1 : 0) - e.mate); e.cap += a * ((g.reason === "cap" ? 1 : 0) - e.cap); e.d += a * (d - e.d);
+  if (watch) { st.lastGameAt = performance.now(); post({type: "game", moves: g.moves.map(mstr), reason: g.reason, result: g.result, games: st.games}); }
+}
+function evalStep() {
+  if (!ev.job) {
+    const k = ev.queue.shift(); if (!k) return false;
+    ev.job = {k, done: 0, w: 0, d: 0, l: 0, total: ev.n};
+  }
+  const j = ev.job, o = opp(j.k), white = j.done % 2 === 0, dp = cfg.depth;
+  const ag = white ? {w: agent, b: o.agent} : {w: o.agent, b: agent}, dep = white ? {w: dp, b: o.depth} : {w: o.depth, b: dp};
+  const r = RL.playGame(ag, {depth: dp, depths: dep, maxPlies: 200, eps: 0, searcher}, rnd, false);
+  const mine = white ? r.result : -r.result; if (mine > 0) j.w++; else if (mine < 0) j.l++; else j.d++; j.done++;
+  if (j.done >= j.total) {
+    ev.cur = ev.cur || {}; ev.cur[j.k] = {score: (j.w + 0.5 * j.d) / j.total, w: j.w, d: j.d, l: j.l, n: j.total}; ev.job = null;
+    if (!ev.queue.length) { post({type: "eval", games: ev.at, res: ev.cur}); ev.cur = null; weightsMsg(); }
+  }
+  return true;
+}
+function maybeStartEval() {
+  if (ev.job || ev.queue.length) return;
+  if (st.games >= ev.next) { ev.queue = OPPS.slice(); ev.at = st.games; ev.cur = {}; ev.next = st.games + ev.every; }
+}
+function tick() {
+  timer = null; if (!running) return;
+  const budget = speed === "slow" ? 1 : speed === "normal" ? 30 : 60, t0 = performance.now();
+  do {
+    maybeStartEval();
+    if (ev.job || ev.queue.length) evalStep(); else trainOne();
+    if (speed === "slow") break;
+  } while (performance.now() - t0 < budget);
+  progress(false);
+  timer = setTimeout(tick, speed === "slow" ? 140 : speed === "normal" ? 25 : 0);
+}
+function setRunning(r) {
+  if (r === running) return;
+  if (r) { running = true; st.t0 = performance.now(); if (!timer) timer = setTimeout(tick, 0); }
+  else { st.tRun += performance.now() - st.t0; running = false; if (timer) { clearTimeout(timer); timer = null; } progress(true); weightsMsg(); }
+}
+self.onmessage = e => {
+  const m = e.data;
+  switch (m.type) {
+    case "init": if (m.opps) OPPS = m.opps; if (m.wEvery) WEVERY = m.wEvery; fresh(m.kind, m.seed); cfgSet(m.cfg); ev.every = m.evalEvery || 250; ev.n = m.evalN || 40; ev.next = 0; progress(true); weightsMsg(); break;
+    case "cfg": cfgSet(m.cfg); if (m.evalEvery) { ev.every = m.evalEvery; ev.next = Math.min(ev.next, st.games + ev.every); } if (m.evalN) ev.n = m.evalN; break;
+    case "run": setRunning(!!m.on); break;
+    case "speed": speed = m.speed; break;
+    case "reset": { const was = running; setRunning(false); fresh(kind, m.seed || seed + 1); cfgSet({}); ev.next = 0; post({type: "reset"}); progress(true); weightsMsg(); if (was) setRunning(true); break; }
+    case "evalnow": ev.next = st.games; break;
+    case "think": {
+      const pos = new Position().setFEN(m.fen); const t = performance.now();
+      const r = tsearch.search(pos, agent, m.depth, Math.random);
+      post({type: "move", id: m.id, move: r.move ? mstr(r.move) : null, score: r.score, pv: r.pv.map(mstr), ms: performance.now() - t});
+      break;
+    }
+    case "score": { const pos = new Position().setFEN(m.fen); post({type: "score", id: m.id, score: agent.score(pos)}); break; }
+  }
+};
+</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const {Position, WHITE, BLACK, mstr} = Chess;
+const PN = ["Pawn", "Knight", "Bishop", "Rook", "Queen"], COL = ["#8a8f94", "#2e9e5b", "#0877bd", "#e8590c", "#f59322"], TRUE = [1, 3, 3, 5, 9];
+const CFG = {depth: 1, lr: 0.01, lambda: 0.7, eps: 0.05, maxPlies: 120, adjudicate: 0.5};
+const S = {w: new Array(5).fill(0), hist: [], curve: [], games: 0};
+
+/* ---------- worker ---------- */
+const url = URL.createObjectURL(new Blob([$("eng").textContent, "\n;\n", $("rlsrc").textContent, "\n;\n", $("wksrc").textContent], {type: "text/javascript"}));
+const wk = new Worker(url); let running = true, thinkId = 0;
+wk.postMessage({type: "init", kind: "mat", seed: 1, cfg: CFG, evalEvery: 200, evalN: 30, opps: ["random"], wEvery: 400});
+wk.postMessage({type: "speed", speed: "max"}); wk.postMessage({type: "run", on: true});
+wk.onmessage = e => {
+  const m = e.data;
+  if (m.type === "prog") { S.games = m.games; $("cnt").textContent = m.games.toLocaleString(); }
+  else if (m.type === "weights") { S.w = Array.from(m.w); S.hist.push({g: S.games, w: S.w.slice()}); drawBars(); drawHist(); }
+  else if (m.type === "eval") { const r = m.res.random; $("vsr").textContent = r.score.toFixed(2); $("vsr").title = `${r.w} wins, ${r.d} draws, ${r.l} losses in ${r.n} games`; }
+  else if (m.type === "reset") { S.hist = []; S.w = new Array(5).fill(0); S.games = 0; $("cnt").textContent = "0"; $("vsr").textContent = "…"; drawBars(); drawHist(); }
+  else if (m.type === "move" && m.id === thinkId) agentMoved(m);
+};
+$("play").onclick = () => { running = !running; $("play").innerHTML = running ? "&#10074;&#10074;" : "&#9654;"; wk.postMessage({type: "run", on: running}); };
+$("reset").onclick = () => wk.postMessage({type: "reset"});
+$("speed").onchange = () => wk.postMessage({type: "speed", speed: $("speed").value});
+
+/* ---------- charts ---------- */
+function setup(cv, w, h) { const d = window.devicePixelRatio || 1; cv.width = Math.round(w * d); cv.height = Math.round(h * d); cv.style.width = w + "px"; cv.style.height = h + "px"; const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); return c; }
+const ratios = w => { const p = Math.max(0.05, w[0]); return w.map(v => Math.max(0, v / p)); };
+function drawBars() {
+  const IW = 600, IH = 250, c = setup($("bars"), IW, IH), L = 80, W = IW - L - 120, mx = 10, r = ratios(S.w); c.clearRect(0, 0, IW, IH);
+  c.font = "13px Roboto,Arial,sans-serif"; c.textBaseline = "middle";
+  const ready = S.w[0] > 0.05;
+  for (let i = 0; i < 5; i++) {
+    const y = 30 + i * 46, v = Math.min(r[i], mx);
+    c.fillStyle = "#333"; c.textAlign = "right"; c.fillText(PN[i], L - 10, y);
+    c.fillStyle = "#eee"; c.fillRect(L, y - 12, W, 24);
+    c.fillStyle = COL[i]; c.fillRect(L, y - 12, W * v / mx, 24);
+    if (i > 0) { c.strokeStyle = "#1b3b4f"; c.lineWidth = 2; c.setLineDash([3, 3]); const tx = L + W * TRUE[i] / mx; c.beginPath(); c.moveTo(tx, y - 16); c.lineTo(tx, y + 16); c.stroke(); c.setLineDash([]); }
+    c.fillStyle = "#222"; c.textAlign = "left"; c.fillText(ready ? r[i].toFixed(1) : "–", L + W + 10, y);
+  }
+}
+function drawHist() {
+  const IW = 600, IH = 260, c = setup($("hist"), IW, IH), L = 44, R = 12, T = 12, B = 34, W = IW - L - R, H = IH - T - B; c.clearRect(0, 0, IW, IH);
+  const pts = S.hist.filter(p => p.w[0] > 0.05 && p.g > 0); let xmax = Math.max(500, ...pts.map(p => p.g)), ymax = 10;
+  const X = g => L + W * g / xmax, Y = v => T + H * (1 - Math.min(v, ymax) / ymax);
+  c.font = "11px Roboto,Arial,sans-serif"; c.textBaseline = "middle";
+  for (let i = 0; i <= 5; i++) { const v = ymax * i / 5, y = Y(v); c.strokeStyle = i ? "#e6e6e6" : "#999"; c.lineWidth = 1; c.beginPath(); c.moveTo(L, y); c.lineTo(L + W, y); c.stroke(); c.fillStyle = "#777"; c.textAlign = "right"; c.fillText(v.toFixed(0), L - 6, y); }
+  c.textAlign = "center"; c.textBaseline = "top"; for (let i = 0; i <= 5; i++) { const g = xmax * i / 5; c.fillStyle = "#777"; c.fillText(Math.round(g).toLocaleString(), X(g), T + H + 6); }
+  c.fillStyle = "#555"; c.fillText("self-play games", L + W / 2, T + H + 20);
+  for (let i = 1; i < 5; i++) { c.strokeStyle = COL[i]; c.lineWidth = 2; c.beginPath(); pts.forEach((p, k) => { const x = X(p.g), y = Y(Math.max(0, p.w[i]) / p.w[0]); k ? c.lineTo(x, y) : c.moveTo(x, y); }); c.stroke(); }
+  $("chips").innerHTML = PN.slice(1).map((n, i) => `<span><i style="border-color:${COL[i + 1]}"></i>${n}</span>`).join("");
+}
+
+/* ---------- board ---------- */
+const BS = 400, SQ = BS / 8, GL = ["", "♟", "♞", "♝", "♜", "♛", "♚"];
+let G = new Position().reset(), mstack = [], sel = -1, targets = [], myCol = WHITE, lastMove = 0, over = false, thinking = false;
+const flipped = () => myCol === BLACK;
+function drawBoard() {
+  const c = setup($("bd"), BS, BS), fl = flipped(); c.clearRect(0, 0, BS, BS);
+  for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) {
+    const x = (fl ? 7 - f : f) * SQ, y = (fl ? r : 7 - r) * SQ, sq = r * 16 + f;
+    c.fillStyle = (r + f) % 2 ? "#f0d9b5" : "#b58863"; c.fillRect(x, y, SQ, SQ);
+    if (lastMove && (sq === (lastMove & 127) || sq === ((lastMove >> 7) & 127))) { c.fillStyle = "rgba(245,147,34,.45)"; c.fillRect(x, y, SQ, SQ); }
+    if (sq === sel) { c.fillStyle = "rgba(8,119,189,.45)"; c.fillRect(x, y, SQ, SQ); }
+  }
+  c.font = "10px Roboto,Arial,sans-serif";
+  for (let i = 0; i < 8; i++) { const f = fl ? 7 - i : i; c.fillStyle = f % 2 === 0 ? "#f0d9b5" : "#b58863"; c.textBaseline = "alphabetic"; c.textAlign = "right"; c.fillText("abcdefgh"[f], (i + 1) * SQ - 3, BS - 3); const r = fl ? i : 7 - i; c.fillStyle = r % 2 === 0 ? "#b58863" : "#f0d9b5"; c.textAlign = "left"; c.textBaseline = "top"; c.fillText(String(r + 1), 3, i * SQ + 3); }
+  c.textAlign = "center"; c.textBaseline = "middle"; c.font = (SQ * 0.82) + "px 'Segoe UI Symbol','DejaVu Sans','Noto Sans Symbols2',Arial,sans-serif";
+  for (let r = 0; r < 8; r++) for (let f = 0; f < 8; f++) {
+    const p = G.b[r * 16 + f]; if (!p) continue; const x = (fl ? 7 - f : f) * SQ + SQ / 2, y = (fl ? r : 7 - r) * SQ + SQ / 2 + 2, g = GL[Math.abs(p)];
+    c.lineWidth = 2; c.strokeStyle = p > 0 ? "#222" : "#f4f4f4"; c.strokeText(g, x, y); c.fillStyle = p > 0 ? "#fff" : "#222"; c.fillText(g, x, y);
+  }
+  for (const t of targets) { const r = t >> 4, f = t & 7, x = (fl ? 7 - f : f) * SQ + SQ / 2, y = (fl ? r : 7 - r) * SQ + SQ / 2; c.fillStyle = "rgba(27,59,79,.5)"; c.beginPath(); c.arc(x, y, G.b[t] ? SQ * .44 : SQ * .13, 0, 7); if (G.b[t]) { c.strokeStyle = "rgba(27,59,79,.55)"; c.lineWidth = 3; c.stroke(); } else c.fill(); }
+}
+function legalFrom(sq) { const l = new Int32Array(256), n = G.legal(l), out = []; for (let i = 0; i < n; i++) if ((l[i] & 127) === sq) out.push(l[i]); return out; }
+const REASON = {stalemate: "Draw by stalemate.", fifty: "Draw by the fifty-move rule.", repetition: "Draw by threefold repetition.", insufficient: "Draw: not enough material."};
+function checkEnd() { const st = G.status(); if (st === "ongoing") { over = false; return false; } over = true; $("status").textContent = st === "checkmate" ? (G.side === myCol ? "Checkmate. The agent wins." : "Checkmate. You win!") : REASON[st]; return true; }
+function setStatus() { if (!over) $("status").textContent = thinking ? "The agent is thinking…" : G.side === myCol ? "Your move" + (G.inCheck() ? " (check)" : "") + ". Click a piece, then a square." : ""; }
+function listMoves() { let s = ""; mstack.forEach((m, i) => { if (i % 2 === 0) s += (i ? "  " : "") + (i / 2 + 1) + ". "; s += mstr(m) + " "; }); $("moves").textContent = s || "No moves yet."; $("moves").scrollTop = 1e6; }
+function afterMove(m) { lastMove = m; sel = -1; targets = []; mstack.push(m); listMoves(); drawBoard(); if (checkEnd()) return; if (G.side !== myCol) askAgent(); setStatus(); }
+$("bd").onclick = e => {
+  if (over || thinking || G.side !== myCol) return;
+  const r = $("bd").getBoundingClientRect(), fx = Math.floor((e.clientX - r.left) / r.width * 8), fy = Math.floor((e.clientY - r.top) / r.height * 8), f = flipped() ? 7 - fx : fx, rk = flipped() ? fy : 7 - fy, sq = rk * 16 + f;
+  if (sel >= 0 && targets.includes(sq)) { const cand = legalFrom(sel).filter(m => ((m >> 7) & 127) === sq); const m = cand.find(x => ((x >> 14) & 7) === 5) || cand[0]; G.make(m); afterMove(m); return; }
+  const p = G.b[sq]; if (p && p * G.side > 0) { sel = sq; targets = legalFrom(sq).map(m => (m >> 7) & 127); } else { sel = -1; targets = []; }
+  drawBoard();
+};
+function askAgent() { thinking = true; setStatus(); wk.postMessage({type: "think", id: ++thinkId, fen: G.getFEN(), depth: +$("pdepth").value}); }
+function agentMoved(m) { if (!thinking) return; thinking = false; const mv = m.move ? G.parseMove(m.move) : 0; if (!mv) { $("status").textContent = "The agent returned no legal move."; return; } G.make(mv); afterMove(mv); }
+function newGame() { thinkId++; thinking = false; G = new Position().reset(); mstack = []; sel = -1; targets = []; lastMove = 0; over = false; myCol = $("mycol").value === "w" ? WHITE : BLACK; listMoves(); drawBoard(); setStatus(); if (G.side !== myCol) askAgent(); }
+$("newgame").onclick = newGame; $("mycol").onchange = newGame;
+$("undo").onclick = () => { if (thinking || !mstack.length) return; do { G.unmake(mstack.pop()); } while (mstack.length && G.side !== myCol); lastMove = mstack.length ? mstack[mstack.length - 1] : 0; sel = -1; targets = []; over = false; listMoves(); drawBoard(); if (G.side !== myCol) askAgent(); else setStatus(); };
+
+drawBars(); drawHist(); newGame();
+</script>
+
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{drawBars();drawHist();drawBoard();}catch(e){} });
+</script>
+</body>
+</html>

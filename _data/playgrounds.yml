@@ -1,0 +1,17 @@
+# Interactive playgrounds (shown on /playgrounds/). Each opens inside the site layout (_layouts/playground.liquid).
+# The app itself is assets/playgrounds/<slug>.html; thumbnails are assets/img/playgrounds/<slug>-light.webp and -dark.webp.
+- slug: optimizer-race
+  title: "Optimizer Race"
+  description: "Race gradient-descent optimizers across classic loss surfaces."
+- slug: nn-playground
+  title: "Neural Network Playground"
+  description: "Train a small neural network in the browser and watch its decision boundary evolve."
+- slug: lora-rank-explorer
+  title: "LoRA Rank Explorer"
+  description: "See how much of a weight update a low-rank LoRA adapter can capture."
+- slug: bias-variance-playground
+  title: "Bias–Variance Playground"
+  description: "Watch bias, variance and noise add up to the error of a fitted model."
+- slug: learning-chess-by-self-play
+  title: "Learning Chess by Self-Play"
+  description: "Watch an agent learn the value of each chess piece by playing itself."

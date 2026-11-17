@@ -18,3 +18,8 @@ nav_order: 2
 {% bibliography %}
 
 </div>
+
+<p class="sb-seeall sb-seeall-end">
+  All publications are available on
+  <a href="https://scholar.google.com/citations?user={{ site.data.socials.scholar_userid }}" target="_blank" rel="noopener">Google Scholar <span aria-hidden="true">↗</span></a>.
+</p>
