@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Attention Visualizer</title>
+<style>
+  :root{--orange:#f59322;--blue:#0877bd;--navy:#1b3b4f;--red:#e8590c;--green:#2e9e5b;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px}
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 24px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #pause{width:38px;height:38px;font-size:13px;letter-spacing:-1px}
+  #pause:disabled{opacity:.35;cursor:default}
+  #pause:disabled:hover{background:#fff}
+  #cnt{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  #rankbox{min-width:260px}
+  #rankv{font-size:24px;font-weight:300;font-variant-numeric:tabular-nums}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  canvas{display:block}
+  
+  #maps canvas{width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #maps .cap{font-size:12px;font-weight:600;color:#333;margin-top:6px}
+  #maps .sub{font-size:11.5px;color:#888;font-variant-numeric:tabular-nums}
+  .chartbox{margin-bottom:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .chartbox .ct select{font-weight:400;font-size:12px;min-width:80px;padding:2px 6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+  .chartframe canvas{max-width:100%;cursor:pointer}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0 4px;font-size:12px;color:#555}
+  .chips span{display:inline-flex;align-items:center;gap:6px}
+  .chips i{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .chips i.dot{width:9px;height:9px;border-radius:50%}
+  .chips i.ln{width:22px;height:0;border-radius:0;border-top:3px solid}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .nums hr{grid-column:1/-1;border:0;border-top:1px solid #e8e8e8;width:100%;margin:2px 0}
+  #verdict{margin-top:10px;font-size:12.5px;padding:7px 9px;border-radius:5px;background:#f3f5f6;color:#444}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  #tdesc{font-size:12.5px;color:#666;margin:6px 0 8px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .sbtn{border:1px solid #ccc;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12.5px}
+  .sbtn:hover{background:#f0f0f0}
+  .sect{margin-top:26px}
+  .acc{color:#0877bd;font-weight:600}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .sect2{margin-top:22px}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}#maps{grid-template-columns:repeat(2,1fr)}}
+
+  #bar .stepinfo{display:flex;flex-direction:column;gap:6px;min-width:300px;flex:1;max-width:520px}
+  #bar .stepinfo .top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:#444}
+  #bar .stepinfo .top b{font-weight:600}
+  #phase{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  #phase.f{color:#0877bd}#phase.b{color:#e8590c}#phase.s{color:#888}
+  #prog{display:flex;gap:3px;height:8px}
+  #prog i{flex:1;background:#dfe3e6;border-radius:2px}
+  #prog i.fdone{background:#0877bd}#prog i.bdone{background:#e8590c}#prog i.cur{outline:2px solid #1b3b4f;outline-offset:1px}
+  #prog i.gap{flex:0 0 10px;background:transparent}
+  .btn svg{display:block}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #gwrap{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:6px}
+  #gsvg{display:block;width:100%;height:auto}
+  .gdesc{font-size:12.5px;color:#666;margin:0 0 10px}
+  #explain{margin-top:16px;border:1px solid var(--line);border-radius:8px;padding:14px 18px;background:#fff;min-height:170px}
+  #explain h4{margin:0 0 8px;font-size:15px;font-weight:600;color:#222}
+  #explain .ln{font-size:13.5px;line-height:1.6;color:#444;margin:3px 0}
+  #explain .eq{font-family:"Roboto Mono",Menlo,Consolas,monospace;font-size:13px;background:#f3f5f6;padding:1px 6px;border-radius:3px;color:#222;white-space:nowrap}
+  #explain .chain{margin:8px 0 4px;padding:8px 10px;border-left:3px solid #e8590c;background:#fff6f0;font-size:13.5px}
+  #explain .fwdbox{margin:8px 0 4px;padding:8px 10px;border-left:3px solid #0877bd;background:#f1f8fd;font-size:13.5px}
+  #explain .small{font-size:12.5px;color:#777}
+  .gtab{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+  .gtab th{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 0 6px}
+  .gtab th:first-child,.gtab td:first-child{text-align:left}
+  .gtab td{text-align:right;padding:3px 0;border-top:1px solid #eee}
+  .gtab td.or{color:#e8590c;font-weight:500}
+  #chk{font-size:12px;color:#666;margin-top:8px}
+  .eqline{font-family:"Roboto Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;padding:8px 12px;border-radius:5px;color:#222;margin:8px 0;overflow-x:auto}
+  .rulestab{border-collapse:collapse;font-size:14px;margin:8px 0 4px}
+  .rulestab td,.rulestab th{padding:4px 14px 4px 0;text-align:left;border-bottom:1px solid #eee;font-weight:400}
+  .rulestab th{font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#888}
+
+  .txt{width:100%;padding:7px 9px;border:1px solid #b8c4cc;border-radius:5px;font-size:calc(14px - 1pt);background:#fff}
+  .txt:focus{outline:2px solid #bcdcf1;border-color:#0877bd}
+  .minis{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:6px}
+  .mini{border:1.5px solid #cfd8de;border-radius:8px;background:#fff;padding:6px 6px 4px;cursor:pointer;text-align:center}
+  .mini:hover{border-color:#9cc3dd}
+  .mini.sel{border-color:#0877bd;background:#e8f3fb}
+  .mini .nm{font-size:12px;font-weight:600;color:#333;margin-top:3px}
+  .mini svg{width:100%;height:auto;display:block}
+  #hdesc{font-size:12.5px;color:#555;margin:10px 0 2px;line-height:1.5}
+  #hdesc b{color:#222}
+  .tag{display:inline-block;font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#8a5a00;background:#fff3d6;border:1px solid #f0d9a0;border-radius:4px;padding:0 5px;margin-left:6px}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .sec{margin-bottom:22px}
+  .sec .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .frame{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px}
+  .frame svg{display:block}
+  #matrixsvg text,#chipsvg text{font-family:Roboto,"Helvetica Neue",Arial,sans-serif}
+  #matrixsvg [data-i]{cursor:pointer}
+  #hover{font-size:12.5px;color:#555;min-height:20px;margin:6px 2px 0}
+  .dtab{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+  .dtab th{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 6px}
+  .dtab th:first-child,.dtab td:first-child{text-align:left}
+  .dtab td{text-align:right;padding:4px 8px;border-top:1px solid #eee}
+  .dtab td.k{font-weight:600;color:#222}
+  .dtab tr.off td{color:#b5b5b5}
+  .dtab tr.top td{background:#f1f8fd}
+  .bar{display:inline-block;height:9px;background:#0877bd;border-radius:2px;vertical-align:middle;margin-right:6px}
+  .dtab td.w{text-align:left;white-space:nowrap;width:150px}
+  .stat{font-size:12.5px;color:#555;margin:8px 2px 0;line-height:1.6}
+  .fline{font-family:"Roboto Mono",Menlo,Consolas,monospace;font-size:12.5px;background:#f3f5f6;padding:6px 10px;border-radius:5px;color:#222;margin:0 0 10px;overflow-x:auto;white-space:nowrap}
+  .hint{font-size:11.5px;color:#999}
+  #trainbox{margin:6px 0 4px;padding:10px;border:1px solid #cfe0ec;border-radius:8px;background:#fff}
+  #trainbox .trow{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  #trainbox .btn{width:34px;height:34px;font-size:14px}
+  #trainbox .btn:disabled{opacity:.35;cursor:default}
+  #trainbox .tinfo{font-size:12.5px;color:#444;margin-left:4px;line-height:1.35}
+  #trainbox select{font-size:12.5px}
+  #lossc{display:block;width:100%;height:150px;margin-top:8px}
+  #trmetrics{font-size:12.5px;color:#444;line-height:1.6;margin-top:4px}
+  #trmetrics b{color:#222}
+  #trnote{font-size:11.5px;color:#888;margin-top:6px;line-height:1.45}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .pred{margin-top:12px;padding-top:10px;border-top:1px solid #eee}
+  .pred .pt{font-size:12.5px;color:#444;margin-bottom:6px}
+  .pred .pr{display:flex;align-items:center;gap:8px;font-size:12.5px;font-variant-numeric:tabular-nums;margin:2px 0}
+  .pred .pr span.w{width:70px;font-weight:600;color:#222}
+  .pred .pr .bar{background:#e8590c}
+</style>
+<body>
+<div id="app">
+  <h1>Attention Visualizer</h1>
+  <p class="blurb">In a transformer, every word decides how much to look at every other word. That decision is the <b>attention matrix</b>: row <i>i</i> shows how word <i>i</i> spreads one unit of attention over all the words. Type a sentence, choose a head, and change the temperature and the mask to see how the pattern responds. You can use four hand-set heads, each designed to do one readable thing, or switch to a small model and train it yourself from random weights to see what it learns. Use the <b>Settings</b> panel on the right.</p>
+
+  <div id="main">
+    <div id="stage">
+      <div class="sec">
+        <div class="ct" id="chiptitle">Attention from the selected word</div>
+        <div class="frame"><svg id="chipsvg" viewBox="0 0 740 220" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:auto"></svg></div>
+        <div class="chips"><span><i class="ln" style="border-color:#0877bd"></i>an arc is attention; a thicker arc means more weight</span></div>
+        <div class="note">Click a word to choose whose attention you are looking at. Click the &times; on a word to hide it from every other word (like padding).</div>
+      </div>
+
+      <div class="sec">
+        <div class="ct">Attention matrix <span style="font-weight:400;color:#777">&mdash; each row sums to 1</span></div>
+        <div class="frame" style="overflow-x:auto"><svg id="matrixsvg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+        <div id="hover"></div>
+        <div class="note">Rows are the words that are looking (queries); columns are the words being looked at (keys). Darker blue means more weight. Hatched cells are blocked by the mask.</div>
+      </div>
+
+      <div class="sec">
+        <div class="ct" id="dettitle">How one row is computed</div>
+        <div class="card" id="detail"></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings &mdash; sentence, head, temperature, mask</div>
+      <div class="card setcard">
+        <div class="sub">Model</div>
+        <label class="radio"><input type="radio" name="model" value="hand" checked><span>Hand-set<small>four heads designed by hand, one readable job each</small></span></label>
+        <label class="radio"><input type="radio" name="model" value="trained"><span>Trained<small>a small transformer you train here, starting from random weights</small></span></label>
+        <div id="trainbox" style="display:none">
+          <div class="trow">
+            <button class="btn" id="trreset" title="Reset: back to random weights (does not start training)">&#8635;</button>
+            <button class="btn" id="trplay" title="Train">&#9654;</button>
+            <button class="btn" id="trpause" title="Pause" disabled>&#10074;&#10074;</button>
+            <div class="tinfo"><b id="trstep">Step 0</b> of <span id="trmax">3000</span><br><select id="trspeed"><option value="slow">Slow</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></div>
+          </div>
+          <canvas id="lossc"></canvas>
+          <div id="trmetrics"></div>
+          <div class="row2" style="margin-top:6px"><button class="linkbtn" id="trseed">Try another random start</button></div>
+          <div id="trnote"></div>
+        </div>
+
+        <div class="sub">Sentence</div>
+        <input class="txt" id="text" type="text" maxlength="140" spellcheck="false" autocomplete="off" placeholder="Type a short sentence">
+        <div class="row2" style="margin-bottom:2px"><select id="preset" style="font-size:12.5px;max-width:100%"></select></div>
+        <div class="hint" id="tokinfo"></div>
+
+        <div class="sub">Head</div>
+        <div class="minis" id="minis"></div>
+        <div id="hdesc"></div>
+
+        <div class="sub">Temperature</div>
+        <div class="slider"><div class="row"><span>Temperature &tau;</span><b id="tv">1.00</b></div><input type="range" id="tau" min="-100" max="70" step="5" value="0"><div class="hint">Scores are divided by &tau; before the softmax. Low: each row focuses on its top word. High: each row spreads out evenly.</div></div>
+
+        <div class="sub">Mask</div>
+        <label class="radio"><input type="radio" name="mask" value="none" checked><span>None<small>every word can look at every word</small></span></label>
+        <label class="radio"><input type="radio" name="mask" value="causal"><span>Causal<small>a word can look only at itself and earlier words (as in GPT-style models)</small></span></label>
+        <div class="row2"><button class="sbtn" id="unhide" style="display:none">Show all hidden words</button></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is, and is not.</b> It is a tiny one-layer model. In hand-set mode the four heads are designed so that each has a pattern you can read; nothing is trained. In trained mode the model learns from a made-up grammar and its heads are usually less tidy. Either way the page shows the mechanics of one attention layer, not what a real language model has learned.</div>
+
+    <h3>Queries, keys and scores</h3>
+    <p>Every word gets two vectors: a <i>query</i> (what this word is looking for) and a <i>key</i> (what this word offers to others). The score of word <i>i</i> for word <i>j</i> is the dot product of the query of <i>i</i> with the key of <i>j</i>, divided by &radic;<i>d<sub>k</sub></i>, where <i>d<sub>k</sub></i> is the length of the vectors. This is the scaled dot-product attention of Vaswani et al. The division keeps the scores from growing just because the vectors are longer. The row detail below the matrix lists these numbers for the word you select.</p>
+
+    <h3>Softmax, one row at a time</h3>
+    <p>For each query word the scores over all key words go through a softmax, which turns them into positive weights that sum to 1:</p>
+    <div class="eqline">weight<sub>j</sub> = exp(score<sub>j</sub> / &tau;) / &Sigma;<sub>k</sub> exp(score<sub>k</sub> / &tau;)</div>
+    <p>These weights are one row of the matrix.</p>
+
+    <h3>Temperature</h3>
+    <p>A standard transformer uses &tau; = 1, so the only scaling is the 1/&radic;<i>d<sub>k</sub></i> above. The &tau; slider is an extra knob added here to show what sharpness means. It rescales every score. With a small &tau; the largest score wins almost all of the weight; with a large &tau; the weights approach 1/<i>n</i> for <i>n</i> visible words. The "entropy" number in the row detail measures this: 0 bits means all weight is on one word, and log<sub>2</sub> <i>n</i> bits means perfectly even.</p>
+
+    <h3>Masks</h3>
+    <p>A mask removes some word pairs by setting their score to &minus;&infin; before the softmax. Their weight is then exactly 0 and the remaining weights are renormalised to sum to 1. A <b>causal mask</b> blocks every word from looking at later words; it is used in models that generate text from left to right, so a word cannot peek at the future. Hiding a word with the &times; button blocks it as a key for every row, which is how padding positions are ignored. In both cases the matrix keeps its shape and the blocked cells are hatched.</p>
+
+    <h3>The four hand-set heads (hand-set mode)</h3>
+    <ul>
+      <li><b>Previous word.</b> Query and key use only word positions, arranged so that the score is highest for the word one step back.</li>
+      <li><b>Same word.</b> Each distinct word gets its own orthogonal code (a row of a 16 &times; 16 Hadamard matrix), so the score is high only between identical words. Try the example with repeated words.</li>
+      <li><b>Word role.</b> Each word is given a rough class (article, adjective, noun, verb, pronoun, preposition, conjunction, other) from a small word list and a few suffix rules. A hand-written table says which classes look for which, for example verbs look for nouns and pronouns. A small distance penalty prefers nearby words. Because the classes come from a short list, some words will be misclassified (the tags under the tokens show what the head sees).</li>
+      <li><b>Nearby words.</b> Positions only again: the score falls with distance from the word itself.</li>
+    </ul>
+    <p>Real transformers run many heads like this in parallel, each with its own learned query and key rules, and combine their outputs.</p>
+
+    <h3>Hand-set or trained</h3>
+    <p>The Model option switches between the four hand-set heads above and a small transformer that you train here, starting from random weights. Nothing is trained until you press play; reset goes back to fresh random weights, and "Try another random start" picks a different set.</p>
+    <p><b>Task.</b> The model reads a sentence and, at every position, predicts the next word. The sentences come from a made-up grammar with a 36-word vocabulary (a few templates such as "the big cat chased the dog and the cat barked ." and "the cat sat on the mat because it was tired ."). The task and the grammar are my own choices for this page, not a standard benchmark. The loss is the average negative log-probability of the true next word (lower is better).</p>
+    <p><b>Model and training.</b> One layer, four heads of size 4, model width 16, learned word and position embeddings, no feed-forward block and no layer normalisation. It is trained with a causal mask and &tau; = 1, using the Adam optimiser (Kingma and Ba) with a learning rate that starts at 0.02 and decays, batches of 16 sentences and 3000 steps. A few percent of input words are randomly replaced by &lt;unk&gt;, so that unknown words in your own sentence are not completely foreign.</p>
+    <p><b>The chart</b> shows the loss on a fixed set of 120 held-out sentences. The dashed line is a baseline that sees only the current word (it counts which word follows which); attention can only beat it by using earlier words. The <b>copy test</b> measures, at the position after "and the", how much probability goes to the nouns that appeared earlier in the sentence, which is where the grammar repeats one of them.</p>
+    <p><b>What I measured</b> (my own runs of this code, 3000 steps; your numbers will vary a little): the loss falls from about 3.7 to about 1.0, below the 1.5 of the current-word-only baseline, and the copy test reaches roughly 0.9 or higher. Which head does the copying differs from one random start to the next, and it is sometimes shared by two or three heads. The learned heads are usually mixtures, for example part previous-word and part first-word, rather than one clean rule each, so the head descriptions in trained mode are percentages measured on the held-out sentences, not labels I chose.</p>
+
+    <h3>What real heads look like</h3>
+    <p>Analyses of trained models find some heads with simple, readable behaviour and others that are broad or hard to describe. Clark et al. report that BERT heads show patterns such as attending to fixed positional offsets, to delimiter tokens, or broadly across the sentence, and that some heads line up with syntactic relations and coreference. Voita et al. found that in a translation model a small number of specialised heads do most of the work, and many others can be removed with little loss. The previous-word, same-word and word-role heads here are cartoons of these kinds of behaviour, not copies of them.</p>
+
+    <h3>Limits</h3>
+    <ul>
+      <li>This is one layer with four heads. In hand-set mode the weights come from rules; in trained mode they come from the made-up grammar only.</li>
+      <li>The trained model has seen only sentences from that grammar. Words outside its 36-word vocabulary are read as &lt;unk&gt;, and other sentences you type are outside what it learned, so its guesses and attention there are not meaningful. It was trained with the causal mask, so the unmasked view is also outside its training.</li>
+      <li>The matrix is only half of an attention layer. In a full layer the weights are used to take a weighted average of value vectors, which this page leaves out.</li>
+      <li>Attention weights show where one head reads from; on their own they are not an explanation of a model's output.</li>
+      <li>Sentences are cut at 14 tokens, and the word classes come from a short word list, so unusual words default to "noun".</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. N. Gomez, &Lstrok;. Kaiser and I. Polosukhin, "Attention is all you need", <i>Advances in Neural Information Processing Systems 30</i> (NIPS 2017). arXiv:1706.03762.</li>
+      <li>K. Clark, U. Khandelwal, O. Levy and C. D. Manning, "What does BERT look at? An analysis of BERT's attention", <i>Proceedings of the 2019 ACL Workshop BlackboxNLP</i>, 276&ndash;286. doi:10.18653/v1/W19-4828.</li>
+      <li>D. P. Kingma and J. Ba, "Adam: A method for stochastic optimization", <i>International Conference on Learning Representations</i> (ICLR 2015). arXiv:1412.6980.</li>
+      <li>E. Voita, D. Talbot, F. Moiseev, R. Sennrich and I. Titov, "Analyzing multi-head self-attention: Specialized heads do the heavy lifting, the rest can be pruned", <i>Proceedings of ACL 2019</i>, 5797&ndash;5808. doi:10.18653/v1/P19-1580.</li>
+    </ul>
+  </div>
+</div>
+
+<script>(function (root) {
+"use strict";
+/* A tiny HAND-SET multi-head attention model. No weights are trained: every head is built from explicit query and key
+   vectors, and attention = softmax(mask(q.k / sqrt(d_k)) / tau) computed exactly as in scaled dot-product attention. */
+const MAXN = 14;
+const CLASSES = ["det", "adj", "noun", "verb", "pron", "prep", "conj", "other"];
+const LEX = {
+  det: "the a an this that these those my your his her its our their some any each every no",
+  pron: "i you he she it we they me him them us who which what",
+  prep: "on in at of to for with by from over under near between into onto about as through after before behind across above below",
+  conj: "and but because or so if while although than when",
+  verb: "is are was were be been am do does did has have had will would can could should may might must sat sit sits saw see sees ate eat eats chased chase chases runs ran run jumped jumps jump went go goes gave give gives took take takes made make makes said say says like likes love loves read reads wrote write writes barked bark barks slept sleeps sleep fell falls fall looked look looks put get got gets",
+  adj: "big small little old new young tired hungry happy sad red blue green black white quick fast slow lazy brown tall short good bad long hot cold bright dark",
+  other: "not very too always never also just only then there here quickly slowly"
+};
+const WORD2CLASS = {}; Object.keys(LEX).forEach(c => LEX[c].split(" ").forEach(w => { WORD2CLASS[w] = CLASSES.indexOf(c); }));
+function tokenize(text) { const m = (text || "").match(/[A-Za-z0-9À-ɏ']+|[^\sA-Za-z0-9À-ɏ']/g) || []; return {tokens: m.slice(0, MAXN), truncated: m.length > MAXN}; }
+function classOf(tok) {
+  const w = tok.toLowerCase(); if (w in WORD2CLASS) return WORD2CLASS[w];
+  if (!/[a-z0-9]/.test(w)) return 7; if (/ly$/.test(w)) return 7; if (/(ing|ed)$/.test(w) && w.length > 4) return 3; return 2;
+}
+/* 16 x 16 Hadamard matrix: rows are exactly orthogonal +-1 vectors, used as codes for distinct words */
+const HAD = []; for (let i = 0; i < 16; i++) { HAD.push([]); for (let j = 0; j < 16; j++) { let b = i & j, p = 0; while (b) { p ^= b & 1; b >>= 1; } HAD[i].push(p ? -1 : 1); } }
+/* class affinity A[query class][key class]; rows/columns in CLASSES order */
+const A = CLASSES.map(() => CLASSES.map(() => 0));
+const setA = (q, k, v) => { A[CLASSES.indexOf(q)][CLASSES.indexOf(k)] = v; };
+[["det", "noun", 12], ["det", "adj", 8], ["adj", "noun", 12], ["noun", "verb", 9], ["noun", "det", 6], ["noun", "adj", 4], ["noun", "prep", 3],
+ ["verb", "noun", 10], ["verb", "pron", 10], ["verb", "prep", 3], ["pron", "verb", 9], ["prep", "noun", 12], ["prep", "pron", 8],
+ ["conj", "verb", 7], ["conj", "noun", 4], ["other", "verb", 4]].forEach(r => setA(r[0], r[1], r[2]));
+const LAMBDA3 = 0.35, G1 = 4, G4 = 1.5, G2 = 0.75;
+
+/* each head returns Q, K (n x d_k arrays) for the tokens */
+const HEADS = [
+  {id: "prev", name: "Previous word", dk: 3,
+   desc: "Each word looks at the word just before it. Its query and key are built from the word positions only: q·k = −g·(j − (i−1))², which is largest when the key position j is one step before the query position i.",
+   build(T) { const Q = [], K = []; T.forEach((t, i) => { Q.push([2 * G1 * (i - 1), -G1, -G1 * (i - 1) * (i - 1)]); K.push([i, i * i, 1]); }); return {Q, K}; }},
+  {id: "same", name: "Same word", dk: 16,
+   desc: "Each word looks at other copies of itself. Every distinct word gets its own orthogonal 16-number code, and the query and key are both that code, so the score is large only when two words are identical. In a sentence without repeated words this head only looks at itself.",
+   build(T) { const idx = {}; let nx = 0; const code = T.map(t => { const w = t.toLowerCase(); if (!(w in idx)) idx[w] = nx++; return HAD[idx[w] % 16]; });
+     return {Q: code.map(c => c.map(v => v * G2)), K: code.map(c => c.slice())}; }},
+  {id: "role", name: "Word role", dk: 11,
+   desc: "Each word looks for words it usually goes with, judged by a rough word class (see the tags under the tokens): articles and adjectives look for nouns, nouns look for their verb and article, verbs look for nouns and pronouns, prepositions look for nouns. A mild penalty on distance prefers nearby words.",
+   build(T) { const Q = [], K = []; T.forEach((t, i) => { const c = classOf(t), q = new Array(8).fill(0); q[c] = 1; Q.push(q.concat([2 * LAMBDA3 * i, -LAMBDA3, -LAMBDA3 * i * i])); K.push(A.map(row => row[c]).concat([i, i * i, 1])); }); return {Q, K}; }},
+  {id: "near", name: "Nearby words", dk: 3,
+   desc: "Each word looks at itself and its closest neighbours, with the weight falling off with distance: q·k = −g·(j − i)². Again built from positions only.",
+   build(T) { const Q = [], K = []; T.forEach((t, i) => { Q.push([2 * G4 * i, -G4, -G4 * i * i]); K.push([i, i * i, 1]); }); return {Q, K}; }}
+];
+const dot = (a, b) => { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; };
+/* raw scores q.k / sqrt(d_k), n x n */
+function scores(head, tokens) { const {Q, K} = head.build(tokens), s = Math.sqrt(head.dk); return Q.map(q => K.map(k => dot(q, k) / s)); }
+/* masking + temperature + softmax. opts: {causal, masked:Set of key indices, tau}. Returns {W, allowed} */
+function attention(raw, opts) {
+  const n = raw.length, tau = Math.max(opts.tau, 1e-6), masked = opts.masked || new Set(), W = [], allowed = [];
+  for (let i = 0; i < n; i++) {
+    const al = raw[i].map((_, j) => !(opts.causal && j > i) && !masked.has(j)); allowed.push(al);
+    let mx = -Infinity; for (let j = 0; j < n; j++) if (al[j]) mx = Math.max(mx, raw[i][j] / tau);
+    const e = raw[i].map((v, j) => al[j] ? Math.exp(raw[i][j] / tau - mx) : 0), z = e.reduce((a, b) => a + b, 0);
+    W.push(z > 0 ? e.map(v => v / z) : e.map(() => 0));
+  }
+  return {W, allowed};
+}
+function entropyBits(row) { let h = 0; row.forEach(p => { if (p > 0) h -= p * Math.log2(p); }); return h; }
+const api = {MAXN, CLASSES, HEADS, tokenize, classOf, scores, attention, entropyBits, A};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.AT = api;
+})(typeof window !== "undefined" ? window : globalThis);
+
+(function (root) {
+"use strict";
+/* A tiny single-layer, 4-head transformer language model trained in the browser with hand-written backprop and Adam.
+   x_t = E[word_t] + P[t];  heads attend (causally during training);  y = x + concat(heads) Wo;  logits = y U + b. */
+const ADJ = ["big", "small", "quick", "brown", "lazy", "tired", "hungry"];
+const ANIM = ["cat", "dog", "bird", "fox", "mouse"];
+const TV = ["chased", "saw", "followed"];
+const IV = {dog: "barked", cat: "meowed", bird: "sang", fox: "ran", mouse: "slept"};
+const VOCAB = ["<unk>", ".", "the", "and", "because", "that", "said", "was", "on", "over", "she", "it"].concat(ADJ, ANIM, ["mat"], TV, ["sat", "jumped", "jumps"], Object.values(IV));
+const ID = {}; VOCAB.forEach((w, i) => { ID[w] = i; });
+const NOUNS = new Set(ANIM.concat(["mat"]).map(w => ID[w]));
+const D = 16, H = 4, DK = 4, V = VOCAB.length, PMAX = 14;
+
+function rng(seed) { let s = seed >>> 0; return () => { s = (s + 0x6D2B79F5) >>> 0; let t = s; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+function gauss(r) { let u = 0, v = 0; while (!u) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+/* made-up grammar. Returns {tokens, copyPos, earlier}: copyPos = index of the "the" after "and" whose next word repeats an earlier noun */
+function genSentence(r) {
+  const pick = a => a[Math.floor(r() * a.length)], adjs = mx => { const k = Math.floor(r() * (mx + 1)), o = []; for (let i = 0; i < k; i++) o.push(pick(ADJ)); return o; };
+  const t = r(); let tok, copyPos = -1, earlier = null;
+  if (t < 0.35) {
+    const n1 = pick(ANIM); let n2 = pick(ANIM); while (n2 === n1) n2 = pick(ANIM); const n3 = r() < 0.5 ? n1 : n2;
+    tok = ["the"].concat(adjs(2), [n1, pick(TV), "the"], adjs(2), [n2, "and", "the"]); copyPos = tok.length - 1; earlier = [n1, n2]; tok.push(n3, IV[n3], ".");
+  } else if (t < 0.5) {
+    const n1 = pick(ANIM); tok = ["she", "said", "that", "she", "saw", "the"].concat(adjs(2), [n1, "and", "the"]); copyPos = tok.length - 1; earlier = [n1]; tok.push(n1, IV[n1], ".");
+  } else if (t < 0.7) { let n2 = pick(ANIM); tok = ["the"].concat(adjs(2), [pick(ANIM), pick(TV), "the"], adjs(2), [n2, "."]); }
+  else if (t < 0.82) tok = ["the"].concat(adjs(2), [pick(ANIM), "sat", "on", "the", "mat", "."]);
+  else if (t < 0.88) tok = ["the"].concat(adjs(2), [pick(ANIM), pick(["jumped", "jumps"]), "over", "the"], adjs(2), [pick(ANIM), "."]);
+  else tok = ["the"].concat(adjs(1), [pick(ANIM), "sat", "on", "the", "mat", "because", "it", "was", pick(ADJ), "."]);
+  return {tokens: tok, ids: tok.map(w => ID[w]), copyPos, earlier};
+}
+const SIZES = {E: V * D, P: PMAX * D, Wq: D * D, Wk: D * D, Wv: D * D, Wo: D * D, U: D * V, b: V};
+const NAMES = Object.keys(SIZES);
+
+class Model {
+  constructor(seed) { this.seed = seed || 1; this.init(); }
+  init() {
+    const r = rng(this.seed * 7919 + 13), sd = {E: 0.3, P: 0.3, Wq: 0.25, Wk: 0.25, Wv: 0.25, Wo: 0.25, U: 0.25, b: 0};
+    this.p = {}; this.g = {}; this.m = {}; this.v = {};
+    NAMES.forEach(n => { const a = new Float64Array(SIZES[n]); for (let i = 0; i < a.length; i++) a[i] = sd[n] * gauss(r); this.p[n] = a; this.g[n] = new Float64Array(a.length); this.m[n] = new Float64Array(a.length); this.v[n] = new Float64Array(a.length); });
+    this.t = 0;
+  }
+  /* forward; opts {tau, causal, masked:Set}. Returns cache with raw scaled scores S[h], attention A[h], logits */
+  forward(ids, opts) {
+    opts = opts || {}; const T = ids.length, tau = Math.max(opts.tau || 1, 1e-6), causal = opts.causal !== false, masked = opts.masked || new Set(), p = this.p, sq = Math.sqrt(DK);
+    const X = new Float64Array(T * D), Q = new Float64Array(T * D), K = new Float64Array(T * D), Vv = new Float64Array(T * D), O = new Float64Array(T * D), Y = new Float64Array(T * D);
+    for (let t = 0; t < T; t++) for (let c = 0; c < D; c++) X[t * D + c] = p.E[ids[t] * D + c] + p.P[t * D + c];
+    for (let t = 0; t < T; t++) for (let c = 0; c < D; c++) { let q = 0, k = 0, v = 0; for (let e = 0; e < D; e++) { const x = X[t * D + e]; q += x * p.Wq[e * D + c]; k += x * p.Wk[e * D + c]; v += x * p.Wv[e * D + c]; } Q[t * D + c] = q; K[t * D + c] = k; Vv[t * D + c] = v; }
+    const S = [], A = [];
+    for (let h = 0; h < H; h++) {
+      const Sh = [], Ah = [];
+      for (let i = 0; i < T; i++) {
+        const s = new Float64Array(T), a = new Float64Array(T); let mx = -Infinity;
+        for (let j = 0; j < T; j++) { let d = 0; for (let c = 0; c < DK; c++) d += Q[i * D + h * DK + c] * K[j * D + h * DK + c]; s[j] = d / sq; if (!(causal && j > i) && !masked.has(j)) mx = Math.max(mx, s[j] / tau); }
+        let z = 0; for (let j = 0; j < T; j++) { if (causal && j > i || masked.has(j)) continue; a[j] = Math.exp(s[j] / tau - mx); z += a[j]; }
+        if (z > 0) for (let j = 0; j < T; j++) a[j] /= z;
+        for (let c = 0; c < DK; c++) { let o = 0; for (let j = 0; j < T; j++) o += a[j] * Vv[j * D + h * DK + c]; O[i * D + h * DK + c] = o; }
+        Sh.push(Array.from(s)); Ah.push(a);
+      }
+      S.push(Sh); A.push(Ah);
+    }
+    const logits = [];
+    for (let t = 0; t < T; t++) { for (let c = 0; c < D; c++) { let o = 0; for (let e = 0; e < D; e++) o += O[t * D + e] * p.Wo[e * D + c]; Y[t * D + c] = X[t * D + c] + o; }
+      const l = new Float64Array(V); for (let w = 0; w < V; w++) { let s = p.b[w]; for (let c = 0; c < D; c++) s += Y[t * D + c] * p.U[c * V + w]; l[w] = s; } logits.push(l); }
+    return {ids, T, X, Q, K, Vv, O, Y, S, A, logits, tau};
+  }
+  probs(l) { let mx = -Infinity; for (const v of l) mx = Math.max(mx, v); const e = Array.from(l, v => Math.exp(v - mx)), z = e.reduce((a, b) => a + b, 0); return e.map(v => v / z); }
+  /* mean next-word cross-entropy over a batch (arrays of {ids (inputs), tgt (clean ids)}); accumulates gradients into this.g if grad */
+  batch(items, grad) {
+    const p = this.p, g = this.g, sq = Math.sqrt(DK); let loss = 0, ntok = 0;
+    items.forEach(it => { ntok += it.tgt.length - 1; });
+    if (grad) NAMES.forEach(n => g[n].fill(0));
+    for (const it of items) {
+      const c = this.forward(it.ids, {tau: 1, causal: true}), T = c.T;
+      const dY = new Float64Array(T * D), dX = new Float64Array(T * D), dO = new Float64Array(T * D), dQ = new Float64Array(T * D), dK = new Float64Array(T * D), dV = new Float64Array(T * D);
+      for (let t = 0; t < T - 1; t++) {
+        const pr = this.probs(c.logits[t]), y = it.tgt[t + 1]; loss -= Math.log(Math.max(pr[y], 1e-300)) / ntok; if (!grad) continue;
+        for (let w = 0; w < V; w++) { const dl = (pr[w] - (w === y ? 1 : 0)) / ntok; g.b[w] += dl; for (let k = 0; k < D; k++) { g.U[k * V + w] += c.Y[t * D + k] * dl; dY[t * D + k] += dl * p.U[k * V + w]; } }
+      }
+      if (!grad) continue;
+      for (let t = 0; t < T; t++) for (let k = 0; k < D; k++) { dX[t * D + k] += dY[t * D + k]; for (let e = 0; e < D; e++) { g.Wo[e * D + k] += c.O[t * D + e] * dY[t * D + k]; dO[t * D + e] += dY[t * D + k] * p.Wo[e * D + k]; } }
+      for (let h = 0; h < H; h++) for (let i = 0; i < T; i++) {
+        const a = c.A[h][i], dA = new Float64Array(T); let dot = 0;
+        for (let j = 0; j < T; j++) { let s = 0; for (let k = 0; k < DK; k++) { s += dO[i * D + h * DK + k] * c.Vv[j * D + h * DK + k]; dV[j * D + h * DK + k] += a[j] * dO[i * D + h * DK + k]; } dA[j] = s; dot += a[j] * s; }
+        for (let j = 0; j < T; j++) { const dS = a[j] * (dA[j] - dot); if (dS === 0) continue; for (let k = 0; k < DK; k++) { dQ[i * D + h * DK + k] += dS * c.K[j * D + h * DK + k] / sq; dK[j * D + h * DK + k] += dS * c.Q[i * D + h * DK + k] / sq; } }
+      }
+      for (let t = 0; t < T; t++) for (let e = 0; e < D; e++) { const x = c.X[t * D + e]; let acc = 0;
+        for (let k = 0; k < D; k++) { g.Wq[e * D + k] += x * dQ[t * D + k]; g.Wk[e * D + k] += x * dK[t * D + k]; g.Wv[e * D + k] += x * dV[t * D + k]; acc += dQ[t * D + k] * p.Wq[e * D + k] + dK[t * D + k] * p.Wk[e * D + k] + dV[t * D + k] * p.Wv[e * D + k]; }
+        dX[t * D + e] += acc; }
+      for (let t = 0; t < T; t++) for (let e = 0; e < D; e++) { g.E[it.ids[t] * D + e] += dX[t * D + e]; g.P[t * D + e] += dX[t * D + e]; }
+    }
+    return loss;
+  }
+  adam(lr) {
+    const b1 = 0.9, b2 = 0.999, eps = 1e-8; this.t++; const c1 = 1 - Math.pow(b1, this.t), c2 = 1 - Math.pow(b2, this.t);
+    NAMES.forEach(n => { const p = this.p[n], g = this.g[n], m = this.m[n], v = this.v[n]; for (let i = 0; i < p.length; i++) { m[i] = b1 * m[i] + (1 - b1) * g[i]; v[i] = b2 * v[i] + (1 - b2) * g[i] * g[i]; p[i] -= lr * (m[i] / c1) / (Math.sqrt(v[i] / c2) + eps); } });
+  }
+  /* one training step on a fresh minibatch; inputs get 3% random <unk> replacement so unknown typed words are handled */
+  step(r, bs, lr) {
+    const items = []; for (let k = 0; k < bs; k++) { const s = genSentence(r); items.push({ids: s.ids.map((w, i) => (i > 0 && r() < 0.03) ? 0 : w), tgt: s.ids}); }
+    const loss = this.batch(items, true); this.adam(lr); return loss;
+  }
+}
+/* fixed evaluation set and metrics */
+function evalSet(n, seed) { const r = rng(seed || 4242), out = []; for (let i = 0; i < n; i++) out.push(genSentence(r)); return out; }
+function evalLoss(model, set) { return model.batch(set.map(s => ({ids: s.ids, tgt: s.ids})), false); }
+/* probability mass the model puts on the earlier nouns at the copy position, averaged over sentences that have one */
+function copyTest(model, set) {
+  let tot = 0, n = 0; set.forEach(s => { if (s.copyPos < 0) return; const c = model.forward(s.ids.slice(0, s.copyPos + 1), {tau: 1, causal: true}), pr = model.probs(c.logits[s.copyPos]); let m = 0; new Set(s.earlier).forEach(w => { m += pr[ID[w]]; }); tot += m; n++; });
+  return n ? tot / n : NaN;
+}
+/* where does each head put its attention? On average over all positions: fraction of weight on itself, the previous word,
+   the first word, and any noun; plus, at the "and the" copy position only, the weight on the earlier nouns that can be copied */
+function headProfile(model, set) {
+  const acc = Array.from({length: H}, () => [0, 0, 0, 0, 0]); let n = 0, nc = 0;
+  set.forEach(s => { const c = model.forward(s.ids, {tau: 1, causal: true}); for (let i = 1; i < c.T; i++) { n++; for (let h = 0; h < H; h++) { const a = c.A[h][i]; acc[h][0] += a[i]; acc[h][1] += a[i - 1]; acc[h][2] += a[0]; let nn = 0; for (let j = 0; j <= i; j++) if (NOUNS.has(s.ids[j])) nn += a[j]; acc[h][3] += nn; } }
+    if (s.copyPos >= 0) { nc++; const set2 = new Set(s.earlier.map(w => ID[w])); for (let h = 0; h < H; h++) { const a = c.A[h][s.copyPos]; let m = 0; for (let j = 0; j < s.copyPos; j++) if (set2.has(s.ids[j])) m += a[j]; acc[h][4] += m; } } });
+  return acc.map(a => [a[0] / n, a[1] / n, a[2] / n, a[3] / n, a[4] / Math.max(nc, 1)]);
+}
+/* count-based bigram baseline: a model that sees only the current word (no attention, no position) */
+function bigramLoss(trainN, set) {
+  const r = rng(99), cnt = Array.from({length: V}, () => new Float64Array(V).fill(0.01));
+  for (let i = 0; i < trainN; i++) { const s = genSentence(r).ids; for (let t = 0; t + 1 < s.length; t++) cnt[s[t]][s[t + 1]]++; }
+  let l = 0, n = 0; set.forEach(s => { for (let t = 0; t + 1 < s.ids.length; t++) { const row = cnt[s.ids[t]], z = row.reduce((a, b) => a + b, 0); l -= Math.log(row[s.ids[t + 1]] / z); n++; } }); return l / n;
+}
+const api = {VOCAB, ID, NOUNS, D, H, DK, V, PMAX, Model, rng, genSentence, evalSet, evalLoss, copyTest, headProfile, bigramLoss, NAMES, SIZES};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.TR = api;
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const {HEADS, CLASSES, tokenize, classOf, scores, attention, entropyBits} = AT;
+const TRAIN_STEPS = 3000, LR0 = 0.02, BATCH = 16;
+const PRESETS = [
+  ["the cat sat on the mat because it was tired", "Example: it, tired, mat"],
+  ["she said that she saw the dog and the dog barked", "Example: repeated words"],
+  ["the quick brown fox jumps over the lazy dog", "Example: adjectives and nouns"],
+  ["the big dog chased the small cat", "Example: short sentence"]];
+const S = {text: PRESETS[0][0], tokens: [], key: "", hidden: new Set(), head: 2, q: 0, tau: 1, causal: false, raw: [], att: [], model: "hand", tr: null, frameN: 0, cache: null};
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+const f2 = v => v.toFixed(2), MINUS = "\u2212";
+const sgn = v => (v < 0 ? "\u2212" : "") + Math.abs(v).toFixed(2);
+function shade(w) { const t = Math.max(0, Math.min(1, w)), a = [255, 255, 255], b = [8, 119, 189]; return `rgb(${a.map((x, i) => Math.round(x + (b[i] - x) * t)).join(",")})`; }
+
+function recompute() {
+  const r = tokenize(S.text); S.tokens = r.tokens; S.trunc = r.truncated;
+  const key = S.tokens.join("\u0001");
+  if (key !== S.key) { S.key = key; S.hidden = new Set(); const it = S.tokens.findIndex(t => t.toLowerCase() === "it"); S.q = it >= 0 ? it : Math.max(0, S.tokens.length - 1); }
+  S.q = Math.min(S.q, Math.max(0, S.tokens.length - 1));
+  S.cache = null;
+  if (S.model === "trained" && S.tr) { S.ids = S.tokens.map(t => { const k = TR.ID[t.toLowerCase()]; return k === undefined ? 0 : k; }); const c = S.tr.m.forward(S.ids, {tau: 1, causal: false}); S.raw = c.S.map(sh => sh.map(r => Array.from(r))); }
+  else S.raw = HEADS.map(h => scores(h, S.tokens));
+  S.att = S.raw.map(raw => attention(raw, {tau: S.tau, causal: S.causal, masked: S.hidden}));
+}
+
+function heads() {
+  if (S.model !== "trained") return HEADS;
+  const p = S.tr && S.tr.prof, t = S.tr;
+  return [0, 1, 2, 3].map(k => ({name: "Head " + (k + 1), dk: TR.DK, desc: !p ? "" :
+    `Learned head (step ${t.step}). Averaged over made-up training sentences, with the causal mask and \u03c4 = 1, it puts ${(100 * p[k][0]).toFixed(0)}% of its weight on the word itself, ${(100 * p[k][1]).toFixed(0)}% on the previous word, ${(100 * p[k][2]).toFixed(0)}% on the first word and ${(100 * p[k][3]).toFixed(0)}% on nouns. At the \u201cand the\u201d position, where the next word repeats an earlier noun, it puts ${(100 * p[k][4]).toFixed(0)}% on the earlier nouns. Learned heads are usually mixtures, not one clean job.`}));
+}
+/* ---------- token strip with arcs ---------- */
+function drawChips() {
+  const n = S.tokens.length, svg = $("chipsvg"); if (!n) { svg.innerHTML = ""; return; }
+  const W = 740, cw = Math.min(84, Math.floor(660 / n)), gap = n > 1 ? Math.min(10, (700 - n * cw) / (n - 1)) : 0, tot = n * cw + (n - 1) * gap, ox = (W - tot) / 2, y0 = 160, ch = 46;
+  const cx = i => ox + i * (cw + gap) + cw / 2, {W: Wt, allowed} = S.att[S.head], row = Wt[S.q];
+  let s = "";
+  for (let j = 0; j < n; j++) {
+    const w = row[j]; if (w < 0.01) continue; const col = "#0877bd", sw = 1 + 10 * w, op = 0.18 + 0.82 * Math.sqrt(w);
+    if (j === S.q) s += `<path d="M${cx(j) - 9},${y0} C${cx(j) - 26},${y0 - 44} ${cx(j) + 26},${y0 - 44} ${cx(j) + 9},${y0}" fill="none" stroke="${col}" stroke-width="${sw}" opacity="${op}" stroke-linecap="round"/>` + (w >= 0.08 ? `<text x="${cx(j)}" y="${y0 - 36}" text-anchor="middle" font-size="11" fill="#0877bd" stroke="#fafafa" stroke-width="3" paint-order="stroke">${f2(w)}</text>` : "");
+    else { const x1 = cx(S.q), x2 = cx(j), h = Math.min(250, 50 + 36 * Math.abs(j - S.q)), mx = (x1 + x2) / 2; s += `<path d="M${x1},${y0} Q${mx},${y0 - h} ${x2},${y0}" fill="none" stroke="${col}" stroke-width="${sw}" opacity="${op}" stroke-linecap="round"/>` + (w >= 0.08 ? `<text x="${mx}" y="${y0 - h / 2 - 5}" text-anchor="middle" font-size="11" fill="#0877bd" stroke="#fafafa" stroke-width="3" paint-order="stroke">${f2(w)}</text>` : ""); }
+  }
+  for (let j = 0; j < n; j++) {
+    const x = ox + j * (cw + gap), sel = j === S.q, hid = S.hidden.has(j), vis = allowed[S.q][j];
+    s += `<g data-q="${j}" style="cursor:pointer" opacity="${vis || sel ? 1 : 0.45}"><rect x="${x}" y="${y0}" width="${cw}" height="${ch}" rx="8" fill="${sel ? "#e8f3fb" : "#fff"}" stroke="${sel ? "#1b3b4f" : hid ? "#c4c9cd" : "#9aa3a9"}" stroke-width="${sel ? 2.6 : 1.3}" ${hid ? 'stroke-dasharray="4 3"' : ""}/>`;
+    const fs = cw < 56 ? 11 : 13.5, mc = Math.max(3, Math.floor((cw - 8) / (fs * 0.56))), full = S.tokens[j], lab = full.length > mc ? full.slice(0, mc - 1) + "\u2026" : full;
+    s += `<text x="${x + cw / 2}" y="${y0 + 21}" text-anchor="middle" font-size="${fs}" font-weight="700" fill="${hid ? "#aaa" : "#222"}" ${hid ? 'text-decoration="line-through"' : ""}>${esc(lab)}<title>${esc(full)}</title></text>`;
+    s += `<text x="${x + cw / 2}" y="${y0 + 37}" text-anchor="middle" font-size="10" fill="#999">${CLASSES[classOf(S.tokens[j])]}</text>`;
+    s += `<g data-x="${j}" style="cursor:pointer"><circle cx="${x + cw - 8}" cy="${y0 + 8}" r="7" fill="${hid ? "#0877bd" : "#eef0f2"}"/><text x="${x + cw - 8}" y="${y0 + 11.5}" text-anchor="middle" font-size="${hid ? 10 : 11}" fill="${hid ? "#fff" : "#777"}">${hid ? "\u21ba" : "\u00d7"}</text><title>${hid ? "Show this word again" : "Hide this word from all other words"}</title></g></g>`;
+  }
+  svg.innerHTML = s;
+  $("chiptitle").textContent = `Attention from \u201c${S.tokens[S.q]}\u201d \u2014 head: ${heads()[S.head].name}`;
+}
+
+/* ---------- matrix ---------- */
+function drawMatrix() {
+  const n = S.tokens.length, svg = $("matrixsvg"); if (!n) { svg.innerHTML = ""; return; }
+  const c = Math.max(30, Math.min(46, Math.floor(560 / n))), x0 = 100, y0 = 96, Wd = x0 + n * c + 10, Ht = y0 + n * c + 10, {W: Wt, allowed} = S.att[S.head];
+  svg.setAttribute("viewBox", `0 0 ${Wd} ${Ht}`); svg.style.width = "100%"; svg.style.maxWidth = Wd + "px"; svg.style.height = "auto";
+  let s = `<defs><pattern id="hat" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="6" height="6" fill="#f1f1f1"/><line x1="0" y1="0" x2="0" y2="6" stroke="#cfcfcf" stroke-width="2"/></pattern></defs>`;
+  s += `<text x="${x0}" y="14" font-size="11.5" fill="#777">key: the word being looked at \u2192</text>`;
+  s += `<text transform="translate(14,${y0 + n * c / 2}) rotate(-90)" text-anchor="middle" font-size="11.5" fill="#777">query: the word that is looking</text>`;
+  for (let j = 0; j < n; j++) s += `<text transform="translate(${x0 + j * c + c / 2 - 2},${y0 - 8}) rotate(-40)" font-size="12" fill="${S.hidden.has(j) ? "#bbb" : "#333"}" ${S.hidden.has(j) ? 'text-decoration="line-through"' : ""}>${esc(S.tokens[j])}</text>`;
+  for (let i = 0; i < n; i++) {
+    s += `<text data-i="${i}" x="${x0 - 8}" y="${y0 + i * c + c / 2 + 4}" text-anchor="end" font-size="12" font-weight="${i === S.q ? 700 : 400}" fill="#333">${esc(S.tokens[i])}</text>`;
+    for (let j = 0; j < n; j++) {
+      const w = Wt[i][j], ok = allowed[i][j], x = x0 + j * c, y = y0 + i * c;
+      s += `<g data-i="${i}" data-j="${j}"><rect x="${x}" y="${y}" width="${c}" height="${c}" fill="${ok ? shade(w) : "url(#hat)"}" stroke="#fff" stroke-width="1"/>`;
+      if (ok) s += `<text x="${x + c / 2}" y="${y + c / 2 + 4}" text-anchor="middle" font-size="${c < 34 ? 10 : 11}" fill="${w > 0.5 ? "#fff" : w < 0.005 ? "#c8cdd1" : "#1b3b4f"}">${w < 0.005 ? "0" : f2(w)}</text>`;
+      s += `</g>`;
+    }
+  }
+  s += `<rect x="${x0 - 1}" y="${y0 + S.q * c - 1}" width="${n * c + 2}" height="${c + 2}" fill="none" stroke="#1b3b4f" stroke-width="2.4" rx="2" pointer-events="none"/>`;
+  svg.innerHTML = s;
+}
+
+/* ---------- row detail ---------- */
+function predHTML() {
+  if (S.model !== "trained" || !S.tr || !S.tokens.length) return "";
+  const c = S.tr.m.forward(S.ids, {tau: S.tau, causal: S.causal, masked: S.hidden}), pr = S.tr.m.probs(c.logits[S.q]);
+  const top = pr.map((p, w) => [p, w]).sort((a, b) => b[0] - a[0]).slice(0, 5);
+  let t = `<div class="pred"><div class="pt">The model is trained to guess the next word. Its top guesses after \u201c${esc(S.tokens[S.q])}\u201d, using the words this row can see:</div>`;
+  top.forEach(([p, w]) => { t += `<div class="pr"><span class="w">${esc(TR.VOCAB[w])}</span><span class="bar" style="width:${Math.round(p * 140)}px"></span>${(100 * p).toFixed(1)}%</div>`; });
+  if (!S.causal) t += `<div class="hint" style="margin-top:4px">The model was trained with the causal mask. With no mask it also sees later words, which it never saw in training, so this guess is not reliable.</div>`;
+  if (S.tr.step === 0) t += `<div class="hint" style="margin-top:4px">Untrained: the guesses are essentially random.</div>`;
+  return t + "</div>";
+}
+function drawDetail() {
+  const n = S.tokens.length, box = $("detail"); if (!n) { box.innerHTML = '<span class="hint">Type a sentence to begin.</span>'; return; }
+  const h = heads()[S.head], i = S.q, raw = S.raw[S.head][i], {W: Wt, allowed} = S.att[S.head], row = Wt[i], sd = Math.sqrt(h.dk), tau = S.tau;
+  $("dettitle").textContent = `How the row for \u201c${S.tokens[i]}\u201d is computed (head: ${h.name})`;
+  const vis = allowed[i].filter(Boolean).length, mx = Math.max(...row);
+  let t = `<div class="fline">score<sub>j</sub> = q\u00b7k<sub>j</sub> / \u221ad<sub>k</sub> &nbsp;&nbsp;(d<sub>k</sub> = ${h.dk}, \u221ad<sub>k</sub> = ${sd.toFixed(2)})</div><div class="fline">weight<sub>j</sub> = exp(score<sub>j</sub> / \u03c4) / \u03a3<sub>k</sub> exp(score<sub>k</sub> / \u03c4) &nbsp;&nbsp;(\u03c4 = ${tau.toFixed(2)})</div>`;
+  t += `<table class="dtab"><tr><th>Key word</th><th>q\u00b7k</th><th>score = q\u00b7k/\u221ad<sub>k</sub></th><th>score / \u03c4</th><th style="text-align:left">weight</th></tr>`;
+  for (let j = 0; j < n; j++) {
+    const ok = allowed[i][j], w = row[j], why = S.hidden.has(j) ? "hidden" : "masked";
+    t += `<tr class="${ok ? (w === mx && mx > 0 ? "top" : "") : "off"}"><td class="k">${esc(S.tokens[j])}</td><td>${sgn(raw[j] * sd)}</td><td>${sgn(raw[j])}</td><td>${ok ? sgn(raw[j] / tau) : "\u2212\u221e (" + why + ")"}</td><td class="w">${ok ? `<span class="bar" style="width:${Math.round(w * 90)}px"></span>${w.toFixed(3)}` : "0.000"}</td></tr>`;
+  }
+  t += `<tr><td colspan="4" style="text-align:right;color:#888">sum of weights</td><td class="w"><b>${row.reduce((a, b) => a + b, 0).toFixed(3)}</b></td></tr></table>`;
+  if (vis === 0) t += `<div class="stat">No word is visible to this row (the mask blocks every key), so all weights are 0.</div>`;
+  else { const k = row.indexOf(mx), H = entropyBits(row); t += `<div class="stat">Highest weight: <b>${mx.toFixed(2)}</b> on \u201c${esc(S.tokens[k])}\u201d. Entropy of the row: <b>${H.toFixed(2)} bits</b> (0 = all weight on one word; ${Math.log2(vis).toFixed(2)} = perfectly even over the ${vis} visible word${vis > 1 ? "s" : ""}).</div>`; }
+  t += predHTML();
+  box.innerHTML = t;
+}
+
+/* ---------- head picker ---------- */
+function drawMinis() {
+  const n = S.tokens.length; let s = "";
+  heads().forEach((h, k) => {
+    let g = "";
+    if (n) { const c = 120 / n, {W: Wt, allowed} = S.att[k]; for (let i = 0; i < n; i++) for (let j = 0; j < n; j++) g += `<rect x="${j * c}" y="${i * c}" width="${c + 0.4}" height="${c + 0.4}" fill="${allowed[i][j] ? shade(Wt[i][j]) : "#e4e4e4"}"/>`; g += `<rect x="0" y="${S.q * c}" width="120" height="${c}" fill="none" stroke="#1b3b4f" stroke-width="1.2"/>`; }
+    s += `<div class="mini ${k === S.head ? "sel" : ""}" data-h="${k}"><svg viewBox="0 0 120 120"><rect width="120" height="120" fill="#fff" stroke="#e0e0e0"/>${g}</svg><div class="nm">${esc(h.name)}</div></div>`;
+  });
+  $("minis").innerHTML = s;
+  $("hdesc").innerHTML = `<b>${esc(heads()[S.head].name)}</b><span class="tag">${S.model === "trained" ? "learned, not designed" : "hand-set, not trained"}</span><br>${esc(heads()[S.head].desc)}`;
+}
+function drawAll() {
+  drawChips(); drawMatrix(); drawDetail(); drawMinis();
+  let info = S.tokens.length ? `${S.tokens.length} token${S.tokens.length > 1 ? "s" : ""}${S.trunc ? " (cut at " + AT.MAXN + ")" : ""}. Words and punctuation marks are separate tokens.` : "No tokens yet.";
+  if (S.model === "trained") { const unk = S.tokens.filter(t => TR.ID[t.toLowerCase()] === undefined); if (unk.length) info += ` Not in the trained model\u2019s 36-word vocabulary, read as <unk>: ${unk.join(", ")}.`; }
+  $("tokinfo").textContent = info;
+  $("unhide").style.display = S.hidden.size ? "" : "none";
+}
+function update() { recompute(); drawAll(); }
+
+/* ---------- events ---------- */
+$("text").value = S.text;
+PRESETS.forEach(p => $("preset").add(new Option(p[1], p[0]))); $("preset").add(new Option("Your own sentence", ""));
+$("preset").value = S.text;
+$("text").oninput = e => { S.text = e.target.value; const m = PRESETS.find(p => p[0] === S.text); $("preset").value = m ? m[0] : ""; update(); };
+$("preset").onchange = e => { if (e.target.value === "") { $("text").focus(); return; } S.text = e.target.value; $("text").value = S.text; update(); };
+$("tau").oninput = e => { S.tau = Math.pow(10, +e.target.value / 100); $("tv").textContent = S.tau.toFixed(2); update(); };
+document.querySelectorAll("input[name=mask]").forEach(r => r.onchange = () => { S.causal = r.value === "causal" && r.checked; update(); });
+$("unhide").onclick = () => { S.hidden = new Set(); update(); };
+$("minis").onclick = e => { const m = e.target.closest("[data-h]"); if (m) { S.head = +m.dataset.h; drawAll(); } };
+$("chipsvg").onclick = e => { const x = e.target.closest("[data-x]"); if (x) { const j = +x.dataset.x; S.hidden.has(j) ? S.hidden.delete(j) : S.hidden.add(j); update(); return; } const q = e.target.closest("[data-q]"); if (q) { S.q = +q.dataset.q; drawAll(); } };
+$("matrixsvg").onclick = e => { const g = e.target.closest("[data-i]"); if (g) { S.q = +g.dataset.i; drawAll(); } };
+$("matrixsvg").onmouseover = e => {
+  const g = e.target.closest("[data-j]"); if (!g) return; const i = +g.dataset.i, j = +g.dataset.j, {W: Wt, allowed} = S.att[S.head];
+  $("hover").innerHTML = allowed[i][j] ? `\u201c${esc(S.tokens[i])}\u201d looks at \u201c${esc(S.tokens[j])}\u201d with weight <b>${Wt[i][j].toFixed(3)}</b> (score ${sgn(S.raw[S.head][i][j])}).` : `\u201c${esc(S.tokens[i])}\u201d cannot look at \u201c${esc(S.tokens[j])}\u201d: ${S.hidden.has(j) ? "that word is hidden" : "blocked by the causal mask"}.`;
+};
+$("matrixsvg").onmouseleave = () => { $("hover").innerHTML = ""; };
+
+/* ---------- training ---------- */
+function ensureTrainer() {
+  if (S.tr) return; const set = TR.evalSet(120, 4242);
+  S.tr = {seed: 1, set, base: TR.bigramLoss(20000, set), running: false, speed: "normal", max: TRAIN_STEPS, m: null, rng: null, step: 0, pts: [], copy: 0, prof: null, profStep: 0};
+  trReset();
+}
+function trEval() { const t = S.tr; t.pts.push([t.step, TR.evalLoss(t.m, t.set)]); t.copy = TR.copyTest(t.m, t.set); }
+function trProf() { const t = S.tr; t.prof = TR.headProfile(t.m, t.set); t.profStep = t.step; }
+function trReset() { const t = S.tr; t.running = false; t.m = new TR.Model(t.seed); t.rng = TR.rng(1000 + t.seed); t.step = 0; t.pts = []; trEval(); trProf(); }
+function trUI() {
+  const t = S.tr; if (!t || S.model !== "trained") return;
+  $("trstep").textContent = "Step " + t.step; $("trmax").textContent = t.max; $("trpause").disabled = !t.running; $("trplay").disabled = t.running;
+  const last = t.pts[t.pts.length - 1][1];
+  $("trmetrics").innerHTML = `Next-word loss: <b>${last.toFixed(2)}</b> <span style="color:#888">(a model that sees only the current word: ${t.base.toFixed(2)})</span><br>Copy test: <b>${(100 * t.copy).toFixed(0)}%</b> <span style="color:#888">of the probability goes to the earlier nouns after \u201cand the\u201d</span>`;
+  $("trnote").innerHTML = `Task: predict the next word of made-up sentences from a 36-word vocabulary (the four examples are built from it). Weights start random, so attention starts nearly even. It is trained with the causal mask, so \u201cCausal\u201d is selected for you.`;
+  drawLoss();
+}
+function drawLoss() {
+  const cv = $("lossc"), t = S.tr, w = cv.clientWidth || 320, hgt = 150, d = window.devicePixelRatio || 1; cv.width = Math.round(w * d); cv.height = Math.round(hgt * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, hgt);
+  const L = 30, R = 6, T = 8, B = 18, W = w - L - R, H = hgt - T - B, X = s => L + W * s / t.max, Y = v => T + H * (1 - Math.min(v, 4) / 4);
+  c.font = "10px Roboto,Arial,sans-serif"; c.textAlign = "right"; c.textBaseline = "middle";
+  for (let v = 0; v <= 4; v++) { c.strokeStyle = "#ececec"; c.beginPath(); c.moveTo(L, Y(v)); c.lineTo(L + W, Y(v)); c.stroke(); c.fillStyle = "#888"; c.fillText(v, L - 4, Y(v)); }
+  c.textBaseline = "top"; [0, 1000, 2000, 3000].forEach(s => { if (s <= t.max) { c.textAlign = s === 0 ? "left" : s === t.max ? "right" : "center"; c.fillText(s, X(s), T + H + 3); } });
+  c.setLineDash([4, 3]); c.strokeStyle = "#999"; c.beginPath(); c.moveTo(L, Y(t.base)); c.lineTo(L + W, Y(t.base)); c.stroke(); c.setLineDash([]);
+  c.fillStyle = "#888"; c.textAlign = "right"; c.textBaseline = "bottom"; c.fillText("sees only the current word", L + W, Y(t.base) - 2);
+  c.strokeStyle = "#e8590c"; c.lineWidth = 2; c.beginPath(); t.pts.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke(); c.lineWidth = 1;
+  c.fillStyle = "#e8590c"; c.textAlign = "left"; c.textBaseline = "top"; c.fillText("loss", L + 4, T);
+}
+function trLoop() {
+  requestAnimationFrame(trLoop); const t = S.tr; if (!t || !t.running || S.model !== "trained") return;
+  const t0 = performance.now(), per = {slow: 1, normal: 3, fast: 8}[t.speed]; let did = 0;
+  while (did < per && t.step < t.max && performance.now() - t0 < 25) { const lr = LR0 * (0.05 + 0.95 * (1 - t.step / t.max)); t.m.step(t.rng, BATCH, lr); t.step++; did++; if (t.step % 50 === 0) trEval(); }
+  if (t.step >= t.max) t.running = false;
+  S.frameN++;
+  if (did && (S.frameN % 4 === 0 || !t.running)) { if (!t.running || t.step - t.profStep >= 150) trProf(); update(); trUI(); }
+}
+$("trplay").onclick = () => { const t = S.tr; if (t.running) return; if (t.step >= t.max) trReset(); t.running = true; trUI(); };
+$("trpause").onclick = () => { const t = S.tr; t.running = false; trProf(); update(); trUI(); };
+$("trreset").onclick = () => { trReset(); update(); trUI(); };
+$("trseed").onclick = () => { S.tr.seed++; trReset(); update(); trUI(); };
+$("trspeed").onchange = () => { S.tr.speed = $("trspeed").value; };
+document.querySelectorAll("input[name=model]").forEach(r => r.onchange = () => {
+  if (!r.checked) return; S.model = r.value;
+  if (S.model === "trained") { ensureTrainer(); if (!S.causalSet) { S.causalSet = true; S.causal = true; document.querySelector("input[name=mask][value=causal]").checked = true; } }
+  else if (S.tr) S.tr.running = false;
+  $("trainbox").style.display = S.model === "trained" ? "" : "none"; update(); trUI();
+});
+requestAnimationFrame(trLoop);
+update();
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{drawAll();}catch(e){} });
+</script>
+</body>
+</html>

@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Backprop Step-through</title>
+<style>
+  :root{--orange:#f59322;--blue:#0877bd;--navy:#1b3b4f;--red:#e8590c;--green:#2e9e5b;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px}
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 24px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #pause{width:38px;height:38px;font-size:13px;letter-spacing:-1px}
+  #pause:disabled{opacity:.35;cursor:default}
+  #pause:disabled:hover{background:#fff}
+  #cnt{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  #rankbox{min-width:260px}
+  #rankv{font-size:24px;font-weight:300;font-variant-numeric:tabular-nums}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  canvas{display:block}
+  
+  #maps canvas{width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #maps .cap{font-size:12px;font-weight:600;color:#333;margin-top:6px}
+  #maps .sub{font-size:11.5px;color:#888;font-variant-numeric:tabular-nums}
+  .chartbox{margin-bottom:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .chartbox .ct select{font-weight:400;font-size:12px;min-width:80px;padding:2px 6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+  .chartframe canvas{max-width:100%;cursor:pointer}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0 4px;font-size:12px;color:#555}
+  .chips span{display:inline-flex;align-items:center;gap:6px}
+  .chips i{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .chips i.dot{width:9px;height:9px;border-radius:50%}
+  .chips i.ln{width:22px;height:0;border-radius:0;border-top:3px solid}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .nums hr{grid-column:1/-1;border:0;border-top:1px solid #e8e8e8;width:100%;margin:2px 0}
+  #verdict{margin-top:10px;font-size:12.5px;padding:7px 9px;border-radius:5px;background:#f3f5f6;color:#444}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  #tdesc{font-size:12.5px;color:#666;margin:6px 0 8px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .sbtn{border:1px solid #ccc;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12.5px}
+  .sbtn:hover{background:#f0f0f0}
+  .sect{margin-top:26px}
+  .acc{color:#0877bd;font-weight:600}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .sect2{margin-top:22px}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}#maps{grid-template-columns:repeat(2,1fr)}}
+
+  #bar .stepinfo{display:flex;flex-direction:column;gap:6px;min-width:300px;flex:1;max-width:520px}
+  #bar .stepinfo .top{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:#444}
+  #bar .stepinfo .top b{font-weight:600}
+  #phase{font-size:12px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
+  #phase.f{color:#0877bd}#phase.b{color:#e8590c}#phase.s{color:#888}
+  #prog{display:flex;gap:3px;height:8px}
+  #prog i{flex:1;background:#dfe3e6;border-radius:2px}
+  #prog i.fdone{background:#0877bd}#prog i.bdone{background:#e8590c}#prog i.cur{outline:2px solid #1b3b4f;outline-offset:1px}
+  #prog i.gap{flex:0 0 10px;background:transparent}
+  .btn svg{display:block}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #gwrap{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:6px}
+  #gsvg{display:block;width:100%;height:auto}
+  .gdesc{font-size:12.5px;color:#666;margin:0 0 10px}
+  #explain{margin-top:16px;border:1px solid var(--line);border-radius:8px;padding:14px 18px;background:#fff;min-height:170px}
+  #explain h4{margin:0 0 8px;font-size:15px;font-weight:600;color:#222}
+  #explain .ln{font-size:13.5px;line-height:1.6;color:#444;margin:3px 0}
+  #explain .eq{font-family:"Roboto Mono",Menlo,Consolas,monospace;font-size:13px;background:#f3f5f6;padding:1px 6px;border-radius:3px;color:#222;white-space:nowrap}
+  #explain .chain{margin:8px 0 4px;padding:8px 10px;border-left:3px solid #e8590c;background:#fff6f0;font-size:13.5px}
+  #explain .fwdbox{margin:8px 0 4px;padding:8px 10px;border-left:3px solid #0877bd;background:#f1f8fd;font-size:13.5px}
+  #explain .small{font-size:12.5px;color:#777}
+  .gtab{width:100%;border-collapse:collapse;font-size:12.5px;font-variant-numeric:tabular-nums}
+  .gtab th{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 0 6px}
+  .gtab th:first-child,.gtab td:first-child{text-align:left}
+  .gtab td{text-align:right;padding:3px 0;border-top:1px solid #eee}
+  .gtab td.or{color:#e8590c;font-weight:500}
+  #chk{font-size:12px;color:#666;margin-top:8px}
+  .eqline{font-family:"Roboto Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;padding:8px 12px;border-radius:5px;color:#222;margin:8px 0;overflow-x:auto}
+  .rulestab{border-collapse:collapse;font-size:14px;margin:8px 0 4px}
+  .rulestab td,.rulestab th{padding:4px 14px 4px 0;text-align:left;border-bottom:1px solid #eee;font-weight:400}
+  .rulestab th{font-weight:600;font-size:12px;letter-spacing:.04em;text-transform:uppercase;color:#888}
+</style>
+<body>
+<div id="app">
+  <h1>Backprop Step-through</h1>
+  <p class="blurb">A neural network is a long chain of small operations. Backpropagation computes how the final loss changes when each input or weight changes, by walking the chain backwards and applying the chain rule one node at a time. Here the chain is tiny, so you can follow every number. Step forward to compute the values, then step backward to compute the gradients. Pick the graph and change its input values in the <b>Settings</b> panel on the right.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="restart" title="Reset: go back to step 0">&#8635;</button>
+      <button class="btn" id="back" title="Step back"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="2" y="3" width="2" height="10" fill="#444"/><path d="M13 3v10L5 8z" fill="#444"/></svg></button>
+      <button class="btn" id="play" title="Play: step automatically">&#9654;</button>
+      <button class="btn" id="pause" title="Pause" disabled>&#10074;&#10074;</button>
+      <button class="btn" id="fwd" title="Step forward"><svg width="16" height="16" viewBox="0 0 16 16"><rect x="12" y="3" width="2" height="10" fill="#444"/><path d="M3 3v10l8-5z" fill="#444"/></svg></button>
+    </div>
+    <div class="stepinfo">
+      <div class="top"><span><b id="stepn">Step 0</b> <span style="color:#888">of <span id="stepmax">0</span></span></span><span id="phase" class="s">Inputs only</span></div>
+      <div id="prog"></div>
+    </div>
+    <div class="grp"><label for="speed">Auto-play speed</label><select id="speed"><option value="2200">Slow</option><option value="1300" selected>Normal</option><option value="600">Fast</option></select></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <p class="gdesc" id="gdesc"></p>
+      <div id="gwrap"><svg id="gsvg" viewBox="0 0 860 400" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div class="chips"><span><i class="ln" style="border-color:#0877bd"></i>blue line: forward, value computed</span><span><i class="ln" style="border-color:#e8590c"></i>orange line: backward, gradient passed back</span></div>
+      <div class="chips" style="margin-top:4px"><span style="color:#0877bd"><b>blue number</b>&nbsp;= value</span><span style="color:#e8590c"><b>orange number</b>&nbsp;= gradient of the output</span></div>
+      <div id="explain"></div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings &mdash; choose the graph and its inputs</div>
+      <div class="card setcard">
+        <div class="sub">Graph</div>
+        <div class="row2"><select id="graph" style="max-width:100%;font-size:12.5px"></select></div>
+        <div class="sub">Input values</div>
+        <div id="sliders"></div>
+        <div class="row2"><button class="sbtn" id="defaults">Back to default values</button></div>
+        <div class="hint" style="font-size:11.5px;color:#999">Changing a value recomputes everything but keeps you on the same step.</div>
+      </div>
+
+      <div class="head sect2">Gradients of the output</div>
+      <div class="card">
+        <table class="gtab" id="gtab"></table>
+        <div id="chk"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is.</b> A scalar toy: every node holds one number. Real networks apply the same two passes to large arrays of numbers (tensors), but the logic at each node is the one you see here.</div>
+
+    <h3>The graph</h3>
+    <p>Each box is a node. The boxes on the left with no incoming arrows are the <i>leaves</i>: inputs, weights, biases and targets. Every other box applies one simple operation (add, multiply, sigmoid, square, ...) to the nodes that point into it. The last node is the output, here a loss or a function value. Each box shows its name, the formula that defines it, its value (blue), and once the backward pass has reached it, its gradient (orange).</p>
+
+    <h3>Forward pass</h3>
+    <p>Starting from the leaves, compute each node from the nodes before it, in order. Nothing is differentiated yet. The values are kept, because the backward pass needs them.</p>
+
+    <h3>Backward pass</h3>
+    <p>The question is: if this node changed by a tiny amount, how much would the output change? That ratio is the node's gradient, written ∂out/∂node. It starts at the output, where ∂out/∂out = 1. Then the nodes are visited in reverse order. At a node <i>n</i> with input <i>u</i>, two numbers are combined:</p>
+    <ul>
+      <li>the <b>upstream gradient</b> ∂out/∂n, already known because every node after <i>n</i> has been handled;</li>
+      <li>the <b>local derivative</b> ∂n/∂u, which depends only on that one operation and the values saved in the forward pass.</li>
+    </ul>
+    <p>The chain rule says to multiply them:</p>
+    <div class="eqline">∂out/∂u &nbsp;+=&nbsp; (∂out/∂n) · (∂n/∂u)</div>
+    <p>The orange box in the explanation panel spells this out with the actual numbers at every step.</p>
+
+    <h3>Why gradients are added</h3>
+    <p>If a node is used by more than one later node, a change in it reaches the output along more than one path, and the effects add. That is the "+=" above. The graph "One input used twice" shows it: x feeds both x·y and sin(x), so its gradient is a sum of two contributions, which you can watch arrive in two separate steps.</p>
+
+    <h3>Why backwards</h3>
+    <p>A node's gradient is only final after every node that uses it has been processed. Walking the graph in reverse order guarantees that, and it gives the gradient of the output with respect to every leaf in one sweep, instead of one separate computation per leaf.</p>
+
+    <h3>The local derivatives used here</h3>
+    <table class="rulestab">
+      <tr><th>Operation</th><th>Local derivative</th></tr>
+      <tr><td>n = u + v</td><td>∂n/∂u = 1, &nbsp;∂n/∂v = 1</td></tr>
+      <tr><td>n = u − v</td><td>∂n/∂u = 1, &nbsp;∂n/∂v = −1</td></tr>
+      <tr><td>n = u · v</td><td>∂n/∂u = v, &nbsp;∂n/∂v = u</td></tr>
+      <tr><td>n = σ(u)</td><td>∂n/∂u = n(1 − n)</td></tr>
+      <tr><td>n = u²</td><td>∂n/∂u = 2u</td></tr>
+      <tr><td>n = sin(u)</td><td>∂n/∂u = cos(u)</td></tr>
+    </table>
+
+    <h3>The gradient check</h3>
+    <p>When the backward pass finishes, the panel on the right compares each leaf gradient with a numerical estimate: nudge the leaf by ±10<sup>−5</sup>, rerun the whole forward pass, and take (output(+) − output(−)) / (2·10<sup>−5</sup>). The two should agree to many digits. This check is the standard way to test a hand-written backward pass. In my tests the two agreed to about 10<sup>−10</sup> (relative) on 1,800 randomly drawn leaf gradients across the three graphs.</p>
+
+    <h3>Limits</h3>
+    <p>This shows reverse-mode differentiation on a fixed, tiny graph. It does not show how a network is trained (that needs many examples and an update rule such as gradient descent), nor how frameworks organise the computation on tensors and hardware.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>D. E. Rumelhart, G. E. Hinton and R. J. Williams, "Learning representations by back-propagating errors", <i>Nature</i> 323(6088), 533–536, 1986. doi:10.1038/323533a0.</li>
+      <li>A. G. Baydin, B. A. Pearlmutter, A. A. Radul and J. M. Siskind, "Automatic differentiation in machine learning: a survey", <i>Journal of Machine Learning Research</i> 18(153), 1–43, 2018 (arXiv:1502.05767).</li>
+    </ul>
+  </div>
+</div>
+
+<script>(function (root) {
+"use strict";
+/* Scalar computation graphs, forward pass, backward pass (reverse-mode autodiff) as an explicit list of steps. */
+const MINUS = "−";
+const fmt = v => { if (!isFinite(v)) return String(v); const s = Math.abs(v) < 5e-4 ? "0.000" : v.toFixed(3); return (s[0] === "-" ? MINUS + s.slice(1) : s); };
+
+/* each op: f(inputs) -> value; loc(inputs, out) -> local derivatives d out / d input_j;
+   sym(name, inNames) -> symbolic local derivatives (strings); num(inputs, out) -> same with numbers substituted */
+const OPS = {
+  mul: {kind: "bin", s: "·", f: v => v[0] * v[1], loc: v => [v[1], v[0]],
+        sym: (n, L) => [L[1], L[0]], num: v => [fmt(v[1]), fmt(v[0])]},
+  add: {kind: "bin", s: "+", f: v => v[0] + v[1], loc: () => [1, 1], sym: () => ["1", "1"], num: () => ["1", "1"]},
+  sub: {kind: "bin", s: MINUS, f: v => v[0] - v[1], loc: () => [1, -1], sym: () => ["1", MINUS + "1"], num: () => ["1", MINUS + "1"]},
+  sigmoid: {kind: "un", fn: "σ", f: v => 1 / (1 + Math.exp(-v[0])), loc: (v, o) => [o * (1 - o)],
+        sym: n => [n + "·(1" + MINUS + n + ")"], num: (v, o) => [fmt(o) + "·(1" + MINUS + fmt(o) + ")"]},
+  square: {kind: "un", fn: "²", f: v => v[0] * v[0], loc: v => [2 * v[0]], sym: (n, L) => ["2·" + L[0]], num: v => ["2·" + fmt(v[0])]},
+  sin: {kind: "un", fn: "sin", f: v => Math.sin(v[0]), loc: v => [Math.cos(v[0])], sym: (n, L) => ["cos(" + L[0] + ")"], num: v => ["cos(" + fmt(v[0]) + ")"]}
+};
+
+/* nodes are listed in topological order; coordinates are in a 860 x 400 box */
+const GRAPHS = {
+  neuron: {
+    name: "One neuron with a loss", out: "L", outName: "L",
+    desc: "A single sigmoid neuron a = σ(w·x + b), compared with a target y through a squared error. The four leaves each get a gradient.",
+    nodes: [
+      {id: "x", role: "input", v: 2, min: -3, max: 3, x: 70, y: 90},
+      {id: "w", role: "weight", v: 0.5, min: -3, max: 3, x: 70, y: 210},
+      {id: "b", role: "bias", v: -0.3, min: -3, max: 3, x: 216, y: 300},
+      {id: "y", role: "target", v: 1, min: -1, max: 2, x: 508, y: 340},
+      {id: "p", op: "mul", ins: ["w", "x"], x: 216, y: 150},
+      {id: "z", op: "add", ins: ["p", "b"], x: 362, y: 220},
+      {id: "a", op: "sigmoid", ins: ["z"], x: 508, y: 220},
+      {id: "d", op: "sub", ins: ["a", "y"], x: 654, y: 220},
+      {id: "L", op: "square", ins: ["d"], x: 800, y: 220}]
+  },
+  classic: {
+    name: "Classic: f = (x + y) · z", out: "f", outName: "f",
+    desc: "The smallest useful example: one addition feeding one multiplication. Notice how the multiplication swaps its inputs when it passes the gradient back.",
+    nodes: [
+      {id: "x", role: "input", v: -2, min: -5, max: 5, x: 100, y: 90},
+      {id: "y", role: "input", v: 5, min: -5, max: 5, x: 100, y: 230},
+      {id: "z", role: "input", v: -4, min: -5, max: 5, x: 350, y: 330},
+      {id: "s", op: "add", ins: ["x", "y"], x: 350, y: 160},
+      {id: "f", op: "mul", ins: ["s", "z"], x: 640, y: 230}]
+  },
+  shared: {
+    name: "One input used twice: f = x·y + sin(x)", out: "f", outName: "f",
+    desc: "The input x feeds two different nodes. On the way back, x receives a gradient from each path and the two contributions add up.",
+    nodes: [
+      {id: "x", role: "input", v: 1.2, min: -3, max: 3, x: 100, y: 160},
+      {id: "y", role: "input", v: 0.8, min: -3, max: 3, x: 100, y: 310},
+      {id: "m", op: "mul", ins: ["x", "y"], x: 360, y: 270},
+      {id: "s", op: "sin", ins: ["x"], x: 360, y: 70},
+      {id: "f", op: "add", ins: ["m", "s"], x: 640, y: 170}]
+  }
+};
+
+function evaluate(spec, leaf) {
+  const val = {};
+  for (const n of spec.nodes) val[n.id] = n.op ? OPS[n.op].f(n.ins.map(i => val[i])) : leaf[n.id];
+  return val;
+}
+function formulaSym(n) {
+  const o = OPS[n.op];
+  return o.kind === "bin" ? `${n.id} = ${n.ins[0]} ${o.s} ${n.ins[1]}` : o.fn === "²" ? `${n.id} = ${n.ins[0]}²` : `${n.id} = ${o.fn}(${n.ins[0]})`;
+}
+/* Build every step: 0 = inputs only, then one forward step per op, the seed step, one backward step per op. */
+function build(spec, leaf) {
+  const nodes = spec.nodes, ops = nodes.filter(n => n.op), byId = {}; nodes.forEach(n => byId[n.id] = n);
+  const vals = {}, grads = {}, steps = [];
+  nodes.forEach(n => { if (!n.op) vals[n.id] = leaf[n.id]; });
+  const snap = ev => { ev.vals = Object.assign({}, vals); ev.grads = Object.assign({}, grads); steps.push(ev); };
+  snap({type: "start"});
+  for (const n of ops) {
+    const o = OPS[n.op], inV = n.ins.map(i => vals[i]); vals[n.id] = o.f(inV);
+    snap({type: "fwd", node: n.id, inV, out: vals[n.id]});
+  }
+  grads[spec.out] = 1; snap({type: "seed", node: spec.out});
+  for (let k = ops.length - 1; k >= 0; k--) {
+    const n = ops[k], o = OPS[n.op], inV = n.ins.map(i => vals[i]), out = vals[n.id], up = grads[n.id], loc = o.loc(inV, out);
+    const sym = o.sym(n.id, n.ins), num = o.num(inV, out), items = [];
+    n.ins.forEach((inp, j) => { const before = grads[inp] || 0, contrib = up * loc[j]; grads[inp] = before + contrib; items.push({input: inp, loc: loc[j], sym: sym[j], num: num[j], contrib, before, after: grads[inp]}); });
+    snap({type: "bwd", node: n.id, up, items});
+  }
+  return {steps, final: {vals: Object.assign({}, vals), grads: Object.assign({}, grads)}};
+}
+/* central-difference derivative of the output with respect to one leaf */
+function numGrad(spec, leaf, id, h) {
+  h = h || 1e-5; const a = Object.assign({}, leaf), b = Object.assign({}, leaf); a[id] += h; b[id] -= h;
+  return (evaluate(spec, a)[spec.out] - evaluate(spec, b)[spec.out]) / (2 * h);
+}
+const api = {OPS, GRAPHS, evaluate, build, numGrad, fmt, formulaSym, MINUS};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.BP = api;
+})(typeof window !== "undefined" ? window : globalThis);
+</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const {GRAPHS, OPS, build, numGrad, evaluate, fmt, formulaSym, MINUS} = BP;
+const S = {key: "neuron", leaf: {}, tl: null, step: 0, running: false, timer: 0, last: 0};
+const BW = 92, BH = 78;
+
+function spec() { return GRAPHS[S.key]; }
+function setDefaults() { S.leaf = {}; spec().nodes.forEach(n => { if (!n.op) S.leaf[n.id] = n.v; }); }
+function recompute() { S.tl = build(spec(), S.leaf); S.step = Math.min(S.step, S.tl.steps.length - 1); }
+const nodeOf = id => spec().nodes.find(n => n.id === id);
+
+/* ---------- graph drawing ---------- */
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+function edgePath(a, b) { const x1 = a.x + BW / 2, y1 = a.y, x2 = b.x - BW / 2, y2 = b.y, dx = (x2 - x1) * 0.5; return {d: `M${x1},${y1} C${x1 + dx},${y1} ${x2 - dx},${y2} ${x2},${y2}`, mx: (x1 + x2) / 2, my: (y1 + y2) / 2, x2, y2}; }
+function drawGraph() {
+  const sp = spec(), st = S.tl.steps[S.step], cur = st.type === "fwd" || st.type === "bwd" ? st.node : st.type === "seed" ? st.node : null;
+  let svg = `<defs>
+    <marker id="aG" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,1 L10,5 L0,9z" fill="#b5bbc0"/></marker>
+    <marker id="aB" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,1 L10,5 L0,9z" fill="#0877bd"/></marker>
+    <marker id="aO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,1 L10,5 L0,9z" fill="#e8590c"/></marker></defs>`;
+  // which edges have had their backward step done / are current
+  const bDone = new Set(), fDone = new Set(); let curBwd = null;
+  for (let i = 0; i <= S.step; i++) { const s = S.tl.steps[i]; if (s.type === "fwd") nodeOf(s.node).ins.forEach(u => fDone.add(u + ">" + s.node)); if (s.type === "bwd") { nodeOf(s.node).ins.forEach(u => bDone.add(u + ">" + s.node)); if (i === S.step) curBwd = s; } }
+  const curEdges = new Set(); if (st.type === "fwd" || st.type === "bwd") nodeOf(st.node).ins.forEach(u => curEdges.add(u + ">" + st.node));
+  const drawEdge = (n, u) => {
+    const key = u + ">" + n.id, p = edgePath(nodeOf(u), n), isCur = curEdges.has(key);
+    const col = bDone.has(key) ? "#e8590c" : fDone.has(key) ? "#0877bd" : "#c4c9cd", mk = bDone.has(key) ? "aO" : fDone.has(key) ? "aB" : "aG";
+    let s = `<path d="${p.d}" fill="none" stroke="${col}" stroke-width="${isCur ? 3.4 : 1.8}" marker-end="url(#${mk})"/>`;
+    if (bDone.has(key)) { const item = S.tl.steps.find(q => q.type === "bwd" && q.node === n.id).items.find(it => it.input === u); const lab = "×" + fmt(item.loc); s += `<rect x="${p.mx - 23}" y="${p.my - 17}" width="46" height="15" rx="3" fill="#fff" stroke="#f3c3a4"/><text x="${p.mx}" y="${p.my - 5.5}" text-anchor="middle" font-size="10.5" fill="#e8590c">${lab}</text>`; }
+    return s;
+  };
+  sp.nodes.forEach(n => { if (n.op) n.ins.forEach(u => { svg += drawEdge(n, u); }); });
+  sp.nodes.forEach(n => {
+    const isCur = cur === n.id, bw = st.type === "bwd" || st.type === "seed", haveV = st.vals[n.id] !== undefined, g = st.grads[n.id];
+    const stroke = isCur ? (bw ? "#e8590c" : "#0877bd") : "#9aa3a9", sw = isCur ? 3 : 1.4, fill = n.op ? "#fff" : "#f1f4f6";
+    svg += `<g><rect x="${n.x - BW / 2}" y="${n.y - BH / 2}" width="${BW}" height="${BH}" rx="9" fill="${fill}" stroke="${stroke}" stroke-width="${sw}"/>`;
+    svg += `<text x="${n.x}" y="${n.y - 21}" text-anchor="middle" font-size="15" font-weight="700" fill="#222">${esc(n.id)}</text>`;
+    svg += `<text x="${n.x}" y="${n.y - 7}" text-anchor="middle" font-size="11" fill="#888">${esc(n.op ? formulaSym(n).split(" = ")[1] : n.role)}</text>`;
+    svg += `<text x="${n.x}" y="${n.y + 12}" text-anchor="middle" font-size="14" font-weight="500" fill="${haveV ? "#0877bd" : "#c4c9cd"}">${haveV ? fmt(st.vals[n.id]) : "?"}</text>`;
+    svg += `<text x="${n.x}" y="${n.y + 29}" text-anchor="middle" font-size="11" fill="${g !== undefined ? "#e8590c" : "#d6d9dc"}">${g !== undefined ? "∂" + sp.outName + "/∂" + esc(n.id) + " = " + fmt(g) : "∂" + sp.outName + "/∂" + esc(n.id) + " = ?"}</text></g>`;
+  });
+  $("gsvg").innerHTML = svg;
+}
+
+/* ---------- explanation ---------- */
+const E = s => `<span class="eq">${s}</span>`;
+function explain() {
+  const sp = spec(), st = S.tl.steps[S.step], last = S.step === S.tl.steps.length - 1, o = sp.outName; let h = "";
+  if (st.type === "start") {
+    h = `<h4>Step 0: the inputs</h4><p class="ln">The leaves (grey boxes) hold the values you set on the right. Every other box is still unknown, shown as <b>?</b>.</p><p class="ln">Press <b>step forward</b> (or play) to start the <b style="color:#0877bd">forward pass</b>: each step computes one node from the nodes pointing into it.</p>`;
+  } else if (st.type === "fwd") {
+    const n = nodeOf(st.node), op = OPS[n.op], vs = st.inV.map(fmt);
+    const calc = op.kind === "bin" ? `${n.id} = ${vs[0]} ${op.s} ${vs[1]} = ${fmt(st.out)}` : op.fn === "²" ? `${n.id} = (${vs[0]})² = ${fmt(st.out)}` : `${n.id} = ${op.fn}(${vs[0]}) = ${fmt(st.out)}`;
+    h = `<h4>Forward: compute <i>${esc(n.id)}</i></h4><div class="fwdbox">${E(formulaSym(n))}<br>${E(esc(calc))}</div><p class="ln small">The value and the inputs are kept: the backward pass will need them to evaluate local derivatives.</p>`;
+    if (S.step === S.tl.steps.findIndex(s => s.type === "seed") - 1) h += `<p class="ln">That was the last node: the output ${E(esc(o) + " = " + fmt(st.out))} is known. The forward pass is complete. Next, the backward pass starts at the output.</p>`;
+  } else if (st.type === "seed") {
+    h = `<h4>Backward starts at the output</h4><p class="ln">The gradient of the output with respect to itself is ${E("∂" + esc(o) + "/∂" + esc(o) + " = 1")}: changing ${esc(o)} by a small amount changes ${esc(o)} by exactly that amount.</p><p class="ln">From here we visit the nodes in <b>reverse</b> order. At each one we multiply the gradient that arrives from the right (<i>upstream</i>) by the node's <i>local derivative</i> and hand the result to its inputs.</p>`;
+  } else {
+    const n = nodeOf(st.node);
+    h = `<h4>Backward: pass the gradient through <i>${esc(n.id)}</i></h4><p class="ln">Node ${E(esc(formulaSym(n)))}. Upstream gradient: ${E("∂" + esc(o) + "/∂" + esc(n.id) + " = " + fmt(st.up))}</p>`;
+    st.items.forEach(it => {
+      let loc = "∂" + esc(n.id) + "/∂" + esc(it.input) + " = " + esc(it.sym);
+      if (it.num !== it.sym) loc += " = " + esc(it.num);
+      if (!/^[\u2212-]?\d+(\.\d+)?$/.test(it.num) && fmt(it.loc) !== it.num && fmt(it.loc) !== it.sym) loc += " = " + fmt(it.loc);
+      h += `<div class="chain"><div>Local derivative: ${E(loc)}</div><div style="margin-top:4px">Chain rule: ${E("∂" + esc(o) + "/∂" + esc(it.input) + " += " + fmt(st.up) + " × " + fmt(it.loc) + " = " + fmt(it.contrib))}</div>`;
+      if (Math.abs(it.before) > 0 || it.before !== 0) h += `<div class="small" style="margin-top:4px">${esc(it.input)} already had ${fmt(it.before)} from another path, so its gradient is now ${fmt(it.before)} + ${fmt(it.contrib)} = <b>${fmt(it.after)}</b>.</div>`;
+      else h += `<div class="small" style="margin-top:4px">First gradient to reach ${esc(it.input)}: ${esc(it.input)} now holds <b>${fmt(it.after)}</b>${S.tl.steps.some((q, i) => i > S.step && q.type === "bwd" && nodeOf(q.node).ins.includes(it.input)) ? " (more may still be added)" : ""}.</div>`;
+      h += `</div>`;
+    });
+    if (last) h += `<p class="ln"><b>Done.</b> Every leaf now holds the gradient of ${esc(o)} with respect to it. Compare with the numerical check on the right.</p>`;
+  }
+  $("explain").innerHTML = h;
+}
+
+/* ---------- side panels, progress ---------- */
+function drawTable() {
+  const sp = spec(), st = S.tl.steps[S.step], last = S.step === S.tl.steps.length - 1, leaves = sp.nodes.filter(n => !n.op), o = sp.outName;
+  let h = `<tr><th>Leaf</th><th>Value</th><th>∂${esc(o)}/∂leaf</th>${last ? "<th>Numerical</th>" : ""}</tr>`, worst = 0;
+  leaves.forEach(n => { const g = st.grads[n.id], ng = last ? numGrad(sp, S.leaf, n.id) : null; if (last) worst = Math.max(worst, Math.abs(g - ng) / Math.max(1, Math.abs(ng)));
+    h += `<tr><td><b>${esc(n.id)}</b></td><td>${fmt(S.leaf[n.id])}</td><td class="or">${g !== undefined ? fmt(g) : "–"}</td>${last ? `<td>${fmt(ng)}</td>` : ""}</tr>`; });
+  $("gtab").innerHTML = h;
+  $("chk").innerHTML = last ? `Numerical check: the output was recomputed with each leaf nudged by ±10<sup>−5</sup>. Largest relative difference: <b>${worst.toExponential(1)}</b>.` : "Gradients appear here as the backward pass reaches each leaf. The numerical check is shown at the last step.";
+}
+function drawProgress() {
+  const T = S.tl.steps, F = T.filter(s => s.type === "fwd").length; let h = "";
+  for (let i = 1; i < T.length; i++) { const t = T[i].type; if (i === F + 1) h += '<i class="gap"></i>'; h += `<i class="${i <= S.step ? (t === "fwd" ? "fdone" : "bdone") : ""}${i === S.step ? " cur" : ""}"></i>`; }
+  $("prog").innerHTML = h; $("stepn").textContent = "Step " + S.step; $("stepmax").textContent = T.length - 1;
+  const t = T[S.step].type, ph = $("phase"); ph.className = t === "start" ? "s" : t === "fwd" ? "f" : "b";
+  ph.textContent = t === "start" ? "Inputs only" : t === "fwd" ? "Forward pass" : t === "seed" ? "Backward pass: seed" : "Backward pass";
+  $("back").disabled = S.step === 0; $("fwd").disabled = S.step === T.length - 1; $("pause").disabled = !S.running;
+}
+function drawAll() { drawGraph(); explain(); drawTable(); drawProgress(); }
+
+/* ---------- controls ---------- */
+function stop() { S.running = false; clearTimeout(S.timer); $("pause").disabled = true; }
+function tick() { if (!S.running) return; if (S.step < S.tl.steps.length - 1) { S.step++; drawAll(); } if (S.step >= S.tl.steps.length - 1) { stop(); drawProgress(); return; } S.timer = setTimeout(tick, +$("speed").value); }
+$("play").onclick = () => { if (S.running) return; if (S.step >= S.tl.steps.length - 1) { S.step = 0; drawAll(); } S.running = true; $("pause").disabled = false; S.timer = setTimeout(tick, 350); };
+$("pause").onclick = () => { stop(); drawProgress(); };
+$("fwd").onclick = () => { stop(); if (S.step < S.tl.steps.length - 1) S.step++; drawAll(); };
+$("back").onclick = () => { stop(); if (S.step > 0) S.step--; drawAll(); };
+$("restart").onclick = () => { stop(); S.step = 0; drawAll(); };
+document.addEventListener("keydown", e => { if (e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return; if (e.key === "ArrowRight") $("fwd").click(); if (e.key === "ArrowLeft") $("back").click(); });
+
+function buildSliders() {
+  $("gdesc").textContent = spec().desc; $("sliders").innerHTML = "";
+  spec().nodes.filter(n => !n.op).forEach(n => {
+    const d = document.createElement("div"); d.className = "slider";
+    d.innerHTML = `<div class="row"><span>${esc(n.id)} <span style="color:#999">(${esc(n.role)})</span></span><b id="v_${n.id}">${fmt(S.leaf[n.id])}</b></div><input type="range" id="s_${n.id}" min="${n.min}" max="${n.max}" step="0.1" value="${S.leaf[n.id]}">`;
+    $("sliders").appendChild(d);
+    d.querySelector("input").oninput = e => { S.leaf[n.id] = +e.target.value; $("v_" + n.id).textContent = fmt(S.leaf[n.id]); stop(); recompute(); drawAll(); };
+  });
+}
+function syncSliders() { spec().nodes.filter(n => !n.op).forEach(n => { $("s_" + n.id).value = S.leaf[n.id]; $("v_" + n.id).textContent = fmt(S.leaf[n.id]); }); }
+Object.keys(GRAPHS).forEach(k => $("graph").add(new Option(GRAPHS[k].name, k)));
+$("graph").onchange = () => { stop(); S.key = $("graph").value; S.step = 0; setDefaults(); recompute(); buildSliders(); drawAll(); };
+$("defaults").onclick = () => { stop(); setDefaults(); recompute(); syncSliders(); drawAll(); };
+setDefaults(); recompute(); buildSliders(); drawAll();
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{drawAll();}catch(e){} });
+</script>
+</body>
+</html>

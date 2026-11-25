@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Message Passing Lab</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:700}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  #cv{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cv.grab{cursor:grab}#cv.drag{cursor:grabbing}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #aaa}
+  .rg{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid #222;vertical-align:-2px}.rg.th{border-width:3px}
+  .ln{display:inline-block;width:26px;height:0;border-top:2px solid #222;vertical-align:middle}.ln.da{border-top-style:dashed;border-top-width:1.5px}
+  .bd{display:inline-block;width:26px;height:10px;border-radius:2px}
+  #detail{min-height:70px}
+  #nums{grid-template-columns:1fr;gap:6px}
+  #nums .pr{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  #nums .pr b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  #nums .sec{grid-column:1/-1}
+  #bar{margin-bottom:0;align-items:flex-end}#cctl{align-items:flex-end}
+  #cctl{flex:1;gap:12px 20px}
+  #cctl .sl{flex:1 1 0;min-width:118px}
+  #cctl{flex-wrap:nowrap}
+  .kopts{display:flex;gap:16px;align-items:flex-start;min-height:34px}
+  .kopts label{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-weight:400;font-size:13px;margin:0;color:#222}
+  .kopts input{margin:3px 0 0}
+  .kopts small{display:block;color:#777;font-size:11.5px;line-height:1.25;margin-top:1px;max-width:112px}
+  input.num{width:52px;font-size:12.5px;padding:1px 5px;text-align:right;border:1px solid #ccc;border-radius:3px;background:#fff;color:#222;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  #hover{margin-top:6px;color:#555;min-height:20px;font-variant-numeric:tabular-nums}
+  .seg{display:flex;gap:6px;margin:8px 0 2px}.seg .tool{flex:1;text-align:center}
+  .tool.o.on{background:#e8590c;border-color:#e8590c}.tool.b.on{background:#0877bd;border-color:#0877bd}
+
+  #cv{aspect-ratio:16/10;cursor:default}
+  .pgrid{margin-top:20px}
+  .pgrid .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+  .pgrid .ph select{min-width:0;max-width:62%}
+  .pgrid canvas{aspect-ratio:1/1;cursor:default}
+  #cl2{aspect-ratio:1/1}
+  .fbtns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:12px 0 0}
+  .fbtns button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:9px 0;font-size:13px;cursor:pointer;color:#222;font-variant-numeric:tabular-nums}
+  .fbtns button:hover:not(:disabled){background:var(--navy);color:#fff;border-color:var(--navy)}
+  .fbtns button:disabled{opacity:.45;cursor:default}
+  table.tbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px}
+  table.tbl th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+  table.tbl td{text-align:right;padding:3px 8px 3px 0}
+  table.tbl tr.sel td{font-weight:700;color:#0b5f96}
+  table.tbl tr.ref td{color:#777;font-style:italic}
+  .cap{font-size:12px;color:#666;line-height:1.45;margin-top:8px}
+  .cap b{color:#333;font-weight:700}
+  #lam{margin-left:14px}
+  .msec{display:none}
+  .msec.on{display:block}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  #detail p{margin:0 0 6px}
+  #detail p:last-child{margin-bottom:0}
+  .bad{color:#b4430a}
+
+  /* ---- Bayes additions ---- */
+  #bar{align-items:flex-end}
+  .btns3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
+  .btns3 button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:8px 0;font-size:12.5px;cursor:pointer;color:#222}
+  .btns3 button:hover{background:#eef5fb}
+  .btns3 button.span2{grid-column:span 2}
+  .btns3 button.h{background:var(--navy);border-color:var(--navy);color:#fff}.btns3 button.h:hover{background:#12293a}
+  #cv.clk{cursor:crosshair}
+  #cv{aspect-ratio:2/1}
+  .lgd{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .lgd span{display:inline-flex;align-items:center;gap:6px}
+  .lgd i{display:inline-block;width:20px;height:0;border-top:2px solid #333}
+  .lgd i.d{border-top-style:dashed}.lgd i.o{border-top-style:dotted}
+  .lgd b.sq{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .lgd b.dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+
+  /* ---- Message passing additions ---- */
+  #bar{gap:14px 26px}
+  #btns{flex:0 0 auto}
+  #layerb,#endb{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{min-width:150px}
+  #cctl{flex-wrap:wrap}
+  #cctl .sl{flex:1 1 150px;max-width:260px}
+  #cctl input[type=range]{height:12px}
+  #cctl input[type=range]::-webkit-slider-thumb{width:10px;height:10px;margin-top:-3.5px}
+  #cctl input[type=range]::-moz-range-thumb{width:10px;height:10px}
+  #cctl input.num{width:44px;font-size:12px}
+  #grid{aspect-ratio:760/440;height:auto}
+  #grid .nd{cursor:pointer}
+  #grid.edit .nd{cursor:crosshair}
+  .wgrid{display:grid;grid-template-columns:repeat(2,64px);gap:6px;margin:6px 0 4px}
+  .wgrid input.num{width:64px}
+  .xgrid{display:flex;gap:8px;align-items:center;margin:6px 0 2px;font-size:12.5px;color:#444}
+  .mt{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12.5px;margin:4px 0 6px}
+  .mt th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:left;padding:2px 10px 3px 0;border-bottom:1px solid #e3e3e3}
+  .mt td{padding:3px 10px 3px 0;white-space:nowrap}
+  .dim{opacity:.32}
+  #detail{min-height:222px}
+  #detail .ln2{margin:5px 0 0}
+  #detail .ln2 b.k{color:#0877bd}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Message Passing Lab</h1>
+  <p class="blurb">A graph neural network layer does the same thing at every node: <b>collect</b> the feature vectors of the neighbours (the <b>messages</b>), <b>aggregate</b> them with sum, mean or max, and <b>update</b> the node. Press <b>Step</b> to watch one layer in three sub-steps: the current features, the messages travelling along the edges, the aggregated result. Every node carries two numbers (x₁, x₂), so you can follow the exact arithmetic. Click a node to see its calculation written out. Try the scenarios in <b>Settings</b>: mean aggregation smooths the graph, sum explodes, and a node only hears from nodes within k hops after k layers.</p>
+
+  <div id="bar"><div class="grp tr" id="btns"><button class="btn" id="play" title="Play / pause">&#9654;</button><button class="btn" id="step" title="Advance one sub-step (features, messages, aggregate)">Step</button><button class="btn" id="layerb" title="Advance one full layer">Layer</button><button class="btn" id="reset" title="Back to the input features">&#8634;</button><button class="btn" id="endb" title="Apply all 8 layers">To end</button></div><div id="status"></div><div id="cctl"></div></div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="chead"></div>
+      <svg id="grid" viewBox="0 0 760 440" role="img" aria-label="Graph with node features"></svg>
+      <div class="lgd" id="legend"></div>
+      <div class="cap" id="capm"></div>
+      <div id="detail" class="card" style="margin:16px 0 0"></div>
+      <div class="pgrid">
+        <div><div class="ph"><span>Feature space (x₁ vs x₂)</span></div><canvas id="cl"></canvas><div class="cap" id="capl"></div></div>
+        <div><div class="ph"><select id="rsel" aria-label="Choose the chart"></select></div><canvas id="cr"></canvas><div class="cap" id="capr"></div></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Scenario</div>
+        <div class="row2" style="margin-top:2px"><select id="scn" style="width:100%"></select></div>
+        <div class="hint" id="scnhint"></div>
+
+        <div class="sub">Graph</div>
+        <div class="row2" style="margin-top:2px"><select id="gsel" style="width:100%"></select></div>
+        <label class="chk"><input type="checkbox" id="edit">Edit edges: click two nodes to add or remove the edge between them</label>
+        <div class="row2" style="margin-bottom:0"><button class="linkbtn" id="gres">Restore the preset edges</button></div>
+
+        <div class="sub">Input features</div>
+        <div class="row2" style="margin-top:2px"><select id="fsel" style="width:100%"></select></div>
+        <div class="xgrid"><span>Node <b id="selid">0</b>:</span><span>x₁</span><input class="num" id="fx1" type="text" inputmode="decimal"><span>x₂</span><input class="num" id="fx2" type="text" inputmode="decimal"></div>
+        <div class="row2" style="margin-bottom:0"><button class="linkbtn" id="reseed">New random features</button></div>
+
+        <div class="sub">Layer rule</div>
+        <label class="radio"><input type="radio" name="agg" value="sum"><span>Sum<small>a = Σ messages</small></span></label>
+        <label class="radio"><input type="radio" name="agg" value="mean"><span>Mean<small>a = average of the messages</small></span></label>
+        <label class="radio"><input type="radio" name="agg" value="max"><span>Max<small>a = element-wise maximum</small></span></label>
+        <label class="radio"><input type="radio" name="agg" value="gcn"><span>GCN normalised sum<small>message = h<sub>u</sub> / √(d<sub>u</sub> d<sub>v</sub>), degrees counted with the self-loop</small></span></label>
+        <label class="chk"><input type="checkbox" id="self">Include the node itself (self-loop)</label>
+        <div class="hint" style="margin:6px 0 0">Update: h′ = activation(W · a). Weights W:</div>
+        <div class="wgrid" id="wgrid"></div>
+        <div class="row2" style="margin-top:0"><button class="linkbtn" id="widt">Identity</button><button class="linkbtn" id="wrnd">Random</button><span style="flex:1"></span><span class="hint">Activation</span><select id="act" style="min-width:70px"><option value="none">none</option><option value="relu">ReLU</option></select></div>
+      </div>
+      <div class="head" style="margin-top:22px">Results</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+<h2>How it works</h2>
+<p>A graph neural network keeps one feature vector <span class="eq">h<sub>v</sub></span> per node. One layer of <b>message passing</b> updates every node from its neighbourhood <span class="eq">N(v)</span> in three steps, which are the three sub-steps of the page:</p>
+<div class="eqb">message   m<sub>u→v</sub> = h<sub>u</sub>           (GCN: h<sub>u</sub> / √(d̃<sub>u</sub> d̃<sub>v</sub>))<br>aggregate a<sub>v</sub> = AGG<sub>u ∈ N(v) ∪ {v}</sub> m<sub>u→v</sub>     (sum, mean or max)<br>update    h′<sub>v</sub> = activation(W · a<sub>v</sub>)</div>
+<p>Here every node has only two features so that the numbers fit on the node. In a real network the vectors have hundreds of entries, the messages are usually learned functions of both end points, and W is trained, but the structure is the same. This general form is the message-passing framework of Gilmer et al. (2017). The "GCN" option is the layer of Kipf and Welling (2017): a sum over the neighbours and the node itself, where each message is divided by √(d̃<sub>u</sub> d̃<sub>v</sub>). The degrees d̃ include the self-loop, and the page uses exactly this rule.</p>
+
+<h3>What the page shows</h3>
+<ul>
+<li><b>One layer = information moves one hop.</b> After k layers a node's features depend only on nodes reachable by a walk of k steps. The "Impulse" scenario starts with a single non-zero node; the non-zero region grows by exactly one hop per layer. I checked this for every start node on all five preset graphs, with and without self-loop (4,716 node-layer cases, no mismatch).</li>
+<li><b>Mean smooths.</b> On the preset graph "two clusters joined by a bridge", the relative spread of the features (RMS distance from the average, divided by the RMS size) was 0.705 at the input and 0.673, 0.637, 0.566 and 0.428 after 1, 2, 4 and 8 mean layers. The decay is geometric: with the self-loop, mean aggregation multiplies the deviation from the average by the second-largest eigenvalue modulus of D̃⁻¹Ã per layer in the long run. I checked this on the path (0.888), the ring (0.805) and the tree (0.890): the measured per-layer ratio after 60 layers agrees with the eigenvalue to four digits. Li, Han and Wu (2018) describe the GCN convolution as a form of Laplacian smoothing and show that stacking many layers makes node features hard to tell apart (over-smoothing). In this toy the loss of distinctness is slow for mean and GCN, much faster for max.</li>
+<li><b>Sum explodes.</b> With weights fixed at the identity, the sum rule multiplies the feature size by roughly the degree of the neighbourhood at every layer. After 8 layers the RMS feature size had grown by a factor of about 4,700 on the ring and about 37,000 on the two-cluster graph. On the ring every node adds up 3 terms, so the sums grow like 3<sup>8</sup> = 6,561 times a common smoothed vector, whose length (about 0.7) is smaller than the initial RMS size (about 1). Mean and GCN stay below the input size (0.7 to 0.8 of it after 8 layers in these runs).</li>
+<li><b>Max forgets quickly.</b> Starting from the two-group features, the relative spread under max was 0.24 after 2 layers on the cluster graph and exactly 0 after 3: every node holds the same vector, namely the coordinate-wise maximum over the graph. The price of max is that it ignores how many neighbours say something.</li>
+<li><b>Without the self-loop, parity matters.</b> On a star, the hub's information reaches the leaves at layer 1, returns to the hub at layer 2, and so on. The receptive-field chart shows the hub seeing 1, 6, 1, 6, … nodes. With the self-loop every node can "wait", so the receptive field only grows.</li>
+</ul>
+<p>Sum, mean and max are also the three aggregators compared in "How Powerful are Graph Neural Networks?" (Xu et al., 2019). There, sum can tell apart multisets that mean and max confuse, which is a reason to prefer sum for expressiveness, at the cost of the growth seen above. The expressive power of such layers is bounded by the Weisfeiler–Leman test, as shown in the same paper.</p>
+
+<div class="warn"><b>What this is not.</b> The weights W are set by hand and nothing is trained. The scenarios use tiny graphs and 2-dimensional features so that every number can be read. Over-smoothing in trained networks also depends on the weights, the activation and residual connections, so the rates above describe the parameter-free dynamics only. The relative spread is my own simple summary, not a standard metric, and the numbers quoted in this text come from the preset graphs and the default features of the page.</div>
+
+<h3>Things to try</h3>
+<ul>
+<li>Select node 3 in the cluster graph and step through layer 1 with mean aggregation. Check the average by hand against the table in the card under the graph.</li>
+<li>Switch the rule to <b>Sum</b> and watch the numbers grow. Then switch the chart to "Feature size (log)".</li>
+<li>Use "Edit edges" to cut the bridge between nodes 3 and 4. The two clusters then never mix, and with the default features the relative spread stays at about 0.71 for any number of layers (measured up to 60).</li>
+
+</ul>
+
+<h3>References</h3>
+<ul>
+<li>T. N. Kipf and M. Welling. Semi-Supervised Classification with Graph Convolutional Networks. ICLR 2017 (arXiv:1609.02907).</li>
+<li>J. Gilmer, S. S. Schoenholz, P. F. Riley, O. Vinyals and G. E. Dahl. Neural Message Passing for Quantum Chemistry. ICML 2017, PMLR 70:1263–1272.</li>
+<li>K. Xu, W. Hu, J. Leskovec and S. Jegelka. How Powerful are Graph Neural Networks? ICLR 2019.</li>
+<li>Q. Li, Z. Han and X.-M. Wu. Deeper Insights into Graph Convolutional Networks for Semi-Supervised Learning. AAAI 2018.</li>
+</ul>
+
+  </div>
+</div>
+<script>/* Message passing on a small undirected graph: one layer = messages -> aggregate -> update. Pure functions, no DOM. */
+const MP = (function () {
+  "use strict";
+  const GRAPHS = {
+    path: {name: "Path of 6 nodes", n: 6, edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5]], pos: [[.08, .5], [.24, .5], [.4, .5], [.6, .5], [.76, .5], [.92, .5]], group: [0, 0, 0, 1, 1, 1]},
+    clusters: {name: "Two clusters joined by a bridge", n: 8, edges: [[0, 1], [1, 2], [2, 3], [3, 0], [0, 2], [4, 5], [5, 6], [6, 7], [7, 4], [4, 6], [3, 4]], pos: [[.1, .5], [.25, .15], [.4, .5], [.25, .85], [.6, .5], [.75, .15], [.9, .5], [.75, .85]], group: [0, 0, 0, 0, 1, 1, 1, 1]},
+    star: {name: "Star (hub and 6 leaves)", n: 7, edges: [[0, 1], [0, 2], [0, 3], [0, 4], [0, 5], [0, 6]], pos: [[.5, .5], [.5, .1], [.82, .27], [.82, .73], [.5, .9], [.18, .73], [.18, .27]], group: [0, 1, 1, 1, 1, 1, 1]},
+    ring: {name: "Ring of 8 nodes", n: 8, edges: [[0, 1], [1, 2], [2, 3], [3, 4], [4, 5], [5, 6], [6, 7], [7, 0]], pos: Array.from({length: 8}, (_, i) => [.5 + .4 * Math.cos(-Math.PI / 2 + 2 * Math.PI * i / 8), .5 + .4 * Math.sin(-Math.PI / 2 + 2 * Math.PI * i / 8)]), group: [0, 0, 0, 0, 1, 1, 1, 1]},
+    tree: {name: "Binary tree (7 nodes)", n: 7, edges: [[0, 1], [0, 2], [1, 3], [1, 4], [2, 5], [2, 6]], pos: [[.5, .12], [.27, .5], [.73, .5], [.14, .88], [.4, .88], [.6, .88], [.86, .88]], group: [0, 0, 1, 0, 0, 1, 1]}
+  };
+  const r2 = v => Math.round(v * 100) / 100;
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function adjOf(n, edges) { const a = Array.from({length: n}, () => []); for (const [u, v] of edges) if (u !== v && !a[u].includes(v)) { a[u].push(v); a[v].push(u); } a.forEach(l => l.sort((x, y) => x - y)); return a; }
+  function initFeatures(kind, g, sel, seed) {
+    const n = g.n;
+    if (kind === "impulse") return Array.from({length: n}, (_, i) => i === sel ? [1, 0] : [0, 0]);
+    if (kind === "random") { const r = mulberry32(seed || 1); return Array.from({length: n}, () => [r2(2 * r() - 1), r2(2 * r() - 1)]); }
+    return Array.from({length: n}, (_, i) => { const o = [((i * 37) % 11 - 5) / 50, ((i * 53) % 11 - 5) / 50]; return g.group[i] === 0 ? [r2(1 + o[0]), r2(o[1])] : [r2(o[0]), r2(1 + o[1])]; });
+  }
+  /* neighbourhood used by node v: self first (if o.self), then neighbours ascending */
+  const hood = (adj, v, o) => (o.self ? [v] : []).concat(adj[v]);
+  function layer(adj, H, o) { // o = {agg:'sum'|'mean'|'max'|'gcn', self:bool, W:[[..],[..]], act:'relu'|'none'}
+    const n = adj.length, d = H[0].length, msgs = [], A = [], Hn = [], deg = adj.map((a, v) => a.length + (o.self ? 1 : 0));
+    for (let v = 0; v < n; v++) {
+      const N = hood(adj, v, o), ms = N.map(u => { const s = o.agg === "gcn" ? (deg[u] > 0 && deg[v] > 0 ? 1 / Math.sqrt(deg[u] * deg[v]) : 0) : 1; const m = H[u].map(x => x * s); msgs.push({from: u, to: v, m}); return m; });
+      let a = new Array(d).fill(0);
+      if (ms.length) {
+        if (o.agg === "max") a = a.map((_, j) => Math.max(...ms.map(m => m[j])));
+        else { for (const m of ms) for (let j = 0; j < d; j++) a[j] += m[j]; if (o.agg === "mean") a = a.map(x => x / ms.length); }
+      }
+      A.push(a);
+      const z = o.W.map(row => row.reduce((s, w, j) => s + w * a[j], 0));
+      Hn.push(o.act === "relu" ? z.map(x => Math.max(0, x)) : z);
+    }
+    return {A, Hn, msgs, deg};
+  }
+  function run(adj, H0, o, L) { const Hs = [H0], As = [null]; for (let l = 0; l < L; l++) { const r = layer(adj, Hs[l], o); Hs.push(r.Hn); As.push(r.A); } return {Hs, As}; }
+  /* which nodes can influence node v after L layers */
+  function reach(adj, o, L) {
+    let S = adj.map((_, v) => new Set([v])); const sizes = [S.map(s => s.size)];
+    for (let l = 0; l < L; l++) { S = adj.map((_, v) => { const t = new Set(); for (const u of hood(adj, v, o)) for (const w of S[u]) t.add(w); return t; }); sizes.push(S.map(s => s.size)); }
+    return {sizes, sets: S};
+  }
+  const meanVec = H => H[0].map((_, j) => H.reduce((s, h) => s + h[j], 0) / H.length);
+  function spread(H) { const m = meanVec(H); return Math.sqrt(H.reduce((s, h) => s + h.reduce((q, x, j) => q + (x - m[j]) ** 2, 0), 0) / H.length); }
+  const rms = H => Math.sqrt(H.reduce((s, h) => s + h.reduce((q, x) => q + x * x, 0), 0) / H.length);
+  const relSpread = H => { const r = rms(H); return r < 1e-12 ? null : spread(H) / r; };
+  function cosine(H) {
+    const u = H.filter(h => Math.hypot(...h) > 1e-9).map(h => { const n = Math.hypot(...h); return h.map(x => x / n); });
+    if (u.length < 2) return null; let s = 0, c = 0;
+    for (let i = 0; i < u.length; i++) for (let j = i + 1; j < u.length; j++) { s += u[i][0] * u[j][0] + u[i][1] * u[j][1]; c++; }
+    return s / c;
+  }
+  return {GRAPHS, adjOf, initFeatures, layer, run, reach, spread, rms, relSpread, cosine, hood};
+})();
+if (typeof module !== "undefined") module.exports = MP;
+</script>
+<script>
+"use strict";
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+const FONT = "11px Roboto,Arial,sans-serif";
+function frame(c, w, h, o) {
+  const pw = w - o.l - o.r, ph = h - o.t - o.b, lx = v => o.xlog ? Math.log(v) : v;
+  const X = v => o.l + (lx(v) - lx(o.x[0])) / (lx(o.x[1]) - lx(o.x[0])) * pw, Y = v => o.t + (1 - (v - o.y[0]) / (o.y[1] - o.y[0])) * ph;
+  const Y2 = o.y2 ? (v => o.t + (1 - (v - o.y2[0]) / (o.y2[1] - o.y2[0])) * ph) : null;
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (const t of o.xt) { c.beginPath(); c.moveTo(X(t), o.t); c.lineTo(X(t), o.t + ph); c.stroke(); c.fillText((o.fx || (v => fm(v, 1)))(t), X(t), o.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const t of o.yt) { c.beginPath(); c.moveTo(o.l, Y(t)); c.lineTo(o.l + pw, Y(t)); c.stroke(); c.fillText((o.fy || (v => fm(v, 1)))(t), o.l - 5, Y(t)); }
+  if (o.y2) { c.textAlign = "left"; c.fillStyle = o.c2 || "#777"; for (const t of o.yt2) c.fillText((o.fy2 || (v => fm(v, 2)))(t), o.l + pw + 5, Y2(t)); c.fillStyle = "#777"; }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(o.l, o.t, pw, ph);
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  if (o.xlab) c.fillText(o.xlab, o.l + pw / 2, o.t + ph + 30);
+  if (o.ylab) { c.save(); c.translate(12, o.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylab, 0, 0); c.restore(); }
+  return {X, Y, Y2, pw, ph};
+}
+function clipTo(c, o, w, h) { c.save(); c.beginPath(); c.rect(o.l, o.t, w - o.l - o.r, h - o.t - o.b); c.clip(); }
+
+function drawLines(cv, o) {
+  const {c, w, h} = prep(cv), r = o.r || 14;
+  const fr = frame(c, w, h, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38, x: o.x, y: o.y, y2: o.y2, c2: o.c2, xt: o.xt, yt: o.yt, yt2: o.yt2, xlog: o.xlog, fx: o.fx, fy: o.fy, fy2: o.fy2, xlab: o.xlab, ylab: o.ylab});
+  const {X, Y, Y2} = fr; clipTo(c, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38}, w, h);
+  for (const s of o.series) {
+    const YY = s.ax2 ? Y2 : Y, pts = s.x.map((x, i) => [x, s.y[i]]).filter(p => p[1] !== null && isFinite(p[1]));
+    if (s.band) { c.fillStyle = s.color; c.globalAlpha = 0.16; c.beginPath(); s.x.forEach((x, i) => i ? c.lineTo(X(x), YY(s.band[1][i])) : c.moveTo(X(x), YY(s.band[1][i]))); for (let i = s.x.length - 1; i >= 0; i--) c.lineTo(X(s.x[i]), YY(s.band[0][i])); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    c.strokeStyle = s.color; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []); c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), YY(p[1])) : c.moveTo(X(p[0]), YY(p[1]))); c.stroke(); c.setLineDash([]);
+    if (s.dots) { c.fillStyle = s.color; pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), YY(p[1]), 2.6, 0, 2 * Math.PI); c.fill(); }); }
+  }
+  for (const v of o.vlines || []) { c.strokeStyle = v.color || "#555"; c.setLineDash([4, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(v.x), 12); c.lineTo(X(v.x), h - 38); c.stroke(); c.setLineDash([]); }
+  for (const m of o.marks || []) { c.fillStyle = m.color; c.beginPath(); c.arc(X(m.x), Y(m.y), 4.5, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.3; c.stroke(); }
+  c.restore();
+  if (o.legend) { c.font = FONT; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.82)"; c.fillRect(w - (o.y2 ? 46 : r) - 156, 14, 150, o.legend.length * 14 + 4); let y = 22; for (const s of o.legend) { c.fillStyle = s.color; c.fillRect(w - (o.y2 ? 46 : r) - 150, y - 4, 14, 3); c.fillStyle = "#444"; c.textAlign = "left"; c.fillText(s.t, w - (o.y2 ? 46 : r) - 130, y - 2); y += 14; } }
+  if (o.ylab2) { c.save(); c.translate(w - 8, 12 + (h - 50) / 2); c.rotate(Math.PI / 2); c.fillStyle = o.c2 || "#555"; c.font = FONT; c.textAlign = "center"; c.fillText(o.ylab2, 0, 0); c.restore(); }
+  if (o.msg) { c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(48, h / 2 - 14, w - 62, 28); c.fillStyle = "#555"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.msg, 48 + (w - 62) / 2, h / 2); }
+}
+const $ = id => document.getElementById(id);
+const BLUE = "#0877bd", ORG = "#e8590c", NAVY = "#1b3b4f", GREY = "#8a8f94", GREEN = "#2f9e44", PURP = "#7b4bb7";
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const fint = v => String(Math.round(v));
+function fv(x) { const a = Math.abs(x); if (a >= 1e4) return x.toExponential(1).replace("e+", "e").replace("-", "−"); if (a >= 100) return fm(x, 0); if (a >= 10) return fm(x, 1); return fm(x, 2); }
+const fvec = h => fv(h[0]) + ", " + fv(h[1]);
+const f3 = v => v === null || !isFinite(v) ? "–" : fm(v, 3);
+function nice(hi, n = 4) { const raw = Math.max(hi, 1e-9) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p, s = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, top = Math.ceil(hi / s - 1e-9) * s, t = []; for (let v = 0; v <= top + 1e-9; v += s) t.push(+v.toFixed(10)); return {t, top}; }
+function ticksFor(lo, hi) { const s0 = (hi - lo) / 4, p = Math.pow(10, Math.floor(Math.log10(s0))), f = s0 / p, s = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, t = []; for (let v = Math.ceil(lo / s - 1e-9) * s; v <= hi + 1e-9; v += s) t.push(+v.toFixed(10)); return t; }
+const LMAX = 8, TMAX = 3 * LMAX, GCOL = [ORG, BLUE];
+const SCEN = [
+  ["smooth", "Smoothing: mean aggregation, no weights", "The two clusters start with different features. Each mean layer pulls every node towards its neighbours, so the clusters blend and the spread shrinks.", {g: "clusters", fk: "groups", agg: "mean", self: true, act: "none", W: "I", sel: 3}],
+  ["sum", "Sum explodes", "Summing messages multiplies the feature size by about the node degree at every layer. Watch the numbers and the log chart.", {g: "ring", fk: "groups", agg: "sum", self: true, act: "none", W: "I", sel: 0}],
+  ["max", "Max pooling", "Max keeps only the largest value in each coordinate, so a few nodes decide what everyone sees. Features collapse to a common vector after a few layers.", {g: "clusters", fk: "random", agg: "max", self: true, act: "none", W: "I", sel: 3}],
+  ["gcn", "GCN: normalised sum, weights and ReLU", "The layer from Kipf & Welling: symmetric normalisation, a weight matrix and a ReLU. With these example weights some coordinates are cut to 0 by the ReLU.", {g: "clusters", fk: "groups", agg: "gcn", self: true, act: "relu", W: [[1.2, -0.4], [0.3, 0.9]], sel: 3}],
+  ["impulse", "Impulse: how far does information travel?", "Only the selected node starts non-zero. After k layers exactly the nodes within k hops are non-zero, no matter what. Click another node to move the impulse.", {g: "path", fk: "impulse", agg: "mean", self: true, act: "none", W: "I", sel: 0}],
+  ["noself", "No self-loop: parity effects on a star", "Without the self-loop a node never sees its own old value. On a star, the hub's information reaches the leaves after 1 layer and returns to the hub after 2, and it keeps bouncing.", {g: "star", fk: "impulse", agg: "sum", self: false, act: "none", W: "I", sel: 0}]
+];
+const GKEYS = Object.keys(MP.GRAPHS);
+const FK = [["groups", "Two groups: (1, 0) and (0, 1) plus a little noise"], ["impulse", "Impulse: (1, 0) at the selected node, 0 elsewhere"], ["random", "Random values in [−1, 1]"]];
+const S = {g: "clusters", edges: [], fk: "groups", seed: 1, H0: [], agg: "mean", self: true, act: "none", W: [[1, 0], [0, 1]], sel: 3, t: 0, playing: false, speed: 2, edit: false, eA: null, rsel: "smooth", scn: "smooth"};
+let ADJ = null, RUN = null, CH = null, REACH = null;
+const GR = () => MP.GRAPHS[S.g];
+const opts = (agg) => ({agg: agg || S.agg, self: S.self, W: S.W, act: S.act});
+const LL = () => Math.min(LMAX, Math.floor(S.t / 3));
+const ST = () => S.t >= TMAX ? 0 : S.t % 3;
+function initF() { S.H0 = MP.initFeatures(S.fk, GR(), S.sel, S.seed); }
+function loadGraph(key) { S.g = key; S.edges = MP.GRAPHS[key].edges.map(e => e.slice()); S.sel = Math.min(S.sel, GR().n - 1); S.eA = null; }
+function randW() { const r = MP.mulberry32(S.seed * 31 + 7); return [[0, 0], [0, 0]].map(() => [Math.round((2 * r() - 1) * 100) / 100, Math.round((2 * r() - 1) * 100) / 100]); }
+function recompute() {
+  ADJ = MP.adjOf(GR().n, S.edges);
+  RUN = MP.run(ADJ, S.H0, opts(), LMAX);
+  CH = {};
+  for (const a of ["sum", "mean", "max", "gcn"]) { const r = MP.run(ADJ, S.H0, opts(a), LMAX); CH[a] = {rel: r.Hs.map(H => MP.relSpread(H)), rms: r.Hs.map(H => MP.rms(H))}; }
+  REACH = {yes: MP.reach(ADJ, {self: true}, LMAX).sizes, no: MP.reach(ADJ, {self: false}, LMAX).sizes};
+}
+const stageName = () => ["node features", "messages along the edges", "aggregated"][ST()];
+
+/* ---------- graph drawing ---------- */
+const NX = p => 60 + p[0] * 640, NY = p => 55 + p[1] * 330;
+function nodeFill(h, mx) {
+  const a = Math.max(0, h[0]), b = Math.max(0, h[1]), s = a + b, nr = Math.hypot(h[0], h[1]);
+  if (s < 1e-12) return "#f4f4f4";
+  const p = a / s, r = Math.round(232 * p + 8 * (1 - p)), g = Math.round(89 * p + 119 * (1 - p)), bl = Math.round(12 * p + 189 * (1 - p)), al = mx > 0 ? Math.min(1, 0.18 + 0.82 * nr / mx) : 0.3;
+  return `rgba(${r},${g},${bl},${al.toFixed(2)})`;
+}
+function drawGraph() {
+  const g = GR(), l = LL(), s = ST(), n = g.n, sel = S.sel, o = opts(), pos = g.pos;
+  const Hshow = s === 2 && l < LMAX ? RUN.Hs[l + 1] : RUN.Hs[l];
+  const Ashow = s === 2 && l < LMAX ? RUN.As[l + 1] : null;
+  const V = Ashow || Hshow, mx = Math.max(...V.map(h => Math.hypot(h[0], h[1])));
+  let out = `<defs><marker id="ah" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M0,0L10,5L0,10z" fill="#9aa3a9"/></marker><marker id="ahs" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0,0L10,5L0,10z" fill="${ORG}"/></marker></defs>`;
+  for (const [u, v] of S.edges) out += `<line x1="${NX(pos[u])}" y1="${NY(pos[u])}" x2="${NX(pos[v])}" y2="${NY(pos[v])}" stroke="${s === 1 ? "#e3e6e8" : "#b9c0c5"}" stroke-width="2"/>`;
+  let lbls = "";
+  if (s === 1 && l < LMAX) {
+    const lay = MP.layer(ADJ, RUN.Hs[l], o);
+    for (const m of lay.msgs) {
+      const hit = m.to === sel;
+      if (m.from === m.to) { const x = NX(pos[m.to]), y = NY(pos[m.to]); out += `<circle cx="${x}" cy="${y}" r="24" fill="none" stroke="${hit ? ORG : "#cfd5d9"}" stroke-width="${hit ? 2.2 : 1.2}" stroke-dasharray="3 3"/>`; if (hit) { const dirs = ADJ[m.to].map(u => Math.atan2(NY(pos[u]) - y, NX(pos[u]) - x)); let best = 0, bs = -1; for (let q = 0; q < 8; q++) { const a = q * Math.PI / 4 + Math.PI / 8; if (Math.sin(a) > 0.1) continue; const sc = dirs.length ? Math.min(...dirs.map(d => Math.abs(Math.atan2(Math.sin(a - d), Math.cos(a - d))))) : 9; if (sc > bs + 1e-9) { bs = sc; best = a; } } const cx = Math.cos(best), an = cx > 0.3 ? "start" : cx < -0.3 ? "end" : "middle"; lbls += `<text x="${x + cx * 30}" y="${y + Math.sin(best) * 30 + 3}" text-anchor="${an}" font-size="10.5" fill="${ORG}" font-weight="600" stroke="#fff" stroke-width="3" paint-order="stroke">self (${fvec(m.m)})</text>`; } continue; }
+      const x1 = NX(pos[m.from]), y1 = NY(pos[m.from]), x2 = NX(pos[m.to]), y2 = NY(pos[m.to]), dx = x2 - x1, dy = y2 - y1, len = Math.hypot(dx, dy), ux = dx / len, uy = dy / len, nx = -uy, ny = ux, off = 6;
+      out += `<line x1="${x1 + ux * 21 + nx * off}" y1="${y1 + uy * 21 + ny * off}" x2="${x2 - ux * 24 + nx * off}" y2="${y2 - uy * 24 + ny * off}" stroke="${hit ? ORG : "#b2bac0"}" stroke-width="${hit ? 2.4 : 1.4}" marker-end="url(#${hit ? "ahs" : "ah"})"/>`;
+      if (hit) { const mx2 = (x1 + x2) / 2 + nx * 17 + ux * (m.from < m.to ? -6 : 6) * 0, my2 = (y1 + y2) / 2 + ny * 17; lbls += `<text x="${mx2}" y="${my2}" text-anchor="middle" font-size="10.5" fill="${ORG}" font-weight="600" stroke="#fff" stroke-width="3" paint-order="stroke">(${fvec(m.m)})</text>`; }
+    }
+  }
+  for (let i = 0; i < n; i++) {
+    const x = NX(pos[i]), y = NY(pos[i]), h = V[i], isSel = i === sel, isA = S.edit && S.eA === i;
+    out += `<g class="nd" data-n="${i}"><circle cx="${x}" cy="${y}" r="26" fill="transparent"/>`;
+    if (isSel) out += `<circle cx="${x}" cy="${y}" r="22" fill="none" stroke="${NAVY}" stroke-width="2.6"/>`;
+    if (isA) out += `<circle cx="${x}" cy="${y}" r="22" fill="none" stroke="${GREEN}" stroke-width="3" stroke-dasharray="4 3"/>`;
+    out += `<circle cx="${x}" cy="${y}" r="17" fill="${nodeFill(h, mx)}" stroke="${GCOL[g.group[i]]}" stroke-width="2.2"/><text x="${x}" y="${y + 4.5}" text-anchor="middle" font-size="13" font-weight="700" fill="#222">${i}</text>`;
+    const tx = fvec(h), w = Math.max(58, tx.length * 6.4 + 12);
+    out += `<rect x="${x - w / 2}" y="${y + 21}" width="${w}" height="17" rx="3" fill="${Ashow ? "#eaf3fa" : "#fff"}" fill-opacity=".94" stroke="${isSel ? NAVY : "#cfd3d6"}" stroke-width="${isSel ? 1.4 : 1}"/><text x="${x}" y="${y + 33.5}" text-anchor="middle" font-size="11.5" fill="#222" style="font-variant-numeric:tabular-nums">${tx}</text></g>`;
+  }
+  $("grid").innerHTML = out + lbls;
+  $("grid").classList.toggle("edit", S.edit);
+}
+
+/* ---------- detail card ---------- */
+function detailHTML() {
+  const l = LL(), s = ST(), v = S.sel, o = opts();
+  if (l >= LMAX) return `<p><b>Node ${v}</b> after the maximum of ${LMAX} layers: h = (${fvec(RUN.Hs[LMAX][v])}). Press ↺ to start again, or change a setting.</p>`;
+  const lay = MP.layer(ADJ, RUN.Hs[l], o), ms = lay.msgs.filter(m => m.to === v), k = l + 1, a = RUN.As[k][v], hn = RUN.Hs[k][v];
+  const z = o.W.map(row => row[0] * a[0] + row[1] * a[1]);
+  const dn = lay.deg[v], aggName = {sum: "sum", mean: "mean", max: "element-wise max", gcn: "sum"}[o.agg];
+  let h = `<p style="margin-bottom:2px"><b>Node ${v}, layer ${k}</b> <span style="color:#888">(degree ${ADJ[v].length}${o.self ? " + self-loop" : ""})</span></p>`;
+  h += `<div class="${s === 0 ? "" : "dim"}" style="${s === 0 ? "" : ""}">Features now: <b class="k">h = (${fvec(RUN.Hs[l][v])})</b></div>`;
+  h += `<div class="${s === 1 ? "" : (s === 0 ? "dim" : "")}"><table class="mt"><tr><th>message from</th><th>its features</th>${o.agg === "gcn" ? "<th>factor</th>" : ""}<th>message</th></tr>`;
+  if (!ms.length) h += `<tr><td colspan="4">no neighbours and no self-loop: no messages</td></tr>`;
+  for (const m of ms) h += `<tr><td>node ${m.from}${m.from === v ? " (self)" : ""}</td><td>(${fvec(RUN.Hs[l][m.from])})</td>${o.agg === "gcn" ? `<td>1/√(${lay.deg[m.from]}·${dn}) = ${fm(1 / Math.sqrt(lay.deg[m.from] * dn), 3)}</td>` : ""}<td>(${fvec(m.m)})</td></tr>`;
+  h += `</table></div>`;
+  h += `<div class="${s === 2 ? "" : "dim"}"><div class="ln2">Aggregate (${aggName}${o.agg === "mean" && ms.length ? ", ÷" + ms.length : ""}): <b class="k">a = (${fvec(a)})</b></div><div class="ln2">Update: W·a = (${fvec(z)})${o.act === "relu" ? ", ReLU" : ""} → <b class="k">h′ = (${fvec(hn)})</b></div></div>`;
+  return h;
+}
+
+/* ---------- charts ---------- */
+function drawFeat() {
+  const l = LL(), s = ST(), cv = $("cl"), {c, w, h} = prep(cv), n = GR().n, Hs = RUN.Hs, g = GR();
+  const last = s === 2 && l < LMAX ? l + 1 : l; let x0 = 0, x1 = 0, y0 = 0, y1 = 0;
+  for (let k = 0; k <= last; k++) for (const p of Hs[k]) { x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]); y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]); }
+  const pad = (a, b) => { const d = Math.max(b - a, 0.5) * 0.12; return [a - d, b + d]; }, X = pad(x0, x1), Y = pad(y0, y1);
+  const fr = frame(c, w, h, {l: 44, r: 12, t: 12, b: 38, x: X, y: Y, xt: ticksFor(X[0], X[1]), yt: ticksFor(Y[0], Y[1]), fx: fv, fy: fv, xlab: "x₁", ylab: "x₂"});
+  clipTo(c, {l: 44, r: 12, t: 12, b: 38}, w, h);
+  for (let i = 0; i < n; i++) {
+    const col = GCOL[g.group[i]]; c.strokeStyle = col; c.globalAlpha = i === S.sel ? 0.9 : 0.35; c.lineWidth = i === S.sel ? 2 : 1.2; c.beginPath();
+    for (let k = 0; k <= last; k++) k ? c.lineTo(fr.X(Hs[k][i][0]), fr.Y(Hs[k][i][1])) : c.moveTo(fr.X(Hs[k][i][0]), fr.Y(Hs[k][i][1])); c.stroke(); c.globalAlpha = 1;
+    c.fillStyle = col; c.globalAlpha = 0.4; c.beginPath(); c.arc(fr.X(Hs[0][i][0]), fr.Y(Hs[0][i][1]), 2.4, 0, 2 * Math.PI); c.fill(); c.globalAlpha = 1;
+  }
+  c.font = "10px Roboto,Arial,sans-serif"; c.textAlign = "left"; c.textBaseline = "middle";
+  for (let i = 0; i < n; i++) {
+    const p = Hs[last][i], px = fr.X(p[0]), py = fr.Y(p[1]), col = GCOL[g.group[i]];
+    c.fillStyle = col; c.beginPath(); c.arc(px, py, i === S.sel ? 6 : 4.6, 0, 2 * Math.PI); c.fill(); c.strokeStyle = i === S.sel ? NAVY : "#fff"; c.lineWidth = i === S.sel ? 2 : 1.2; c.stroke();
+    c.fillStyle = "#333"; c.fillText(String(i), px + 7, py - 6);
+  }
+  c.restore();
+  $("capl").innerHTML = `Each dot is a node, placed at its current features. Lines show where it has been since layer 0 (small dot). <b>Orange / blue</b> = the node's group in the preset graph. ${last === 0 ? "" : `Showing layers 0 to ${last}.`}`;
+}
+function niceLog(vals) {
+  const pos = vals.filter(v => v > 0 && isFinite(v)), vmin = Math.min(...pos), vmax = Math.max(...pos), cand = [];
+  for (let k = -8; k <= 12; k++) for (const m of [1, 2, 5]) cand.push(m * Math.pow(10, k));
+  let lo = cand.filter(v => v <= vmin * 1.0000001).pop(), hi = cand.find(v => v >= vmax * 0.9999999); if (lo === hi) hi = cand[cand.indexOf(lo) + 1];
+  let tk = cand.filter(v => v >= lo * 0.99999 && v <= hi * 1.00001); if (tk.length > 7) tk = tk.filter(v => Math.abs(Math.log10(v) - Math.round(Math.log10(v))) < 1e-9);
+  if (tk.length < 2) tk = [lo, hi];
+  return {y: [Math.log10(lo), Math.log10(hi)], yt: tk.map(Math.log10), fy: v => { const x = Math.pow(10, v); return x >= 1e4 ? "1e" + Math.round(Math.log10(x)) : String(+x.toPrecision(2)); }};
+}
+const ACOL = {sum: ORG, mean: BLUE, max: GREEN, gcn: PURP}, ANAME = {sum: "sum", mean: "mean", max: "max", gcn: "GCN"};
+function drawRight() {
+  const cv = $("cr"), l = LL(), xs = Array.from({length: LMAX + 1}, (_, i) => i), common = {x: [0, LMAX], xt: xs, fx: fint, xlab: "layers applied"};
+  const aggs = ["sum", "mean", "max", "gcn"];
+  if (S.rsel === "smooth") {
+    drawLines(cv, Object.assign({}, common, {y: [0, 1], yt: [0, 0.25, 0.5, 0.75, 1], ylab: "relative spread of the features",
+      series: aggs.map(a => ({x: xs, y: CH[a].rel, color: ACOL[a], w: a === S.agg ? 2.8 : 1.3, dash: a === S.agg ? [] : [5, 3], dots: a === S.agg})),
+      legend: aggs.map(a => ({color: ACOL[a], t: ANAME[a] + (a === S.agg ? " (selected)" : "")})), marks: CH[S.agg].rel[l] === null ? [] : [{x: l, y: CH[S.agg].rel[l], color: NAVY}]}));
+    $("capr").innerHTML = `<b>Relative spread</b> = RMS distance of the nodes from their average feature vector, divided by the RMS feature size. 1 means the nodes are very different, 0 means all nodes carry the same vector (<b>over-smoothing</b>). The four rules are drawn on the same graph and features; the dashed ones are not selected.`;
+  } else if (S.rsel === "size") {
+    const all = []; aggs.forEach(a => CH[a].rms.forEach(v => all.push(v / CH[a].rms[0])));
+    const nl = niceLog(all);
+    drawLines(cv, Object.assign({}, common, {y: nl.y, yt: nl.yt, fy: nl.fy, ylab: "RMS feature size, relative to layer 0 (log)",
+      series: aggs.map(a => ({x: xs, y: CH[a].rms.map(v => v > 0 ? Math.log10(v / CH[a].rms[0]) : null), color: ACOL[a], w: a === S.agg ? 2.8 : 1.3, dash: a === S.agg ? [] : [5, 3], dots: a === S.agg})),
+      legend: aggs.map(a => ({color: ACOL[a], t: ANAME[a] + (a === S.agg ? " (selected)" : "")})), marks: CH[S.agg].rms[l] > 0 ? [{x: l, y: Math.log10(CH[S.agg].rms[l] / CH[S.agg].rms[0]), color: NAVY}] : []}));
+    $("capr").innerHTML = `<b>Feature size</b>: root mean square of all numbers on the graph, relative to the input, on a log axis. Sum grows without bound on graphs with high-degree nodes, mean and GCN stay bounded, max can only grow up to the largest input value.`;
+  } else {
+    const n = GR().n, yn = nice(n, 4), a = REACH.yes.map(r => r[S.sel]), b = REACH.no.map(r => r[S.sel]);
+    drawLines(cv, Object.assign({}, common, {y: [0, yn.top], yt: yn.t, fy: fint, ylab: "nodes that can influence the selected node",
+      series: [{x: xs, y: S.self ? a : b, color: NAVY, w: 2.8, dots: true}, {x: xs, y: S.self ? b : a, color: GREY, w: 1.4, dash: [5, 3]}],
+      legend: [{color: NAVY, t: S.self ? "with self-loop (selected)" : "without self-loop (selected)"}, {color: GREY, t: S.self ? "without self-loop" : "with self-loop"}], marks: [{x: l, y: (S.self ? a : b)[l], color: ORG}]}));
+    $("capr").innerHTML = `<b>Receptive field</b> of node ${S.sel}: after k layers it can only depend on nodes reachable by a walk of exactly k steps (with self-loop: at most k). Without the self-loop the count can drop again on bipartite graphs such as stars and trees.`;
+  }
+}
+
+/* ---------- results ---------- */
+function drawNums() {
+  const l = LL(), s = ST(), v = S.sel, H = RUN.Hs[l], m = S.edges.length, n = GR().n, rf = REACH[S.self ? "yes" : "no"][l][v];
+  const sec = t => `<div class="sec">${t}</div>`, row = (a, b) => `<div class="pr"><span>${a}</span><b>${b}</b></div>`;
+  const nx = s === 2 && l < LMAX;
+  $("nums").innerHTML = sec("Graph") + row("Nodes / edges", n + " / " + m) + row("Mean degree", fm(2 * m / n, 2)) +
+    sec("Position") + row("Layers applied", l + " of " + LMAX) + row("Sub-step", l >= LMAX ? "done" : stageName()) +
+    sec("Selected node " + v) + row("Degree", ADJ[v].length) + row("Features h", "(" + fvec(H[v]) + ")") + row("Aggregate a", nx ? "(" + fvec(RUN.As[l + 1][v]) + ")" : "–") + row("Next features h′", nx ? "(" + fvec(RUN.Hs[l + 1][v]) + ")" : "–") + row("Receptive field", rf + " of " + n + " nodes") +
+    sec("All nodes at layer " + l) + row("Relative spread", f3(MP.relSpread(H))) + row("RMS feature size", fv(MP.rms(H))) + row("Mean pairwise cosine", f3(MP.cosine(H)));
+}
+
+/* ---------- main draw ---------- */
+function draw() {
+  const l = LL(), s = ST();
+  drawGraph();
+  $("chead").innerHTML = l >= LMAX ? `Layer ${LMAX} of ${LMAX} <span style="color:#888;text-transform:none;letter-spacing:0">· final features</span>` : `Layer <span class="acc">${l + 1}</span> of ${LMAX} <span style="color:#888;text-transform:none;letter-spacing:0">· ${["current features h", "messages on every edge (selected node in orange)", "aggregated a, before the update"][s]}</span>`;
+  if (l === 0 && s === 0) $("chead").innerHTML = `Input features <span style="color:#888;text-transform:none;letter-spacing:0">· layer 1 of ${LMAX} is next</span>`;
+  $("status").innerHTML = `${l} <small>${l >= LMAX ? "layers applied · done" : "layers applied · " + stageName()}</small>`;
+  $("legend").innerHTML = `<span><b class="dot" style="background:${ORG}"></b>orange fill: mostly x₁</span><span><b class="dot" style="background:${BLUE}"></b>blue fill: mostly x₂</span><span>paler = smaller feature vector</span><span><i style="border-color:${NAVY}"></i>ring: selected node</span><span>border colour: group in the preset</span>`;
+  $("capm").innerHTML = `Numbers under a node are its two features (x₁, x₂). Click a node to select it. ${S.edit ? "<b>Edge editing is on:</b> click one node, then another, to add or remove the edge." : ""}`;
+  $("detail").innerHTML = detailHTML();
+  drawFeat(); drawRight(); drawNums();
+  $("play").innerHTML = S.playing ? "&#10074;&#10074;" : "&#9654;";
+  $("step").disabled = $("layerb").disabled = $("endb").disabled = S.t >= TMAX; $("reset").disabled = S.t === 0;
+  syncBar();
+}
+const SLD = [{k: "layers", lab: "Layers applied", lo: 0, hi: LMAX, int: 1, tip: "Jump to the state after this many complete layers.", get: () => LL(), set: v => { stop(); S.t = 3 * v; draw(); }},
+  {k: "speed", lab: "Play speed (steps/s)", lo: 0.5, hi: 6, step: 0.5, tip: "How many sub-steps per second the play button advances.", get: () => S.speed, set: v => { S.speed = v; }}];
+const showV = (d, v) => d.int ? String(v) : v.toFixed(1);
+function renderBar() {
+  const box = $("cctl"); box.innerHTML = "";
+  for (const d of SLD) {
+    const g = document.createElement("div"); g.className = "grp sl"; g.title = d.tip;
+    g.innerHTML = `<div class="row"><span>${d.lab}</span><input class="num" type="text" inputmode="decimal" id="nb_${d.k}" aria-label="value"></div><input type="range" id="sl_${d.k}" min="${d.lo}" max="${d.hi}" step="${d.step || 1}">`;
+    box.appendChild(g);
+    const rg = $("sl_" + d.k), nb = $("nb_" + d.k);
+    rg.addEventListener("input", () => { d.set(+rg.value); nb.value = showV(d, +rg.value); });
+    const commit = () => { let v = parseFloat(nb.value.replace(",", ".")); if (!isFinite(v)) { nb.value = showV(d, d.get()); nb.blur(); return; } v = Math.max(d.lo, Math.min(d.hi, v)); if (d.int) v = Math.round(v); d.set(v); rg.value = v; nb.value = showV(d, v); nb.blur(); };
+    nb.addEventListener("change", commit); nb.addEventListener("keydown", e => { if (e.key === "Enter") commit(); }); nb.addEventListener("blur", () => { nb.value = showV(d, d.get()); });
+    nb.title = "Type a value between " + d.lo + " and " + d.hi + " and press Enter";
+  }
+}
+function syncBar() { for (const d of SLD) { const rg = $("sl_" + d.k), nb = $("nb_" + d.k); if (!rg) continue; rg.value = d.get(); if (document.activeElement !== nb) nb.value = showV(d, d.get()); } }
+
+/* ---------- play ---------- */
+let last = 0, acc = 0;
+function tick(now) { if (!S.playing) return; acc += (now - last) / 1000 * S.speed; last = now; while (acc >= 1) { acc -= 1; if (S.t < TMAX) S.t++; } if (S.t >= TMAX) S.playing = false; draw(); if (S.playing) requestAnimationFrame(tick); }
+function play() { if (S.t >= TMAX) S.t = 0; S.playing = true; acc = 0; last = performance.now(); requestAnimationFrame(tick); draw(); }
+function stop() { S.playing = false; }
+function upd() { recompute(); draw(); }
+
+/* ---------- UI sync ---------- */
+function syncUI() {
+  document.querySelectorAll("input[name=agg]").forEach(e => e.checked = e.value === S.agg);
+  $("self").checked = S.self; $("act").value = S.act; $("gsel").value = S.g; $("fsel").value = S.fk; $("edit").checked = S.edit; $("rsel").value = S.rsel;
+  $("selid").textContent = S.sel; $("fx1").value = fv(S.H0[S.sel][0]); $("fx2").value = fv(S.H0[S.sel][1]);
+  document.querySelectorAll("#wgrid input").forEach(e => { e.value = String(S.W[+e.dataset.i][+e.dataset.j]).replace("-", "−"); });
+  $("scn").value = S.scn; $("scnhint").textContent = (SCEN.find(x => x[0] === S.scn) || [0, 0, ""])[2];
+}
+function applyScenario(id) {
+  const sc = SCEN.find(x => x[0] === id), p = sc[3]; stop(); S.scn = id; S.sel = p.sel; loadGraph(p.g); S.fk = p.fk; S.agg = p.agg; S.self = p.self; S.act = p.act; S.W = p.W === "I" ? [[1, 0], [0, 1]] : p.W.map(r => r.slice()); S.t = 0; S.edit = false;
+  initF(); recompute(); syncUI(); draw();
+}
+function custom() { S.scn = ""; $("scn").value = ""; $("scnhint").textContent = "Custom settings."; }
+const num = s => parseFloat(String(s).replace(",", ".").replace("−", "-"));
+function bind() {
+  $("scn").innerHTML = SCEN.map(x => `<option value="${x[0]}">${x[1]}</option>`).join("") + `<option value="" hidden>Custom</option>`;
+  $("gsel").innerHTML = GKEYS.map(k => `<option value="${k}">${MP.GRAPHS[k].name}</option>`).join("");
+  $("fsel").innerHTML = FK.map(x => `<option value="${x[0]}">${x[1]}</option>`).join("");
+  $("rsel").innerHTML = [["smooth", "Over-smoothing (spread)"], ["size", "Feature size (log)"], ["reach", "Receptive field"]].map(x => `<option value="${x[0]}">${x[1]}</option>`).join("");
+  let wh = ""; for (let i = 0; i < 2; i++) for (let j = 0; j < 2; j++) wh += `<input class="num" type="text" inputmode="decimal" data-i="${i}" data-j="${j}" aria-label="W row ${i + 1} column ${j + 1}">`;
+  $("wgrid").innerHTML = wh;
+  $("play").onclick = () => S.playing ? (stop(), draw()) : play();
+  $("step").onclick = () => { stop(); S.t = Math.min(TMAX, S.t + 1); draw(); };
+  $("layerb").onclick = () => { stop(); S.t = Math.min(TMAX, 3 * (Math.floor(S.t / 3) + 1)); draw(); };
+  $("reset").onclick = () => { stop(); S.t = 0; draw(); };
+  $("endb").onclick = () => { stop(); S.t = TMAX; draw(); };
+  $("scn").onchange = e => { if (e.target.value) applyScenario(e.target.value); };
+  $("gsel").onchange = e => { stop(); loadGraph(e.target.value); initF(); S.t = 0; custom(); recompute(); syncUI(); draw(); };
+  $("gres").onclick = () => { stop(); loadGraph(S.g); S.t = 0; custom(); upd(); syncUI(); };
+  $("fsel").onchange = e => { stop(); S.fk = e.target.value; initF(); S.t = 0; custom(); recompute(); syncUI(); draw(); };
+  $("reseed").onclick = () => { stop(); S.seed++; S.fk = "random"; initF(); S.t = 0; custom(); recompute(); syncUI(); draw(); };
+  document.querySelectorAll("input[name=agg]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.agg = e.value; custom(); upd(); } }));
+  $("self").onchange = e => { S.self = e.target.checked; custom(); upd(); };
+  $("act").onchange = e => { S.act = e.target.value; custom(); upd(); };
+  $("edit").onchange = e => { S.edit = e.target.checked; S.eA = null; draw(); };
+  $("rsel").onchange = e => { S.rsel = e.target.value; draw(); };
+  $("widt").onclick = () => { S.W = [[1, 0], [0, 1]]; custom(); syncUI(); upd(); };
+  $("wrnd").onclick = () => { S.seed++; S.W = randW(); custom(); syncUI(); upd(); };
+  document.querySelectorAll("#wgrid input").forEach(e => { const c = () => { const v = num(e.value); if (isFinite(v)) { S.W[+e.dataset.i][+e.dataset.j] = Math.max(-5, Math.min(5, v)); custom(); upd(); } syncUI(); e.blur(); }; e.addEventListener("change", c); e.addEventListener("keydown", ev => { if (ev.key === "Enter") c(); }); });
+  for (const [id, j] of [["fx1", 0], ["fx2", 1]]) { const e = $(id), c = () => { const v = num(e.value); if (isFinite(v)) { S.H0[S.sel][j] = v; custom(); upd(); } syncUI(); e.blur(); }; e.addEventListener("change", c); e.addEventListener("keydown", ev => { if (ev.key === "Enter") c(); }); }
+  $("grid").addEventListener("click", ev => {
+    const nd = ev.target.closest("[data-n]"); if (!nd) return; const i = +nd.dataset.n;
+    if (S.edit) {
+      if (S.eA === null) S.eA = i; else if (S.eA === i) S.eA = null; else {
+        const a = Math.min(S.eA, i), b = Math.max(S.eA, i), k = S.edges.findIndex(e => Math.min(e[0], e[1]) === a && Math.max(e[0], e[1]) === b);
+        if (k >= 0) S.edges.splice(k, 1); else S.edges.push([a, b]); S.eA = null; custom(); recompute();
+      }
+      draw(); return;
+    }
+    S.sel = i; if (S.fk === "impulse") { initF(); recompute(); } syncUI(); draw();
+  });
+  $("rsel").value = S.rsel;
+  window.addEventListener("resize", draw);
+}
+bind(); renderBar(); applyScenario("smooth");
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>

@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tokenizer Lab: byte-pair encoding</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:700}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  #cv{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cv.grab{cursor:grab}#cv.drag{cursor:grabbing}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #aaa}
+  .rg{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid #222;vertical-align:-2px}.rg.th{border-width:3px}
+  .ln{display:inline-block;width:26px;height:0;border-top:2px solid #222;vertical-align:middle}.ln.da{border-top-style:dashed;border-top-width:1.5px}
+  .bd{display:inline-block;width:26px;height:10px;border-radius:2px}
+  #detail{min-height:70px}
+  #nums{grid-template-columns:1fr;gap:6px}
+  #nums .pr{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  #nums .pr b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  #nums .sec{grid-column:1/-1}
+  #bar{margin-bottom:0;align-items:flex-end}#cctl{align-items:flex-end}
+  #cctl{flex:1;gap:12px 20px}
+  #cctl .sl{flex:1 1 0;min-width:118px}
+  #cctl{flex-wrap:nowrap}
+  .kopts{display:flex;gap:16px;align-items:flex-start;min-height:34px}
+  .kopts label{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-weight:400;font-size:13px;margin:0;color:#222}
+  .kopts input{margin:3px 0 0}
+  .kopts small{display:block;color:#777;font-size:11.5px;line-height:1.25;margin-top:1px;max-width:112px}
+  input.num{width:52px;font-size:12.5px;padding:1px 5px;text-align:right;border:1px solid #ccc;border-radius:3px;background:#fff;color:#222;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  #hover{margin-top:6px;color:#555;min-height:20px;font-variant-numeric:tabular-nums}
+  .seg{display:flex;gap:6px;margin:8px 0 2px}.seg .tool{flex:1;text-align:center}
+  .tool.o.on{background:#e8590c;border-color:#e8590c}.tool.b.on{background:#0877bd;border-color:#0877bd}
+
+  #cv{aspect-ratio:16/10;cursor:default}
+  .pgrid{margin-top:20px}
+  .pgrid .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+  .pgrid .ph select{min-width:0;max-width:62%}
+  .pgrid canvas{aspect-ratio:1/1;cursor:default}
+  #cl2{aspect-ratio:1/1}
+  .fbtns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:12px 0 0}
+  .fbtns button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:9px 0;font-size:13px;cursor:pointer;color:#222;font-variant-numeric:tabular-nums}
+  .fbtns button:hover:not(:disabled){background:var(--navy);color:#fff;border-color:var(--navy)}
+  .fbtns button:disabled{opacity:.45;cursor:default}
+  table.tbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px}
+  table.tbl th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+  table.tbl td{text-align:right;padding:3px 8px 3px 0}
+  table.tbl tr.sel td{font-weight:700;color:#0b5f96}
+  table.tbl tr.ref td{color:#777;font-style:italic}
+  .cap{font-size:12px;color:#666;line-height:1.45;margin-top:8px}
+  .cap b{color:#333;font-weight:700}
+  #lam{margin-left:14px}
+  .msec{display:none}
+  .msec.on{display:block}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  #detail p{margin:0 0 6px}
+  #detail p:last-child{margin-bottom:0}
+  .bad{color:#b4430a}
+
+  /* ---- BPE additions ---- */
+  #bar{align-items:center;padding:12px 22px;gap:12px 22px}
+  #btns{gap:8px!important;flex:0 0 auto}
+  #btns #play{width:46px;height:46px;font-size:17px}
+  #btns #reset{font-size:18px}
+  #step,#endb{font-size:12.5px;width:auto;border-radius:19px;padding:0 14px}
+  #cctl .sl{min-width:104px!important}
+  #cctl{gap:10px 18px!important}
+  #bar label,#cctl .sl .row{font-size:12px!important}
+  input.num{width:46px;font-size:12px}
+  #txt,#tryout{border:1px solid #cfd3d6;border-radius:3px;background:#fff;padding:9px 12px;overflow:auto;font:13px/1.95 "SF Mono",Menlo,Consolas,monospace}
+  #txt{height:196px}
+  #tryout{max-height:150px;min-height:44px}
+  .tk{display:inline;padding:1px 0;margin:0 1px;border-radius:3px;cursor:pointer;white-space:pre-wrap;overflow-wrap:anywhere}
+  .t0{background:#dcecf8}.t1{background:#fbe3d3}.t2{background:#dcf1e1}.t3{background:#ebe3f8}
+  .tk.new{outline:2px solid #e8590c;outline-offset:0}
+  .tk.sel{outline:2px solid #0877bd;outline-offset:0}
+  .tk.hl{outline:2px solid #1b3b4f;outline-offset:0}
+  textarea{width:100%;font:12px/1.45 "SF Mono",Menlo,Consolas,monospace;border:1px solid #ccc;border-radius:4px;padding:6px 8px;resize:vertical;color:#222;background:#fff}
+  textarea:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  .mtwrap{border:1px solid #cfd3d6;border-radius:3px;background:#fff;overflow:auto;aspect-ratio:1/1;width:100%}
+  .mtwrap table.tbl{margin:0}
+  .mtwrap table.tbl th{position:sticky;top:0;background:#fff;padding:6px 8px 5px 8px;z-index:1}
+  .mtwrap table.tbl td{padding:3px 8px;cursor:pointer;white-space:nowrap}
+  .mtwrap table.tbl tr:hover td{background:#f3f7fb}
+  .mtwrap table.tbl tr.new td{background:#fdeee3}
+  .mtwrap table.tbl tr.sel td{background:#e6f2fb}
+  .mtwrap table.tbl tr.fut td{color:#aaa;font-style:italic}
+  table.tbl td.m,table.tbl td.mk{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12px;text-align:left}
+  .mtwrap table.tbl th:nth-child(2),.mtwrap table.tbl th:nth-child(3){text-align:left}
+  .btn4{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:8px 0 2px}
+  .btn4 button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:8px 0;font-size:12.5px;cursor:pointer;color:#222}
+  .btn4 button:hover{background:#eef5fb}
+  .btn4 button.go{background:var(--navy);border-color:var(--navy);color:#fff}.btn4 button.go:hover{background:#12293a}
+  #tknote{font-size:12px;color:#777;margin:7px 0 0 2px;min-height:34px}
+  .pgrid .ph .tt{font-weight:500}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Tokenizer Lab</h1>
+  <p class="blurb">A language model never reads letters; it reads <b>tokens</b>. <b>Byte-pair encoding (BPE)</b> is the most common way to decide what the tokens are: start with one token per byte of your text, then repeatedly find the <b>most frequent pair of neighbouring tokens</b> and fuse it into a new token. Every fusion is a <b>merge</b>, and the list of merges is the tokenizer. Paste any text into <b>Settings</b>, press <b>Play</b>, and watch the vocabulary build and the token count fall. Then try the tokenizer you just trained on new text.</p>
+
+  <div id="bar"><div class="grp tr" id="btns"><button class="btn" id="play" title="Play / pause">&#9654;</button><button class="btn" id="step" title="Apply one merge">Step</button><button class="btn" id="reset" title="Back to 0 merges">&#8634;</button><button class="btn" id="endb" title="Apply all learned merges">To end</button></div><div id="cctl"></div></div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="chead"></div>
+      <div id="txt"></div>
+      <div id="tknote"></div>
+      <div class="pgrid">
+        <div><div class="ph"><span>Merges learned so far</span></div><div class="mtwrap" id="mtw"></div><div class="cap" id="capl"></div></div>
+        <div><div class="ph"><select id="rsel" aria-label="Choose the chart"><option value="tokens">Tokens vs merges</option><option value="count">Pair counts</option><option value="len">Token lengths</option></select></div><canvas id="cr"></canvas><div class="cap" id="capr"></div></div>
+      </div>
+      <div class="card" style="margin:16px 0 0">
+        <div class="head" style="margin-bottom:6px">Try the tokenizer on new text</div>
+        <textarea id="try" rows="2" spellcheck="false"></textarea>
+        <div id="tryout" style="margin-top:8px"></div>
+        <div class="cap" id="trystat"></div>
+      </div>
+      <div id="detail" class="card" style="margin:16px 0 0"></div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Training text</div>
+        <select id="smp" style="width:100%;margin-bottom:8px"></select>
+        <textarea id="inp" rows="17" spellcheck="false"></textarea>
+        <div class="hint" id="inhint" style="margin-top:4px"></div>
+
+        <div class="sub">Pre-tokenisation</div>
+        <label class="radio"><input type="radio" name="pt" value="regex" checked><span>Split into words first<small>GPT-2 style pattern; a word keeps its leading space and merges never cross word boundaries</small></span></label>
+        <label class="radio"><input type="radio" name="pt" value="whole"><span>Whole text as one piece<small>merges may span spaces, lines and punctuation</small></span></label>
+
+        <div class="sub">Stop learning when</div>
+        <div class="row2" style="margin-top:2px"><label for="minf" style="font-size:12.5px;color:#444">Best pair occurs fewer than</label><select id="minf"><option value="1">1 time (learn all)</option><option value="2" selected>2 times</option><option value="3">3 times</option><option value="5">5 times</option></select></div>
+        <div class="hint">Or when the &ldquo;Max merges to learn&rdquo; budget at the top is used up.</div>
+      </div>
+      <div class="head" style="margin-top:22px">Results</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <p>Everything on this page is computed in your browser from the text you give it. There is no pre-trained tokenizer; the merges you see are learned from that text only.</p>
+
+    <h3>Training: the algorithm</h3>
+    <ul>
+      <li><b>Split into pre-tokens</b> (optional, on by default). A word keeps its leading space, so &ldquo; low&rdquo; and &ldquo;low&rdquo; at the start of a text are different pieces. Numbers, punctuation and runs of spaces become pieces of their own. Merges never cross from one piece to the next. The pattern is the GPT-2 style one: <span class="eq">'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+</span></li>
+      <li><b>Write every piece as UTF-8 bytes.</b> The starting vocabulary is the 256 byte values (ids 0 to 255), so any text can be encoded and there is no &ldquo;unknown&rdquo; token. A letter such as &ldquo;&auml;&rdquo; is two bytes and starts as two tokens, which is why you see <span class="eq">&lt;C3&gt;</span>-style labels for half characters (try the German sample at 0 merges).</li>
+      <li><b>Count neighbouring pairs.</b> For a pair of tokens (a, b), the count is
+        <div class="eqb">count(a, b) = &Sigma; over distinct pieces w of  freq(w) &times; (number of places where a is directly followed by b inside w)</div>
+        Each distinct piece is counted once and weighted by how often it occurs, which gives the same result as scanning the whole text.</li>
+      <li><b>Merge the most frequent pair.</b> It becomes a new token with id 256, 257, &hellip; in the order learned. In every piece the pair is replaced from left to right, without overlap. If two pairs tie, the pair with the smaller ids wins; this is a choice made on this page so that the result is deterministic.</li>
+      <li><b>Repeat</b> until the budget &ldquo;Max merges to learn&rdquo; is used up, or the best pair occurs fewer times than the minimum you set, or every piece is a single token.</li>
+    </ul>
+    <p>To tokenize <b>new text</b>, the learned merges are applied in the order they were learned: repeatedly take the earliest learned merge that applies to the piece and fuse every occurrence. This reproduces exactly what training did on the training text (checked below), and it is what the &ldquo;Try the tokenizer on new text&rdquo; box does.</p>
+
+    <h3>What the plots mean</h3>
+    <ul>
+      <li><b>Count and saved.</b> The count of the chosen pair never rises from one merge to the next. A merge can only create new pairs that involve the new token, and the new token occurs at most as often as the pair it came from; all other counts can only fall. I checked this on all samples in both modes. &ldquo;Saved&rdquo; is how many tokens the merge removed. It can be smaller than the count when occurrences overlap: on the text &ldquo;aaaaaaa aaaa aaa&rdquo; the first merge (a + a) has count 11 but removes 6 tokens.</li>
+      <li><b>Tokens against merges</b> is the compression curve: how much shorter the text becomes. <b>Bytes per token</b> is its inverse view; one token per byte means 1.0.</li>
+      <li><b>Token lengths</b> shows what the vocabulary is made of: single bytes at first, then longer pieces.</li>
+    </ul>
+
+    <h3>What I measured with this page's code</h3>
+    <p>All numbers below come from running the same training code on the built-in samples (words split first, minimum count 1, so every pair seen at least once may be merged). Tokens needed for the whole sample after 0, 20, 50 and 100 merges, with bytes per token in brackets:</p>
+    <table class="tbl" style="max-width:640px"><tr><th>Sample</th><th>bytes</th><th>20 merges</th><th>50 merges</th><th>100 merges</th></tr>
+      <tr><td>English paragraph</td><td>610</td><td>430 (1.42)</td><td>332 (1.84)</td><td>251 (2.43)</td></tr>
+      <tr><td>German paragraph</td><td>522</td><td>382 (1.37)</td><td>302 (1.73)</td><td>226 (2.31)</td></tr>
+      <tr><td>Python snippet</td><td>253</td><td>158 (1.60)</td><td>102 (2.48)</td><td>&ndash; (only 64 possible)</td></tr>
+      <tr><td>Numbers and dates</td><td>218</td><td>166 (1.31)</td><td>121 (1.80)</td><td>71 (3.07)</td></tr>
+    </table>
+    <div class="warn"><b>These samples are tiny, so read the numbers as an illustration.</b> With minimum count 1 the English sample (610 bytes, 79 distinct words) ends after 232 merges at 119 tokens, which is one token per word: the tokenizer has memorised its own text. With minimum count 2 (the default) it learns 81 merges and ends at 270 tokens, 2.26 bytes per token. A real tokenizer is trained on far more text, where the merges describe common patterns of the language rather than the words of one paragraph.</div>
+    <ul>
+      <li><b>A tokenizer fits the text it was trained on.</b> I trained 80 merges on the English sample, and for comparison 80 merges on each target text, then tokenized that target text. German (522 bytes): 402 tokens (1.30 bytes per token) with the English merges against 246 (2.12) with merges learned from the German text. Python (253 bytes): 227 (1.11) against 88 (2.88). Numbers (218 bytes): 193 (1.13) against 91 (2.40). The second figure in each pair is measured on the text its merges were learned from, which flatters it, so the gap is overstated; the direction is what the demo shows. Petrov et al. (2023) study this effect at scale and report that the same text can need many more tokens in some languages than in others (up to about 15 times in their comparison).</li>
+      <li><b>Pre-tokenisation changes what a token can be.</b> On the English sample with 100 merges, splitting into words first gives 251 tokens and none of the 100 merges contains a space or new line after its first byte. Treating the whole text as one piece gives 258 tokens, and 32 of the 100 merges contain a space or new line inside the token, so they span words. On the Python snippet, whole-text mode keeps going to 127 merges and ends with the entire snippet as a single token, while split-into-words stops after 64 merges at 88 tokens.</li>
+    </ul>
+
+    <h3>Checks I ran</h3>
+    <ul>
+      <li>An independent, deliberately naive Python implementation (it works on bytes objects, one entry per occurrence, with no frequency table) gives <b>exactly the same merges, pair counts and token counts after every merge</b> as the JavaScript on this page, for 23 combinations of text, pre-tokenisation mode and minimum count.</li>
+      <li>The Hugging Face <span class="eq">tokenizers</span> library (version 0.23.3, byte-level BPE with its GPT-2 pattern) gives the <b>same number of tokens</b> after 20 and after 60 merges on four of the samples (8 comparisons). I compared token counts only, not the merge order, because implementations may break ties differently and I did not check that.</li>
+      <li>Decoding the token ids returns the original text exactly, at several merge counts, in both modes. Tokenizing the training text with the first k merges gives exactly the token count recorded during training.</li>
+    </ul>
+
+    <h3>What this page leaves out</h3>
+    <ul>
+      <li>Real tokenizers add special tokens, sometimes normalise text before tokenizing, and use other pre-tokenisation patterns; none of that is modelled here.</li>
+      <li>Texts are limited to 50,000 characters (20,000 in whole-text mode, which is slower) so the page stays responsive.</li>
+      <li>Ties are broken by the smaller token ids; other implementations may choose differently and then produce a different, equally valid tokenizer.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>Gage, P. &ldquo;A New Algorithm for Data Compression.&rdquo; <i>The C Users Journal</i>, February 1994. The original byte-pair compression method.</li>
+      <li>Sennrich, R., Haddow, B., Birch, A. &ldquo;Neural Machine Translation of Rare Words with Subword Units.&rdquo; <i>Proceedings of the 54th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)</i>, pp. 1715&ndash;1725, 2016. doi:10.18653/v1/P16-1162. BPE applied to build subword vocabularies for neural models.</li>
+      <li>Radford, A., Wu, J., Child, R., Luan, D., Amodei, D., Sutskever, I. &ldquo;Language Models are Unsupervised Multitask Learners.&rdquo; OpenAI technical report, 2019. Byte-level BPE as used for GPT-2.</li>
+      <li>Petrov, A., La Malfa, E., Torr, P. H. S., Bibi, A. &ldquo;Language Model Tokenizers Introduce Unfairness Between Languages.&rdquo; <i>Advances in Neural Information Processing Systems 36 (NeurIPS 2023)</i>, pp. 36963&ndash;36990.</li>
+    </ul>
+
+  </div>
+</div>
+<script>const SAMPLES = {
+  simple: "low low low low low lower lower newest newest newest newest newest newest widest widest widest",
+  english: "The tokenizer reads text as bytes and repeatedly merges the most frequent neighbouring pair. Frequent words such as the, and, of become single tokens quickly, while rare words stay split into smaller pieces. This is why a tokenizer trained on one text handles that text efficiently, and other text less so. A model never sees letters; it sees these tokens. The more often a pattern appears in the training text, the earlier it is merged, and the shorter the token sequence becomes.\n\nTokenizers differ in how they treat spaces, numbers and punctuation, and these choices affect how many tokens a sentence needs.",
+  python: "def fib(n):\n    if n < 2:\n        return n\n    return fib(n - 1) + fib(n - 2)\n\nfor i in range(10):\n    print(i, fib(i))\n\ndef total(values):\n    result = 0\n    for value in values:\n        result += value\n    return result\n\nprint(total([1, 2, 3, 4, 5]))\n",
+  german: "Der Tokenizer liest den Text als Bytes und verschmilzt immer wieder das häufigste benachbarte Paar. Häufige Wörter wie der, die und das werden schnell zu einem einzigen Token, während seltene Wörter in kleinere Stücke zerlegt bleiben. Ein Modell sieht keine Buchstaben, sondern nur diese Token. Je öfter ein Muster im Trainingstext vorkommt, desto früher wird es verschmolzen und desto kürzer wird die Tokenfolge.\n\nÜbrigens: Größere Texte ergeben bessere Verschmelzungen, weil mehr Muster wiederholt vorkommen.",
+  numbers: "Order 1042 shipped on 2026-11-18 to Braunschweig. Order 1043 shipped on 2026-11-19 to Dresden. Total: 3.14 + 2.71 = 5.85 units; price 19.99 EUR, 29.99 EUR, 39.99 EUR. Call +49 531 391 0000 or write to info@example.org."
+};
+if (typeof module !== "undefined") module.exports = SAMPLES;
+</script>
+<script>/* Byte-level BPE: training, replay and encoding. Pure functions, no DOM. */
+const BPE = (function () {
+  "use strict";
+  const KEY = 8192;                       // pair key = a*KEY+b  (ids < 8192)
+  const RE = /'s|'t|'re|'ve|'m|'ll|'d| ?\p{L}+| ?\p{N}+| ?[^\s\p{L}\p{N}]+|\s+(?!\S)|\s+/gu;
+  const enc = new TextEncoder();
+
+  function pretok(text, mode) {           // mode "regex" | "whole"
+    if (mode === "whole") return text.length ? [text] : [];
+    return text.match(RE) || [];
+  }
+
+  // merge all non-overlapping leftmost occurrences of (a,b) in array w -> new array
+  function mergeInto(w, a, b, id) {
+    const out = [];
+    let i = 0, n = 0;
+    while (i < w.length) {
+      if (i + 1 < w.length && w[i] === a && w[i + 1] === b) { out.push(id); i += 2; n++; }
+      else { out.push(w[i]); i++; }
+    }
+    return { out, n };
+  }
+
+  /* train(text, {mode, maxMerges, minFreq}) ->
+     { merges:[{a,b,id,count,drop}], tokensAt:[T0,T1,...], nBytes, nWords, uniqWords } */
+  function train(text, opt) {
+    const mode = opt.mode || "regex", maxMerges = opt.maxMerges, minFreq = opt.minFreq || 1;
+    const freq = new Map();
+    let nBytes = 0;
+    for (const p of pretok(text, mode)) { freq.set(p, (freq.get(p) || 0) + 1); }
+    const words = [];                      // {w: array of ids, f}
+    let nWords = 0;
+    for (const [p, f] of freq) {
+      const b = enc.encode(p); nBytes += b.length * f; nWords += f;
+      words.push({ w: Array.from(b), f });
+    }
+    let T = 0; for (const x of words) T += x.w.length * x.f;
+    const merges = [], tokensAt = [T];
+    while (merges.length < maxMerges) {
+      const cnt = new Map();
+      for (const x of words) {
+        const w = x.w;
+        for (let i = 0; i + 1 < w.length; i++) {
+          const k = w[i] * KEY + w[i + 1];
+          cnt.set(k, (cnt.get(k) || 0) + x.f);
+        }
+      }
+      let bk = -1, bc = 0;
+      for (const [k, c] of cnt) if (c > bc || (c === bc && k < bk)) { bc = c; bk = k; }
+      if (bk < 0 || bc < minFreq) break;
+      const a = Math.floor(bk / KEY), b = bk % KEY, id = 256 + merges.length;
+      let drop = 0;
+      for (const x of words) {
+        const r = mergeInto(x.w, a, b, id);
+        if (r.n) { x.w = r.out; drop += r.n * x.f; }
+      }
+      T -= drop; tokensAt.push(T);
+      merges.push({ a, b, id, count: bc, drop });
+    }
+    return { merges, tokensAt, nBytes, nWords, uniqWords: words.length };
+  }
+
+  function rankMap(merges, k) {
+    const m = new Map();
+    for (let i = 0; i < k; i++) m.set(merges[i].a * KEY + merges[i].b, i);
+    return m;
+  }
+
+  // encode one piece's bytes with the first k merges (lowest rank first, leftmost occurrences)
+  function encodeBytes(bytes, ranks, merges) {
+    let w = Array.from(bytes);
+    for (;;) {
+      let best = -1;
+      for (let i = 0; i + 1 < w.length; i++) {
+        const r = ranks.get(w[i] * KEY + w[i + 1]);
+        if (r !== undefined && (best < 0 || r < best)) best = r;
+      }
+      if (best < 0) break;
+      w = mergeInto(w, merges[best].a, merges[best].b, merges[best].id).out;
+    }
+    return w;
+  }
+
+  // tokenise text -> array of {id, piece}; pieces keep boundaries (for display)
+  function encode(text, merges, k, mode) {
+    const ranks = rankMap(merges, k), out = [], cache = new Map();
+    for (const p of pretok(text, mode)) {
+      let ids = cache.get(p);
+      if (!ids) { ids = encodeBytes(enc.encode(p), ranks, merges); cache.set(p, ids); }
+      for (const id of ids) out.push(id);
+    }
+    return out;
+  }
+
+  // byte content of every id 0..255+merges.length
+  function vocabBytes(merges) {
+    const v = [];
+    for (let i = 0; i < 256; i++) v.push([i]);
+    for (const m of merges) v.push(v[m.a].concat(v[m.b]));
+    return v;
+  }
+
+  function decode(ids, merges) {
+    const v = vocabBytes(merges), bytes = [];
+    for (const id of ids) for (const b of v[id]) bytes.push(b);
+    return new TextDecoder().decode(new Uint8Array(bytes));
+  }
+
+  return { pretok, train, encode, decode, vocabBytes, rankMap, KEY };
+})();
+if (typeof module !== "undefined") module.exports = BPE;
+</script>
+<script>
+"use strict";
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+const FONT = "11px Roboto,Arial,sans-serif";
+function frame(c, w, h, o) {
+  const pw = w - o.l - o.r, ph = h - o.t - o.b, lx = v => o.xlog ? Math.log(v) : v;
+  const X = v => o.l + (lx(v) - lx(o.x[0])) / (lx(o.x[1]) - lx(o.x[0])) * pw, Y = v => o.t + (1 - (v - o.y[0]) / (o.y[1] - o.y[0])) * ph;
+  const Y2 = o.y2 ? (v => o.t + (1 - (v - o.y2[0]) / (o.y2[1] - o.y2[0])) * ph) : null;
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (const t of o.xt) { c.beginPath(); c.moveTo(X(t), o.t); c.lineTo(X(t), o.t + ph); c.stroke(); c.fillText((o.fx || (v => fm(v, 1)))(t), X(t), o.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const t of o.yt) { c.beginPath(); c.moveTo(o.l, Y(t)); c.lineTo(o.l + pw, Y(t)); c.stroke(); c.fillText((o.fy || (v => fm(v, 1)))(t), o.l - 5, Y(t)); }
+  if (o.y2) { c.textAlign = "left"; c.fillStyle = o.c2 || "#777"; for (const t of o.yt2) c.fillText((o.fy2 || (v => fm(v, 2)))(t), o.l + pw + 5, Y2(t)); c.fillStyle = "#777"; }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(o.l, o.t, pw, ph);
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  if (o.xlab) c.fillText(o.xlab, o.l + pw / 2, o.t + ph + 30);
+  if (o.ylab) { c.save(); c.translate(12, o.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylab, 0, 0); c.restore(); }
+  return {X, Y, Y2, pw, ph};
+}
+function clipTo(c, o, w, h) { c.save(); c.beginPath(); c.rect(o.l, o.t, w - o.l - o.r, h - o.t - o.b); c.clip(); }
+
+function drawLines(cv, o) {
+  const {c, w, h} = prep(cv), r = o.r || 14;
+  const fr = frame(c, w, h, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38, x: o.x, y: o.y, y2: o.y2, c2: o.c2, xt: o.xt, yt: o.yt, yt2: o.yt2, xlog: o.xlog, fx: o.fx, fy: o.fy, fy2: o.fy2, xlab: o.xlab, ylab: o.ylab});
+  const {X, Y, Y2} = fr; clipTo(c, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38}, w, h);
+  for (const s of o.series) {
+    const YY = s.ax2 ? Y2 : Y, pts = s.x.map((x, i) => [x, s.y[i]]).filter(p => p[1] !== null && isFinite(p[1]));
+    if (s.band) { c.fillStyle = s.color; c.globalAlpha = 0.16; c.beginPath(); s.x.forEach((x, i) => i ? c.lineTo(X(x), YY(s.band[1][i])) : c.moveTo(X(x), YY(s.band[1][i]))); for (let i = s.x.length - 1; i >= 0; i--) c.lineTo(X(s.x[i]), YY(s.band[0][i])); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    c.strokeStyle = s.color; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []); c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), YY(p[1])) : c.moveTo(X(p[0]), YY(p[1]))); c.stroke(); c.setLineDash([]);
+    if (s.dots) { c.fillStyle = s.color; pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), YY(p[1]), 2.6, 0, 2 * Math.PI); c.fill(); }); }
+  }
+  for (const v of o.vlines || []) { c.strokeStyle = v.color || "#555"; c.setLineDash([4, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(v.x), 12); c.lineTo(X(v.x), h - 38); c.stroke(); c.setLineDash([]); }
+  for (const m of o.marks || []) { c.fillStyle = m.color; c.beginPath(); c.arc(X(m.x), Y(m.y), 4.5, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.3; c.stroke(); }
+  c.restore();
+  if (o.legend) { c.font = FONT; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.82)"; c.fillRect(w - (o.y2 ? 46 : r) - 156, 14, 150, o.legend.length * 14 + 4); let y = 22; for (const s of o.legend) { c.fillStyle = s.color; c.fillRect(w - (o.y2 ? 46 : r) - 150, y - 4, 14, 3); c.fillStyle = "#444"; c.textAlign = "left"; c.fillText(s.t, w - (o.y2 ? 46 : r) - 130, y - 2); y += 14; } }
+  if (o.ylab2) { c.save(); c.translate(w - 8, 12 + (h - 50) / 2); c.rotate(Math.PI / 2); c.fillStyle = o.c2 || "#555"; c.font = FONT; c.textAlign = "center"; c.fillText(o.ylab2, 0, 0); c.restore(); }
+  if (o.msg) { c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(48, h / 2 - 14, w - 62, 28); c.fillStyle = "#555"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.msg, 48 + (w - 62) / 2, h / 2); }
+}
+const $ = id => document.getElementById(id);
+const BLUE = "#0877bd", ORG = "#e8590c", NAVY = "#1b3b4f", GREY = "#8a8f94";
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const pct = (v, d = 1) => (100 * v).toFixed(d) + "%";
+const esc = t => t.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const SMP_LABELS = {simple: "Toy: low, lower, newest, widest", english: "English paragraph about tokenizers", python: "Python snippet", german: "German paragraph", numbers: "Numbers, dates and an e-mail address", custom: "Your own text"};
+const CAP_R = 50000, CAP_W = 20000, VIEW = 2500;
+const S = {sample: "english", text: SAMPLES.english, mode: "regex", minF: 2, maxM: 300, speed: 8, k: 12, sel: null, rsel: "tokens", tryText: "Tokenizers merge frequent pairs. Rare words like zyzzyva stay split into pieces.", playing: false, tr: null, V: [], L: 0, ids: [], endIds: null, tt: "", trunc: false};
+const utf8 = t => new TextEncoder().encode(t).length;
+
+/* ---------- display of tokens ---------- */
+const DEC = new TextDecoder("utf-8", {fatal: true});
+let LC = [];
+function lab(id) {
+  if (LC[id] !== undefined) return LC[id];
+  const b = S.V[id]; let s;
+  try { s = DEC.decode(Uint8Array.from(b)); }
+  catch (e) { s = b.map(x => x < 128 ? String.fromCharCode(x) : "\u0001" + x.toString(16).toUpperCase().padStart(2, "0") + "\u0002").join(""); }
+  s = esc(s.replace(/ /g, "·").replace(/\n/g, "↵").replace(/\t/g, "→").replace(/\r/g, "␍").replace(/\u0001/g, "<").replace(/\u0002/g, ">"));
+  s = s.replace(/&lt;([0-9A-F]{2})&gt;/g, "&lt;$1&gt;");
+  return LC[id] = s;
+}
+const hex = id => S.V[id].map(x => x.toString(16).padStart(2, "0")).join(" ");
+function tokHTML(ids, limit, o) {
+  o = o || {}; let out = "";
+  const n = Math.min(ids.length, limit);
+  for (let i = 0; i < n; i++) {
+    const id = ids[i];
+    let cls = "tk t" + (i % 4);
+    if (o.newest !== undefined && id === o.newest) cls += " new";
+    if (o.sel !== undefined && id === o.sel) cls += " sel";
+    if (S.V[id][0] === 32) out += "<wbr>";
+    out += `<span class="${cls}" data-id="${id}" title="id ${id} · bytes ${hex(id)}">${lab(id)}</span>`;
+    if (S.V[id].includes(10)) out += "<br>";
+  }
+  return out;
+}
+
+/* ---------- training ---------- */
+function retrain() {
+  const cap = S.mode === "whole" ? CAP_W : CAP_R;
+  let t = S.text; S.trunc = false;
+  if (t.length > cap) { t = Array.from(t).slice(0, cap).join(""); S.trunc = true; }
+  S.tt = t;
+  S.tr = BPE.train(t, {mode: S.mode, maxMerges: S.maxM, minFreq: S.minF});
+  S.V = BPE.vocabBytes(S.tr.merges); LC = []; S.L = S.tr.merges.length;
+  S.k = Math.min(S.k, S.L); S.sel = null; S.endIds = null;
+  setKRange(); refresh();
+}
+let rt = 0; const reTrain = (ms = 120) => { clearTimeout(rt); rt = setTimeout(retrain, ms); };
+function refresh() {
+  S.ids = BPE.encode(S.tt, S.tr.merges, S.k, S.mode);
+  draw(); syncK();
+}
+
+/* ---------- top bar sliders ---------- */
+const SL = {
+  k: {lab: "Merges applied", lo: 0, hi: 1, int: 1, get: () => S.k, set: v => { S.k = v; S.sel = null; refresh(); }, tip: "How many of the learned merges are applied to the text. 0 = one token per byte. Merge n always uses the same pair, whatever the later merges are."},
+  maxM: {lab: "Max merges to learn", lo: 10, hi: 2000, log: 1, int: 1, get: () => S.maxM, set: v => { S.maxM = v; reTrain(); }, tip: "Budget for training: at most this many merges are learned. The vocabulary then has 256 + merges tokens. Learning can stop earlier (see Settings). A larger budget only adds merges at the end; the earlier ones do not change."},
+  speed: {lab: "Play speed (merges/s)", lo: 1, hi: 60, log: 1, int: 1, get: () => S.speed, set: v => { S.speed = v; }, tip: "How many merges Play applies per second."}
+};
+const toPos = (d, v) => d.log ? Math.log10(v) : v;
+const fromPos = (d, p) => { let v = d.log ? Math.pow(10, p) : p; if (d.int) v = Math.round(v); return v; };
+function renderBar() {
+  const box = $("cctl"); box.innerHTML = "";
+  for (const k of ["k", "maxM", "speed"]) {
+    const d = SL[k], g = document.createElement("div"); g.className = "grp sl"; g.title = d.tip;
+    const step = d.log ? 0.01 : 1;
+    g.innerHTML = `<div class="row"><span>${d.lab}</span><input class="num" type="text" inputmode="decimal" id="nb_${k}" aria-label="value"></div><input type="range" id="sl_${k}" min="${toPos(d, d.lo)}" max="${toPos(d, d.hi)}" step="${step}">`;
+    box.appendChild(g);
+    const rg = $("sl_" + k), nb = $("nb_" + k);
+    rg.value = toPos(d, d.get()); nb.value = d.get();
+    const hi = () => k === "k" ? S.L : d.hi;
+    rg.addEventListener("input", () => { stop(); let v = fromPos(d, +rg.value); v = Math.max(d.lo, Math.min(hi(), v)); nb.value = v; d.set(v); });
+    const commit = () => { let v = parseFloat(nb.value.replace(",", ".")); if (!isFinite(v)) { nb.blur(); nb.value = d.get(); return; } v = Math.max(d.lo, Math.min(hi(), Math.round(v))); if (k === "k") stop(); rg.value = toPos(d, v); nb.value = v; nb.blur(); d.set(v); };
+    nb.addEventListener("change", commit); nb.addEventListener("keydown", e => { if (e.key === "Enter") commit(); }); nb.addEventListener("blur", () => { nb.value = d.get(); });
+    nb.title = "Type a value and press Enter";
+  }
+}
+function setKRange() { const rg = $("sl_k"); rg.max = Math.max(1, S.L); }
+function syncK() { const rg = $("sl_k"), nb = $("nb_k"); if (document.activeElement !== nb) nb.value = S.k; rg.value = S.k; }
+
+/* ---------- play ---------- */
+let last = 0, acc = 0;
+function tick(ts) {
+  if (!S.playing) return;
+  const dt = Math.min(0.1, (ts - last) / 1000); last = ts; acc += dt * S.speed;
+  const st = Math.floor(acc);
+  if (st > 0) { acc -= st; S.k = Math.min(S.L, S.k + st); S.sel = null; refresh(); if (S.k >= S.L) { stop(); return; } }
+  requestAnimationFrame(tick);
+}
+function play() { if (S.k >= S.L) { S.k = 0; S.sel = null; refresh(); } S.playing = true; acc = 0; last = performance.now(); $("play").innerHTML = "&#10074;&#10074;"; requestAnimationFrame(tick); }
+function stop() { S.playing = false; $("play").innerHTML = "&#9654;"; }
+
+/* ---------- helpers for charts ---------- */
+function nice(hi, n = 4) { const raw = Math.max(hi, 1e-9) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p, s = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, top = Math.ceil(hi / s - 1e-9) * s, t = []; for (let v = 0; v <= top + 1e-9; v += s) t.push(+v.toFixed(10)); return {t, top}; }
+const fint = v => String(Math.round(v));
+
+function drawTokens(cv) {
+  const T = S.tr.tokensAt, L = S.L, xr = Math.max(L, 1), yn = nice(T[0] * 1.02), xn = nice(xr);
+  drawLines(cv, {x: [0, xn.top], y: [0, yn.top], xt: xn.t, yt: yn.t, fx: fint, fy: fint, xlab: "merges applied", ylab: "tokens needed for the whole text",
+    series: [{x: [0, xn.top], y: [T[0], T[0]], color: GREY, dash: [5, 4], w: 1.4}, {x: T.map((_, i) => i), y: T, color: NAVY, w: 2}],
+    marks: [{x: S.k, y: T[S.k], color: ORG}], legend: [{color: NAVY, t: "tokens needed"}, {color: GREY, t: "start: one per byte"}], msg: L === 0 ? "No merge was learned from this text" : ""});
+}
+function drawCount(cv) {
+  const M = S.tr.merges, L = S.L;
+  if (!L) { drawLines(cv, {x: [0, 1], y: [0, 1], xt: [0, 1], yt: [0, 1], xlab: "merge number", ylab: "occurrences of the merged pair", series: [], msg: "No merge was learned from this text"}); return; }
+  const lg = M.map(m => Math.log10(m.count)), top = Math.max(1, Math.ceil(Math.max(...lg) - 1e-9)), xn = nice(L), yt = []; for (let v = 0; v <= top; v++) yt.push(v);
+  drawLines(cv, {x: [0, xn.top], y: [0, top], xt: xn.t, yt, fx: fint, fy: v => String(Math.round(Math.pow(10, v))), xlab: "merge number", ylab: "occurrences of the merged pair (log scale)",
+    series: [{x: M.map((_, i) => i + 1), y: lg, color: NAVY, w: 2}], marks: S.k >= 1 ? [{x: S.k, y: lg[S.k - 1], color: ORG}] : []});
+}
+function lenShares(ids) { const r = new Float64Array(8); for (const id of ids) r[Math.min(7, S.V[id].length - 1)]++; return ids.length ? Array.from(r, v => v / ids.length) : Array.from(r); }
+function drawLen(cv) {
+  const {c, w, h} = prep(cv);
+  if (!S.endIds) S.endIds = BPE.encode(S.tt, S.tr.merges, S.L, S.mode);
+  const now = lenShares(S.ids), end = lenShares(S.endIds), mx = Math.max(0.05, ...now, ...end), yn = nice(mx * 1.05, 4);
+  const fr = frame(c, w, h, {l: 48, r: 14, t: 12, b: 38, x: [0.5, 8.5], y: [0, yn.top], xt: [1, 2, 3, 4, 5, 6, 7, 8], yt: yn.t, fx: v => v === 8 ? "8+" : String(v), fy: v => pct(v, yn.top < 0.1 ? 1 : 0), xlab: "token length in bytes", ylab: "share of all tokens in the text"});
+  const bars = (a, col, al) => { c.fillStyle = col; c.globalAlpha = al; a.forEach((v, i) => { c.fillRect(fr.X(i + 1 - 0.38), fr.Y(v), fr.X(i + 1 + 0.38) - fr.X(i + 1 - 0.38), fr.Y(0) - fr.Y(v)); }); c.globalAlpha = 1; };
+  bars(end, ORG, 0.35); bars(now, NAVY, 0.8);
+  c.font = FONT; c.textAlign = "left"; c.textBaseline = "middle";
+  const lx = w - 14 - 190; c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(lx - 6, 14, 190, 34);
+  c.fillStyle = NAVY; c.globalAlpha = .8; c.fillRect(lx, 20, 12, 8); c.globalAlpha = 1; c.fillStyle = "#444"; c.fillText("now (" + S.k + " merges)", lx + 18, 24);
+  c.fillStyle = ORG; c.globalAlpha = .45; c.fillRect(lx, 35, 12, 8); c.globalAlpha = 1; c.fillStyle = "#444"; c.fillText("after all " + S.L + " learned merges", lx + 18, 39);
+}
+const CAPS = {
+  tokens: "<b>Tokens needed against merges.</b> x: number of merges applied; y: number of tokens the whole training text needs. It starts at one token per byte (grey dashed line) and falls with every merge. A merge removes at most as many tokens as its pair occurred, and these counts never rise, so the curve flattens. Orange dot: where you are now.",
+  count: "<b>Count of each merged pair.</b> x: merge number (1 is the first merge); y: how many times the chosen pair occurred in the text at that moment (log scale). It shows how quickly the useful patterns run out: the first merges are the most frequent pairs, and the curve never rises. Orange dot: the merge you are at.",
+  len: "<b>Token lengths.</b> x: length of a token in bytes (8+ groups all longer ones); y: share of all tokens in the text that have that length. Navy: now; orange: after every learned merge. It shows what the merges build: at the start every token is one byte, afterwards the text is covered by longer pieces."
+};
+function drawChart() {
+  const cv = $("cr");
+  if (S.rsel === "tokens") drawTokens(cv); else if (S.rsel === "count") drawCount(cv); else drawLen(cv);
+  $("capr").innerHTML = CAPS[S.rsel];
+}
+
+/* ---------- merge table ---------- */
+const mergeStr = j => { const m = S.tr.merges[j]; return `<td>${j + 1}</td><td class="m">${lab(m.a)} + ${lab(m.b)}</td><td class="mk">${lab(m.id)}</td><td>${m.count}</td><td>${m.drop}</td>`; };
+function drawTable() {
+  const w = $("mtw"), prevTop = w.scrollTop, wasEnd = w.scrollTop + w.clientHeight >= w.scrollHeight - 4;
+  let h = `<table class="tbl"><tr><th>#</th><th>merge</th><th>new token</th><th>count</th><th>saved</th></tr>`;
+  if (!S.L) h += `<tr class="fut"><td colspan="5" style="text-align:left;white-space:normal">No pair reaches the minimum count.</td></tr>`;
+  for (let j = 0; j < S.k; j++) h += `<tr data-j="${j}" class="${j === S.k - 1 ? "new" : ""} ${S.sel === j ? "sel" : ""}">${mergeStr(j)}</tr>`;
+  if (S.k < S.L) h += `<tr class="fut" title="learned, not applied yet">${mergeStr(S.k)}</tr>`;
+  h += "</table>"; w.innerHTML = h;
+  if (S.sel !== null) { const r = w.querySelector("tr.sel"); if (r) r.scrollIntoView({block: "nearest"}); }
+  else if (wasEnd || S.playing) w.scrollTop = w.scrollHeight; else w.scrollTop = prevTop;
+  $("capl").innerHTML = "<b>The merge list is the tokenizer.</b> Columns: merge number; the two tokens that were fused (· = space, ↵ = new line); the token it creates; <b>count</b> = how often the pair occurred when it was chosen; <b>saved</b> = how many tokens the merge removed. Click a row to see where it acts. Grey italic row: the next merge, not applied yet.";
+}
+
+/* ---------- text view, details, numbers, try box ---------- */
+const row = (a, b) => `<div class="pr"><span>${a}</span><b>${b}</b></div>`, sec = t => `<div class="sec">${t}</div>`;
+function drawText() {
+  const k = S.k, newest = k ? 256 + k - 1 : undefined, sel = S.sel !== null ? 256 + S.sel : undefined;
+  $("chead").innerHTML = `Training text as tokens &middot; <span class="acc">${k} merge${k === 1 ? "" : "s"} applied</span>`;
+  $("txt").innerHTML = tokHTML(S.ids, VIEW, {newest, sel});
+  const more = S.ids.length > VIEW ? `Showing the first ${VIEW} of ${S.ids.length} tokens. ` : "";
+  $("tknote").innerHTML = more + "Each box is one token: · = space, ↵ = new line, &lt;C3&gt; = a byte that is only part of a character. <span style='color:#e8590c;font-weight:600'>Orange outline</span> = tokens from the newest merge; <span style='color:#0877bd;font-weight:600'>blue outline</span> = the merge selected in the table. Click a token to select the merge that created it. Hover for its id and bytes.";
+}
+function drawDetail() {
+  const M = S.tr.merges, T = S.tr.tokensAt, j = S.sel !== null ? S.sel : S.k - 1;
+  let h;
+  if (S.L === 0) h = `<p><b>No merges to learn.</b> With the current settings no pair of neighbouring tokens occurs often enough, so the text stays one token per byte. Lower the minimum count or use a longer text.</p>`;
+  else if (j < 0) h = `<p><b>Start: one token per byte.</b> The vocabulary is the 256 possible byte values, so the text needs ${T[0]} tokens (${S.tr.nBytes} bytes). Press <b>Play</b> or <b>Step</b>, or move <b>Merges applied</b>. Each merge looks at every pair of neighbouring tokens, counts them, and fuses the most frequent pair into a new token.</p>`;
+  else {
+    const m = M[j], n = S.ids.filter(id => id === m.id).length, tie = j === S.k - 1 && S.sel === null ? "the newest merge" : "the selected merge";
+    h = `<p><b>Merge ${j + 1}</b> (${tie}): <b>${lab(m.a)}</b> + <b>${lab(m.b)}</b> &rarr; <b>${lab(m.id)}</b>, a new token with id ${m.id} and bytes ${hex(m.id)}.</p>
+    <p>This pair was the most frequent one at that moment: it occurred <b>${m.count}</b> time${m.count === 1 ? "" : "s"}, each word counted as often as it appears in the text. Applying it removed <b>${m.drop}</b> token${m.drop === 1 ? "" : "s"}, so the text went from ${T[j]} to ${T[j + 1]} tokens.${m.drop < m.count ? " The count is larger than the saving because occurrences can overlap (in &ldquo;aaa&rdquo; the pair &ldquo;aa&rdquo; occurs twice, but only one of the two can be merged)." : ""} ${S.k > j ? `With ${S.k} merges applied, this token appears ${n} time${n === 1 ? "" : "s"} in the text as it stands now (later merges may have absorbed it into longer tokens).` : ""}</p>
+    <p>If several pairs share the top count, the one with the smaller token ids is taken, so training is deterministic.</p>`;
+  }
+  $("detail").innerHTML = h;
+}
+function drawNums() {
+  const tr = S.tr, k = S.k, T = tr.tokensAt, now = T[k], by = tr.nBytes;
+  let h = sec("Training text") + row("Bytes (UTF-8)", by) + row("Pre-tokens (words, spaces, punctuation)", tr.nWords) + row("Distinct pre-tokens", tr.uniqWords);
+  h += sec(`Now: ${k} merges applied`) + row("Vocabulary size (256 + merges)", 256 + k) + row("Tokens for the text", now) + row("Bytes per token", by ? fm(by / now, 2) : "–") + row("Tokens as share of bytes", by ? pct(now / by, 1) : "–");
+  const nx = k < S.L ? tr.merges[k] : null;
+  h += sec("Next merge") + row("Pair", nx ? `${lab(nx.a)} + ${lab(nx.b)}` : "none") + row("Occurrences", nx ? nx.count : "–");
+  const why = S.L === S.maxM ? "budget used up" : (T[S.L] === tr.nWords ? "every word is one token" : "best pair below minimum count");
+  h += sec("Whole run") + row("Merges learned", S.L) + row("Learning stopped because", S.L === 0 && by === 0 ? "no text" : why) + row("Tokens after all merges", T[S.L]);
+  $("nums").innerHTML = h;
+}
+function drawTry() {
+  const t = S.tryText, ids = BPE.encode(t, S.tr.merges, S.k, S.mode), b = utf8(t);
+  $("tryout").innerHTML = tokHTML(ids, 800, {});
+  const bt = S.tr.nBytes && S.tr.tokensAt[S.k] ? S.tr.nBytes / S.tr.tokensAt[S.k] : 0;
+  $("trystat").innerHTML = t ? `<b>${ids.length}</b> tokens for <b>${b}</b> bytes &rarr; <b>${fm(b / ids.length, 2)}</b> bytes per token on this text, against <b>${fm(bt, 2)}</b> on the training text with the same ${S.k} merges. Characters the merges never saw still work, because every byte is in the vocabulary; they just stay as one token per byte (non-ASCII letters take 2 to 4 bytes). Decoding the ids returns the original text exactly.` : "Type some text to see how it is tokenized with the current merges.";
+}
+function drawInHint() {
+  const t = S.text; let s = `${Array.from(t).length} characters`; if (S.tr) s += ` · ${S.tr.nBytes} bytes used`;
+  if (S.trunc) s += `<br><span class="bad">Only the first ${(S.mode === "whole" ? CAP_W : CAP_R).toLocaleString("en-US")} characters are used (limit in this mode).</span>`;
+  $("inhint").innerHTML = s;
+}
+function draw() { drawText(); drawTable(); drawChart(); drawDetail(); drawNums(); drawTry(); drawInHint(); }
+
+/* ---------- UI wiring ---------- */
+function bind() {
+  $("smp").innerHTML = Object.keys(SMP_LABELS).map(k => `<option value="${k}">${SMP_LABELS[k]}</option>`).join(""); $("smp").value = S.sample;
+  $("inp").value = S.text; $("try").value = S.tryText;
+  $("smp").onchange = e => { const v = e.target.value; if (v === "custom") return; S.sample = v; S.text = SAMPLES[v]; $("inp").value = S.text; stop(); retrain(); };
+  $("inp").addEventListener("input", e => { S.text = e.target.value; S.sample = "custom"; $("smp").value = "custom"; stop(); reTrain(250); });
+  $("try").addEventListener("input", e => { S.tryText = e.target.value; drawTry(); });
+  document.querySelectorAll("input[name=pt]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.mode = e.value; stop(); retrain(); } }));
+  $("minf").onchange = e => { S.minF = +e.target.value; stop(); retrain(); };
+  $("rsel").onchange = e => { S.rsel = e.target.value; drawChart(); };
+  $("play").onclick = () => S.playing ? stop() : play();
+  $("step").onclick = () => { stop(); if (S.k < S.L) { S.k++; S.sel = null; refresh(); } };
+  $("reset").onclick = () => { stop(); S.k = 0; S.sel = null; refresh(); };
+  $("endb").onclick = () => { stop(); S.k = S.L; S.sel = null; refresh(); };
+  $("mtw").addEventListener("click", e => { const tr = e.target.closest("tr[data-j]"); if (tr) { stop(); S.sel = +tr.dataset.j; draw(); } });
+  const pickTok = e => { const el = e.target.closest(".tk"); if (!el) return; const id = +el.dataset.id; if (id >= 256 && id - 256 < S.k) { stop(); S.sel = id - 256; draw(); } };
+  $("txt").addEventListener("click", pickTok); $("tryout").addEventListener("click", pickTok);
+  window.addEventListener("resize", drawChart);
+}
+renderBar(); bind(); retrain();
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>

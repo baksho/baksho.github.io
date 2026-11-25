@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Double Descent Playground</title>
+<style>
+  :root{--orange:#f59322;--blue:#0877bd;--navy:#1b3b4f;--red:#e8590c;--green:#2e9e5b;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px}
+  #bar{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:16px 24px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #pause{width:38px;height:38px;font-size:13px;letter-spacing:-1px}
+  #pause:disabled{opacity:.35;cursor:default}
+  #pause:disabled:hover{background:#fff}
+  #cnt{font-size:24px;font-weight:300;letter-spacing:.03em;font-variant-numeric:tabular-nums}
+  #rankbox{min-width:260px}
+  #rankv{font-size:24px;font-weight:300;font-variant-numeric:tabular-nums}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  canvas{display:block}
+  
+  #maps canvas{width:100%;height:auto;aspect-ratio:1;image-rendering:pixelated;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #maps .cap{font-size:12px;font-weight:600;color:#333;margin-top:6px}
+  #maps .sub{font-size:11.5px;color:#888;font-variant-numeric:tabular-nums}
+  .chartbox{margin-bottom:26px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px;display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .chartbox .ct select{font-weight:400;font-size:12px;min-width:80px;padding:2px 6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px;width:fit-content;max-width:100%}
+  .chartframe canvas{max-width:100%;cursor:pointer}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px 18px;margin:8px 0 0 4px;font-size:12px;color:#555}
+  .chips span{display:inline-flex;align-items:center;gap:6px}
+  .chips i{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .chips i.dot{width:9px;height:9px;border-radius:50%}
+  .chips i.ln{width:22px;height:0;border-radius:0;border-top:3px solid}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .nums hr{grid-column:1/-1;border:0;border-top:1px solid #e8e8e8;width:100%;margin:2px 0}
+  #verdict{margin-top:10px;font-size:12.5px;padding:7px 9px;border-radius:5px;background:#f3f5f6;color:#444}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  #tdesc{font-size:12.5px;color:#666;margin:6px 0 8px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:10px 0}
+  .sbtn{border:1px solid #ccc;background:#fff;border-radius:5px;padding:5px 10px;cursor:pointer;font-size:12.5px}
+  .sbtn:hover{background:#f0f0f0}
+  .sect{margin-top:26px}
+  .acc{color:#0877bd;font-weight:600}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .sect2{margin-top:22px}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}#maps{grid-template-columns:repeat(2,1fr)}}
+</style>
+<body>
+<div id="app">
+  <h1>Double Descent Playground</h1>
+  <p class="blurb">Fit noisy data with a model made of <i>p</i> random features and let <i>p</i> grow. Classical statistics says error should rise once the model is too flexible. Here it rises, spikes when the model has exactly as many features as there are data points (<i>p = n</i>), and then falls again. Press play to sweep the model size and watch the test error. The <b>Settings</b> panel on the right changes the data (n, noise, true function) and the model (roughness, ridge penalty).</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="restart" title="Reset: clear the curves and go back to p = 1">&#8635;</button>
+      <button class="btn" id="play" title="Start / resume the sweep">&#9654;</button>
+      <button class="btn" id="pause" title="Pause the sweep" disabled>&#10074;&#10074;</button>
+    </div>
+    <div class="grp"><label>Model size p = <span id="pv">1</span> <span style="font-weight:400;color:#888">of <span id="pmaxv">120</span></span></label><input type="range" id="p" min="1" max="120" step="1" value="1" style="width:300px"></div>
+    
+    <div class="grp"><label for="speed">Sweep speed</label><select id="speed"><option value="slow">Slow (watch)</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="chartbox" style="margin-top:0">
+        <div class="ct"><span>Error against model size p (log scale)</span></div>
+        <div class="chartframe"><canvas id="cA"></canvas></div>
+        <div class="chips"><span><i class="ln" style="border-color:#e8590c"></i><span id="lgT">test error (median of trials)</span></span><span><i class="ln" style="border-color:#f3c3a4"></i>individual trials</span><span><i class="ln" style="border-color:#0877bd"></i><span id="lgR">training error (median)</span></span><span><i class="ln" style="border-color:#999;border-top-style:dashed"></i>noise level σ²</span></div>
+        <div class="note">Test error is measured against the noise-free function plus the noise variance σ², which is what a fresh noisy test point would give on average. Training error is shown down to 1e-4; below that it is effectively zero.</div>
+      </div>
+      <div class="chartbox">
+        <div class="ct"><span>Size of the learned coefficients ‖c‖ (log scale)</span></div>
+        <div class="chartframe"><canvas id="cB"></canvas></div>
+        <div class="note">The vertical dashed line is p = n. The coefficients are huge exactly where the test error spikes.</div>
+      </div>
+      <div class="chartbox">
+        <div class="ct"><span id="fitT">The fitted function at the chosen p</span></div>
+        <div class="chartframe"><canvas id="cC"></canvas></div>
+        <div class="chips"><span><i class="ln" style="border-color:#222"></i>true function</span><span><i class="dot" style="background:#e8590c"></i>noisy training points (trial 1)</span><span><i class="ln" style="border-color:#0877bd"></i>fit, trial 1</span><span><i class="ln" style="border-color:#a9cfe8"></i>fits, trials 2–4 (other random draws)</span></div>
+        <div class="note">The vertical axis is clipped, so a wildly oscillating fit leaves the frame.</div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings &mdash; change the data and the model here</div>
+      <div class="card setcard">
+      <div class="sub">Data</div>
+      <div class="slider"><div class="row"><span>Training points n</span><b id="nv">30</b></div><input type="range" id="n" min="10" max="60" step="1" value="30"><div class="hint">Restarts the sweep. The spike sits at p = n, so moving n moves the spike.</div></div>
+      <div class="slider"><div class="row"><span>Noise level σ</span><b id="sv"></b></div><input type="range" id="sig" min="0" max="1" step="0.05"><div class="hint">Standard deviation of the label noise.</div></div>
+      <div class="row2"><label>True function <select id="tgt"></select></label></div>
+
+      <div class="sub">Model</div>
+      <div class="slider"><div class="row"><span>Feature roughness (decay exponent γ)</span><b id="gv"></b></div><input type="range" id="gam" min="0.25" max="1.5" step="0.05"><div class="hint">Small γ: rough random features. Large γ: smoother features, which are more alike and make the fit less stable.</div></div>
+      <div class="slider"><div class="row"><span>Ridge penalty λ</span><b id="lv"></b></div><input type="range" id="lam" min="0" max="1000" step="1"><div class="hint">Far left = 0: pure minimum-norm fit. Raise it to see the spike disappear.</div></div>
+
+      <div class="sub">Experiment</div>
+      <div class="row2"><label>Trials <select id="trials"><option>1</option><option>5</option><option selected>10</option><option>20</option></select></label><label>Average <select id="avg"><option value="median" selected>median</option><option value="mean">mean</option></select></label></div>
+      <div class="row2"><button class="sbtn" id="newdraw">New random draw</button></div>
+      </div>
+
+      <div class="head sect2">At the chosen p</div>
+      <div class="card">
+        <div class="nums" id="nums"></div>
+        <div id="verdict"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is, and is not.</b> It is a small, controlled toy: one input, random smooth features and a fit computed exactly. It shows the double descent shape clearly. It does not show that deep networks behave the same way, which is an empirical finding studied in the papers below.</div>
+
+    <h3>The model</h3>
+    <p>There are <i>n</i> training points <span class="eq">(x, y)</span> with <span class="eq">y = f(x) + noise</span>. The model has <i>p</i> random features <span class="eq">φ<sub>1</sub>(x), …, φ<sub>p</sub>(x)</span> and predicts <span class="eq">f̂(x) = Σ c<sub>j</sub> φ<sub>j</sub>(x) / √p</span>. Each feature is a random smooth function: a random combination of 160 cosine waves whose weights shrink with frequency as (1 + k)<sup>−γ</sup>. The features are fixed once drawn; only the coefficients <i>c</i> are fitted. Model size means the number of features <i>p</i>. The features are nested, so going from <i>p</i> to <i>p + 1</i> adds one new feature and keeps the others.</p>
+
+    <h3>The fit</h3>
+    <p>For <i>p &lt; n</i> the fit is ordinary least squares. For <i>p ≥ n</i> there are many coefficient vectors that pass exactly through every training point, and the fit picks the one with the smallest ‖c‖ (the minimum-norm solution). With ridge penalty λ &gt; 0 it minimises the squared error plus λ‖c‖² instead. It is computed through the n × n kernel matrix, with a tiny numerical safeguard (a relative ridge of 1e-10) when λ is 0.</p>
+
+    <h3>The three regimes</h3>
+    <ul>
+      <li><b>p well below n.</b> The model is too small to fit every point. As p grows, the fit improves but also starts to follow the noise, which is the classical U-shape.</li>
+      <li><b>p near n.</b> Exactly enough features to hit every noisy label. The system is close to singular, so the coefficients must become very large to do it (see the second chart), and the fit swings wildly between the data points. This is the spike.</li>
+      <li><b>p well above n.</b> Many exact fits exist, and the minimum-norm one is far better behaved than the one at p = n. The error falls again.</li>
+    </ul>
+
+    <h3>What to try</h3>
+    <ul>
+      <li>Drag the <b>training points n</b> slider in Settings (it restarts the sweep) and watch the spike move with it. In 20-trial runs I measured the median test error peaking exactly at p = 15, 30 and 50 for n = 15, 30 and 50.</li>
+      <li>Set the <b>noise</b> to 0. The spike shrinks a lot but does not vanish, because the true function cannot be represented exactly by the features. In my 20-trial run at n = 30 the median at p = n went from about 1100 at σ = 0.3 to about 10 at σ = 0.</li>
+      <li>Raise the <b>ridge penalty</b>. With λ = 0.01 the large spike disappears in my 20-trial run; a small, gentle bump in the median remains a little below p = n, and the error then settles lower than at the start.</li>
+      <li>Compare <b>median and mean</b>. Near p = n a few random draws are catastrophic, so the mean is dominated by them while the median stays readable. Individual trials differ a lot, which the faint lines show.</li>
+    </ul>
+
+    <h3>A note on how I built it</h3>
+    <p>I first tried the textbook version, random Fourier features of a single input. In one dimension these features are so smooth and so similar to one another that the system is badly conditioned for the whole range of p, and the results were dominated by numerical noise rather than a clean peak at p = n. The random functions used here keep the features varied enough that the peak lands exactly at p = n. The roughness slider shows the trade-off: smoother features make the fit more fragile.</p>
+
+    <h3>Limits</h3>
+    <p>Values like "peak at p = n" are measured here for this feature family. In other settings (different features, higher-dimensional inputs, trained networks) the peak position and size can differ. The analytic results in the literature are for specific high-dimensional random-feature models, not this one-input toy.</p>
+
+    <h3>References</h3>
+    <ul>
+      <li>M. Belkin, D. Hsu, S. Ma and S. Mandal, "Reconciling modern machine-learning practice and the classical bias–variance trade-off", <i>PNAS</i> 116(32), 15849–15854, 2019. doi:10.1073/pnas.1903070116.</li>
+      <li>S. Mei and A. Montanari, "The generalization error of random features regression: Precise asymptotics and the double descent curve", <i>Communications on Pure and Applied Mathematics</i> 75(4), 667–766, 2022. doi:10.1002/cpa.22008 (arXiv:1908.05355).</li>
+      <li>P. Nakkiran, G. Kaplun, Y. Bansal, T. Yang, B. Barak and I. Sutskever, "Deep Double Descent: Where Bigger Models and More Data Hurt", ICLR 2020. arXiv:1912.02292.</li>
+    </ul>
+  </div>
+</div>
+
+<script>/* Double descent demo: random-features regression in 1D.
+   Each random feature is a random smooth function phi_j(x) = sum_k g_jk * (1+k)^(-gamma) * cos(k*pi*(x+1)/2), g_jk ~ N(0,1).
+   The model is f(x) = sum_{j<=p} c_j phi_j(x) / sqrt(p), fitted with the minimum-norm / ridge solution via the n x n kernel system. */
+(function (root) {
+"use strict";
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(r){const u=r()||1e-12,v=r();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+const TARGETS = {
+  wave:  {name: "Smooth wave",   f: x => Math.sin(2.2*Math.PI*x) + 0.5*Math.sin(5*Math.PI*x)},
+  step:  {name: "Step function", f: x => x < 0.1 ? -1 : 1},
+  cubic: {name: "Cubic",         f: x => 1.6*x*x*x - 1.1*x}
+};
+/* Cholesky solve of (K + lam I) a = y ; returns null if not positive definite */
+function cholSolve(K, n, lam, y) {
+  const L = new Float64Array(n*n);
+  for (let i=0;i<n;i++) for (let j=0;j<=i;j++) {
+    let s = K[i*n+j] + (i===j ? lam : 0);
+    for (let k=0;k<j;k++) s -= L[i*n+k]*L[j*n+k];
+    if (i===j) { if (!(s > 0)) return null; L[i*n+i] = Math.sqrt(s); } else L[i*n+j] = s / L[j*n+j];
+  }
+  const z = new Float64Array(n);
+  for (let i=0;i<n;i++){ let s=y[i]; for(let k=0;k<i;k++) s-=L[i*n+k]*z[k]; z[i]=s/L[i*n+i]; }
+  const a = new Float64Array(n);
+  for (let i=n-1;i>=0;i--){ let s=z[i]; for(let k=i+1;k<n;k++) s-=L[k*n+i]*a[k]; a[i]=s/L[i*n+i]; }
+  return a;
+}
+const NT = 200, DB = 160;   // test/display grid size, number of cosine modes
+function Trial(cfg, seed) {
+  const r = mulberry32(seed*7919 + 17), n = cfg.n, P = cfg.pmax, gam = cfg.gamma;
+  this.cfg = cfg; this.n = n; this.p = 0; this.nt = NT;
+  this.xs = new Float64Array(n); this.y = new Float64Array(n); this.z = new Float64Array(n);
+  for (let i=0;i<n;i++){ this.xs[i] = -1 + 2*r(); this.z[i] = gauss(r); }
+  this.xt = new Float64Array(NT); this.ft = new Float64Array(NT);
+  for (let i=0;i<NT;i++) this.xt[i] = -1 + 2*(i+.5)/NT;
+  this.refit();
+  const amp = new Float64Array(DB); let nrm = 0; for (let k=0;k<DB;k++){ amp[k] = Math.pow(1+k, -gam); nrm += amp[k]*amp[k]; } nrm = Math.sqrt(nrm);
+  const cosT = (xs) => { const m = xs.length, C = new Float64Array(m*DB); for (let i=0;i<m;i++) for (let k=0;k<DB;k++) C[i*DB+k] = Math.cos(k*Math.PI*(xs[i]+1)/2)*amp[k]/nrm; return C; };
+  const Cs = cosT(this.xs), Ct = cosT(this.xt);
+  this.Phi = new Float64Array(n*P); this.PhiT = new Float64Array(NT*P);
+  const g = new Float64Array(DB);
+  for (let j=0;j<P;j++) {
+    for (let k=0;k<DB;k++) g[k] = gauss(r);
+    for (let i=0;i<n;i++){ let s=0; for(let k=0;k<DB;k++) s+=Cs[i*DB+k]*g[k]; this.Phi[i*P+j]=s; }
+    for (let i=0;i<NT;i++){ let s=0; for(let k=0;k<DB;k++) s+=Ct[i*DB+k]*g[k]; this.PhiT[i*P+j]=s; }
+  }
+  this.P = P; this.K = new Float64Array(n*n); this.Kt = new Float64Array(NT*n);
+}
+/* recompute labels / clean test function after noise level or target function changed (cfg is shared and mutated by the caller) */
+Trial.prototype.refit = function () { const f = TARGETS[this.cfg.target].f; for (let i=0;i<this.n;i++) this.y[i] = f(this.xs[i]) + this.cfg.noise*this.z[i]; for (let i=0;i<NT;i++) this.ft[i] = f(this.xt[i]); };
+Trial.prototype.clear = function () { this.p = 0; this.K.fill(0); this.Kt.fill(0); };
+Trial.prototype.addFeature = function () {
+  const j = this.p++, n = this.n, P = this.P, ph = new Float64Array(n); for (let i=0;i<n;i++) ph[i] = this.Phi[i*P+j];
+  for (let i=0;i<n;i++){ const a=ph[i]; for (let k=0;k<n;k++) this.K[i*n+k] += a*ph[k]; }
+  for (let i=0;i<NT;i++){ const a=this.PhiT[i*P+j]; for (let k=0;k<n;k++) this.Kt[i*n+k] += a*ph[k]; }
+};
+Trial.prototype.solve = function (K, lamRel) {
+  const n = this.n; let tr = 0; for (let i=0;i<n;i++) tr += K[i*n+i];
+  let lam = Math.max(lamRel, 1e-10) * tr / n, a = null;
+  for (let t=0; t<6 && !a; t++, lam*=100) a = cholSolve(K, n, lam, this.y);
+  return a;
+};
+/* metrics at the current p; test = squared error against the clean function plus the noise variance (error on fresh noisy labels) */
+Trial.prototype.fit = function (lamRel) {
+  const n = this.n, inv = 1/this.p, K = new Float64Array(n*n); for (let i=0;i<n*n;i++) K[i] = this.K[i]*inv;
+  const a = this.solve(K, lamRel); if (!a) return {test: NaN, train: NaN, norm: NaN};
+  let train = 0, test = 0, na = 0;
+  for (let i=0;i<n;i++){ let s=0; for(let k=0;k<n;k++) s+=K[i*n+k]*a[k]; const d=this.y[i]-s; train+=d*d; na += a[i]*s; }
+  for (let i=0;i<NT;i++){ let s=0; for(let k=0;k<n;k++) s+=this.Kt[i*n+k]*inv*a[k]; const d=s-this.ft[i]; test+=d*d; }
+  let norm = Math.sqrt(Math.max(0, na));
+  if (this.p < n) { const pn = this.primalNorm(K, lamRel); if (isFinite(pn)) norm = pn; } /* dual form is ill-conditioned when K has rank p < n */
+  return {train: train/n, test: test/NT + this.cfg.noise*this.cfg.noise, norm};
+};
+/* ||c|| from the p x p primal normal equations (Phi'Phi/p + lam I) c = Phi'y/sqrt(p); same ridge as the dual solve */
+Trial.prototype.primalNorm = function (K, lamRel) {
+  const n = this.n, p = this.p, P = this.P; let tr = 0; for (let i=0;i<n;i++) tr += K[i*n+i];
+  const G = new Float64Array(p*p), b = new Float64Array(p), sp = Math.sqrt(p);
+  for (let j=0;j<p;j++){ let s=0; for(let i=0;i<n;i++) s+=this.Phi[i*P+j]*this.y[i]; b[j]=s/sp;
+    for (let k=j;k<p;k++){ let g=0; for(let i=0;i<n;i++) g+=this.Phi[i*P+j]*this.Phi[i*P+k]; G[j*p+k]=G[k*p+j]=g/p; } }
+  let lam = Math.max(lamRel, 1e-10) * tr / n, c = null;
+  const y0 = this.y; this.y = b; for (let t=0; t<6 && !c; t++, lam*=100) c = cholSolve(G, p, lam, b); this.y = y0;
+  if (!c) return NaN; let s = 0; for (let j=0;j<p;j++) s += c[j]*c[j]; return Math.sqrt(s);
+};
+/* fitted function on the display grid for any p (rebuilds the kernels from the first p features) */
+Trial.prototype.curve = function (p, lamRel) {
+  const n = this.n, P = this.P, K = new Float64Array(n*n), Kt = new Float64Array(NT*n);
+  for (let j=0;j<p;j++) { for (let i=0;i<n;i++){ const a=this.Phi[i*P+j]; for(let k=0;k<n;k++) K[i*n+k]+=a*this.Phi[k*P+j]; } for (let i=0;i<NT;i++){ const a=this.PhiT[i*P+j]; for(let k=0;k<n;k++) Kt[i*n+k]+=a*this.Phi[k*P+j]; } }
+  for (let i=0;i<n*n;i++) K[i]/=p;
+  const a = this.solve(K, lamRel), out = new Float64Array(NT); if (!a) return out;
+  for (let i=0;i<NT;i++){ let s=0; for(let k=0;k<n;k++) s+=Kt[i*n+k]/p*a[k]; out[i]=s; }
+  return out;
+};
+const api = {mulberry32, gauss, TARGETS, Trial, cholSolve, NT};
+if (typeof module !== "undefined" && module.exports) module.exports = api; else root.DD = api;
+})(typeof globalThis !== "undefined" ? globalThis : this);
+</script>
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const {Trial, TARGETS, NT} = DD;
+const CW = 680;
+const S = {cfg: {n: 30, noise: 0.3, target: "wave", gamma: 0.5, pmax: 120}, lam: 0, T: 10, avg: "median", seed: 1, p: 1, goal: 1, frontier: 0, running: false, speed: "normal", trials: [], rec: null, fitKey: "", fits: null, frame: 0, done: false};
+const SPD = {slow: 1, normal: 2, fast: 8};
+
+/* ---------- state ---------- */
+function build() {
+  S.cfg.pmax = 4 * S.cfg.n; S.trials = [];
+  for (let t = 0; t < S.T; t++) S.trials.push(new Trial(S.cfg, S.seed * 100 + t + 1));
+  S.p = Math.min(S.p, S.cfg.pmax); $("p").max = S.cfg.pmax; $("pmaxv").textContent = S.cfg.pmax; resetResults();
+}
+function resetResults() {
+  S.trials.forEach(t => t.clear()); S.frontier = 0; S.done = false; S.fitKey = "";
+  const P = S.cfg.pmax + 1; S.rec = {test: [], train: [], norm: []}; for (let t = 0; t < S.T; t++) { S.rec.test.push(new Float64Array(P).fill(NaN)); S.rec.train.push(new Float64Array(P).fill(NaN)); S.rec.norm.push(new Float64Array(P).fill(NaN)); }
+  S.goal = S.p; S.running = false; syncSlider(); drawAll();
+}
+function advance() {
+  const p = ++S.frontier;
+  S.trials.forEach((t, i) => { t.addFeature(); const f = t.fit(S.lam); S.rec.test[i][p] = f.test; S.rec.train[i][p] = f.train; S.rec.norm[i][p] = f.norm; });
+}
+function agg(arrs, p) {
+  const v = []; for (const a of arrs) { const x = a[p]; if (isFinite(x)) v.push(x); } if (!v.length) return NaN;
+  if (S.avg === "mean") return v.reduce((a, b) => a + b, 0) / v.length;
+  v.sort((a, b) => a - b); const m = v.length >> 1; return v.length % 2 ? v[m] : 0.5 * (v[m - 1] + v[m]);
+}
+function syncSlider() { $("p").value = S.p; $("pv").textContent = S.p; $("nv").textContent = S.cfg.n; }
+
+/* ---------- drawing ---------- */
+function setup(cv, w, h) { const d = window.devicePixelRatio || 1; cv.width = Math.round(w * d); cv.height = Math.round(h * d); cv.style.width = w + "px"; cv.style.height = h + "px"; const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); return c; }
+function logAxis(c, L, T, W, H, lo, hi, fmt) {
+  c.font = "11px Roboto,Arial,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+  for (let e = lo; e <= hi; e++) { const y = T + H * (1 - (e - lo) / (hi - lo)); c.strokeStyle = "#e6e6e6"; c.beginPath(); c.moveTo(L, y); c.lineTo(L + W, y); c.stroke(); c.fillStyle = "#777"; c.fillText(fmt(e), L - 6, y); }
+}
+function xAxis(c, L, T, W, H, xmax) {
+  c.textAlign = "center"; c.textBaseline = "top"; c.fillStyle = "#777"; c.font = "11px Roboto,Arial,sans-serif";
+  const step = xmax <= 60 ? 10 : xmax <= 130 ? 20 : xmax <= 260 ? 40 : 60;
+  for (let v = 0; v <= xmax; v += step) c.fillText(v, L + W * v / xmax, T + H + 5);
+  c.fillStyle = "#555"; c.fillText("model size p (number of random features)", L + W / 2, T + H + 18);
+}
+function vlines(c, L, T, W, H, xmax) {
+  const X = v => L + W * v / xmax;
+  c.setLineDash([5, 4]); c.strokeStyle = "#8a8f94"; c.lineWidth = 1.4; c.beginPath(); c.moveTo(X(S.cfg.n), T); c.lineTo(X(S.cfg.n), T + H); c.stroke(); c.setLineDash([]);
+  c.fillStyle = "#666"; c.font = "11px Roboto,Arial,sans-serif"; c.textAlign = "left"; c.textBaseline = "top"; c.fillText("p = n", X(S.cfg.n) + 4, T + 2);
+  c.strokeStyle = "#1b3b4f"; c.lineWidth = 1.6; c.beginPath(); c.moveTo(X(S.p), T); c.lineTo(X(S.p), T + H); c.stroke(); c.lineWidth = 1;
+}
+function drawA() {
+  const CH = 300, c = setup($("cA"), CW, CH), L = 56, R = 12, T = 12, B = 36, W = CW - L - R, H = CH - T - B, xmax = S.cfg.pmax; c.clearRect(0, 0, CW, CH);
+  let mx = 1; for (let p = 1; p <= S.frontier; p++) { const v = agg(S.rec.test, p); if (isFinite(v)) mx = Math.max(mx, v); }
+  const lo = -4, hi = Math.max(1, Math.ceil(Math.log10(mx * 1.5)));
+  const X = v => L + W * v / xmax, Y = v => T + H * (1 - (Math.log10(Math.min(Math.max(v, 1e-4), 10 ** hi)) - lo) / (hi - lo));
+  logAxis(c, L, T, W, H, lo, hi, e => "1e" + e); xAxis(c, L, T, W, H, xmax);
+  const s2 = S.cfg.noise ** 2; if (s2 > 1e-4) { c.setLineDash([4, 4]); c.strokeStyle = "#999"; c.beginPath(); c.moveTo(L, Y(s2)); c.lineTo(L + W, Y(s2)); c.stroke(); c.setLineDash([]); }
+  c.save(); c.beginPath(); c.rect(L, T, W, H); c.clip();
+  if (S.T > 1) { c.strokeStyle = "rgba(232,89,12,.22)"; c.lineWidth = 1; for (let t = 0; t < S.T; t++) { c.beginPath(); let st = false; for (let p = 1; p <= S.frontier; p++) { const v = S.rec.test[t][p]; if (!isFinite(v)) continue; st ? c.lineTo(X(p), Y(v)) : c.moveTo(X(p), Y(v)); st = true; } c.stroke(); } }
+  const line = (arrs, col) => { c.strokeStyle = col; c.lineWidth = 2.2; c.beginPath(); let st = false; for (let p = 1; p <= S.frontier; p++) { const v = agg(arrs, p); if (!isFinite(v)) continue; st ? c.lineTo(X(p), Y(v)) : c.moveTo(X(p), Y(v)); st = true; } c.stroke(); c.lineWidth = 1; };
+  line(S.rec.train, "#0877bd"); line(S.rec.test, "#e8590c"); c.restore();
+  vlines(c, L, T, W, H, xmax);
+  $("lgT").textContent = "test error (" + S.avg + " of trials)"; $("lgR").textContent = "training error (" + S.avg + ")";
+}
+function drawB() {
+  const CH = 200, c = setup($("cB"), CW, CH), L = 56, R = 12, T = 12, B = 36, W = CW - L - R, H = CH - T - B, xmax = S.cfg.pmax; c.clearRect(0, 0, CW, CH);
+  let mn = Infinity, mx = 0; for (let p = 1; p <= S.frontier; p++) { const v = agg(S.rec.norm, p); if (isFinite(v) && v > 0) { mn = Math.min(mn, v); mx = Math.max(mx, v); } }
+  if (!isFinite(mn)) { mn = 1; mx = 100; }
+  let lo = Math.floor(Math.log10(mn)) - 0, hi = Math.ceil(Math.log10(mx)); if (hi - lo < 2) hi = lo + 2;
+  const X = v => L + W * v / xmax, Y = v => T + H * (1 - (Math.log10(Math.max(v, 10 ** lo)) - lo) / (hi - lo));
+  logAxis(c, L, T, W, H, lo, hi, e => e === 0 ? "1" : "1e" + e); xAxis(c, L, T, W, H, xmax);
+  c.save(); c.beginPath(); c.rect(L, T, W, H); c.clip(); c.strokeStyle = "#2e9e5b"; c.lineWidth = 2.2; c.beginPath(); let st = false;
+  for (let p = 1; p <= S.frontier; p++) { const v = agg(S.rec.norm, p); if (!isFinite(v)) continue; st ? c.lineTo(X(p), Y(v)) : c.moveTo(X(p), Y(v)); st = true; } c.stroke(); c.restore();
+  vlines(c, L, T, W, H, xmax);
+}
+function drawC() {
+  const CH = 270, c = setup($("cC"), CW, CH), L = 40, R = 12, T = 10, B = 28, W = CW - L - R, H = CH - T - B; c.clearRect(0, 0, CW, CH);
+  const X = x => L + W * (x + 1) / 2, ylo = -3, yhi = 3, Y = v => T + H * (1 - (Math.max(ylo - 1, Math.min(yhi + 1, v)) - ylo) / (yhi - ylo));
+  c.font = "11px Roboto,Arial,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+  for (let v = -3; v <= 3; v += 1) { c.strokeStyle = v === 0 ? "#bbb" : "#eee"; c.beginPath(); c.moveTo(L, Y(v)); c.lineTo(L + W, Y(v)); c.stroke(); c.fillStyle = "#777"; c.fillText(v, L - 6, Y(v)); }
+  c.textAlign = "center"; c.textBaseline = "top"; [-1, -.5, 0, .5, 1].forEach(x => c.fillText(x, X(x), T + H + 5));
+  const tr = S.trials[0]; if (!tr) return;
+  const key = [S.p, S.cfg.n, S.cfg.noise, S.cfg.target, S.cfg.gamma, S.lam, S.T, S.seed].join("|");
+  if (key !== S.fitKey && (S.frame % 6 === 0 || !S.running)) { S.fits = []; for (let t = 0; t < Math.min(4, S.T); t++) S.fits.push(S.trials[t].curve(S.p, S.lam)); S.fitKey = key; }
+  c.save(); c.beginPath(); c.rect(L, T, W, H); c.clip();
+  if (S.fits) { for (let t = S.fits.length - 1; t >= 0; t--) { c.strokeStyle = t === 0 ? "#0877bd" : "rgba(8,119,189,.32)"; c.lineWidth = t === 0 ? 2.2 : 1.2; c.beginPath(); for (let i = 0; i < NT; i++) i ? c.lineTo(X(tr.xt[i]), Y(S.fits[t][i])) : c.moveTo(X(tr.xt[i]), Y(S.fits[t][i])); c.stroke(); } }
+  c.strokeStyle = "#222"; c.lineWidth = 2; c.beginPath(); for (let i = 0; i < NT; i++) i ? c.lineTo(X(tr.xt[i]), Y(tr.ft[i])) : c.moveTo(X(tr.xt[i]), Y(tr.ft[i])); c.stroke(); c.lineWidth = 1;
+  c.fillStyle = "#e8590c"; for (let i = 0; i < S.cfg.n; i++) { c.beginPath(); c.arc(X(tr.xs[i]), Y(tr.y[i]), 3.2, 0, 7); c.fill(); }
+  c.restore();
+  const rel = S.p < S.cfg.n ? "fewer features than data points" : S.p === S.cfg.n ? "interpolation threshold (p = n)" : "more features than data points";
+  $("fitT").textContent = `The fitted function at p = ${S.p}: ${rel}`;
+}
+const f3 = v => !isFinite(v) ? "–" : v >= 100 ? v.toFixed(0) : v >= 1 ? v.toFixed(2) : v >= 0.001 ? v.toFixed(3) : v === 0 ? "0" : v.toExponential(1);
+function drawNums() {
+  const n = S.cfg.n, p = S.p, ok = p <= S.frontier, row = (a, b) => `<span>${a}</span><b>${b}</b>`;
+  let best = [Infinity, 0], worst = [0, 0]; for (let q = 1; q <= S.frontier; q++) { const v = agg(S.rec.test, q); if (v < best[0]) best = [v, q]; if (v > worst[0]) worst = [v, q]; }
+  $("nums").innerHTML = row("Model size p", p) + row("Training points n", n) + row("Ratio p / n", (p / n).toFixed(2)) +
+    `<div class="sec">Test error at this p (${S.avg} of ${S.T})</div>` + row("Test error", ok ? f3(agg(S.rec.test, p)) : "not computed yet") + row("Training error", ok ? f3(agg(S.rec.train, p)) : "–") + row("Coefficient size ‖c‖", ok ? f3(agg(S.rec.norm, p)) : "–") +
+    `<div class="sec">Over the sweep so far</div>` + row("Lowest test error", S.frontier ? f3(best[0]) + " at p = " + best[1] : "–") + row("Highest test error", S.frontier ? f3(worst[0]) + " at p = " + worst[1] : "–");
+  const near = Math.abs(p - n) <= Math.max(1, Math.round(0.04 * n));
+  $("verdict").textContent = near ? "At the interpolation threshold: just enough features to pass through every noisy point. The fit is nearly singular and the coefficients blow up." : p < n ? "Under-parameterised: fewer features than data points, so the model cannot fit every point." : "Over-parameterised: many exact fits exist and the fit picks the one with the smallest coefficients.";
+}
+function drawAll() { drawA(); drawB(); drawC(); drawNums(); }
+
+/* ---------- loop ---------- */
+function frame() {
+  requestAnimationFrame(frame); S.frame++; $("pause").disabled = !S.running;
+  const goal = S.running ? S.cfg.pmax : S.goal; let did = 0;
+  if (S.frontier < goal) {
+    const t0 = performance.now(), want = S.running ? SPD[S.speed] : 1e9;
+    while (S.frontier < goal && did < want && performance.now() - t0 < 12) { advance(); did++; }
+    if (S.running) { S.p = Math.max(1, S.frontier); syncSlider(); }
+    if (S.frontier >= S.cfg.pmax) { S.running = false; S.done = true; }
+    drawAll();
+  } else if (S.running) { S.running = false; }
+}
+
+/* ---------- controls ---------- */
+Object.keys(TARGETS).forEach(k => $("tgt").add(new Option(TARGETS[k].name, k)));
+const lamOf = v => v <= 0 ? 0 : Math.pow(10, -4 + v / 1000 * 4); // 0, then 1e-4 .. 1
+function showLam() { $("lv").textContent = S.lam === 0 ? "0 (off)" : S.lam.toPrecision(2); }
+$("play").onclick = () => { if (S.running) return; if (S.frontier >= S.cfg.pmax) { resetResults(); S.p = 1; syncSlider(); } S.running = true; };
+$("pause").onclick = () => { S.running = false; };
+$("restart").onclick = () => { S.p = 1; resetResults(); };
+$("p").oninput = e => { S.p = +e.target.value; S.running = false; S.goal = Math.max(S.goal, S.p); $("pv").textContent = S.p; drawAll(); };
+$("speed").onchange = () => S.speed = $("speed").value;
+$("avg").onchange = () => { S.avg = $("avg").value; drawAll(); };
+$("tgt").onchange = () => { S.cfg.target = $("tgt").value; S.trials.forEach(t => t.refit()); resetResults(); };
+$("sig").oninput = e => { S.cfg.noise = +e.target.value; $("sv").textContent = S.cfg.noise.toFixed(2); S.trials.forEach(t => t.refit()); resetResults(); };
+$("lam").oninput = e => { S.lam = lamOf(+e.target.value); showLam(); resetResults(); };
+$("n").oninput = e => { $("nv").textContent = e.target.value; };
+$("n").onchange = e => { S.cfg.n = +e.target.value; S.p = 1; $("nv").textContent = S.cfg.n; build(); };
+$("gam").oninput = e => { $("gv").textContent = (+e.target.value).toFixed(2); };
+$("gam").onchange = e => { S.cfg.gamma = +e.target.value; build(); };
+$("trials").onchange = () => { S.T = +$("trials").value; build(); };
+$("newdraw").onclick = () => { S.seed++; build(); };
+$("n").value = S.cfg.n; $("nv").textContent = S.cfg.n; $("sig").value = S.cfg.noise; $("sv").textContent = S.cfg.noise.toFixed(2); $("gam").value = S.cfg.gamma; $("gv").textContent = S.cfg.gamma.toFixed(2); $("lam").value = 0; showLam(); $("tgt").value = S.cfg.target;
+build(); requestAnimationFrame(frame);
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{drawAll();}catch(e){} });
+</script>
+</body>
+</html>

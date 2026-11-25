@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Clustering and PCA Playground</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:500}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Clustering and PCA Playground</h1>
+  <p class="blurb">Two classic ways to find structure in unlabelled data. <b>Clustering</b> groups 2D points: watch k-means and a Gaussian mixture model (GMM) go through their steps one at a time, with the mixture fitted by EM, by variational inference or by Gibbs sampling. <b>PCA</b> squashes a 3D point cloud onto a flat plane: tilt the plane yourself and compare it with the plane that PCA picks. Choose the topic at the top of the <b>Settings</b> panel on the right.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="reset" title="Reset: back to the initial centres (does not start)">&#8635;</button>
+      <button class="btn" id="play" title="Start / resume">&#9654;</button>
+      <button class="btn" id="pause" title="Pause" disabled>&#10074;&#10074;</button>
+      <button class="btn" id="step" title="One half-step: assign points, or update centres">Step</button>
+    </div>
+    <div class="grp"><label for="speed">Speed</label><select id="speed"><option value="slow">Slow (watch)</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></div>
+    <div id="status"></div>
+    <div id="cctl">
+      <div class="grp"><label for="cdata">Data</label><select id="cdata"></select></div>
+      <div class="grp sl"><div class="row"><span>Points</span><b id="nv"></b></div><input type="range" id="n" min="60" max="1000" step="20"></div>
+      <div class="grp sl"><div class="row"><span>Clusters K</span><b id="kv"></b></div><input type="range" id="K" min="1" max="10" step="1"></div>
+    </div>
+  </div>
+
+  <div id="pbar" style="display:none">
+    <div class="grp"><label>Projection plane</label></div>
+    <div class="pc">
+      <div class="grp sl"><div class="row"><span>Tilt of the plane</span><b id="thv"></b></div><input type="range" id="theta" min="0" max="180" step="1" title="0&deg; = lying flat (horizontal); 90&deg; = standing upright"></div>
+      <div class="grp sl"><div class="row"><span>Direction of the plane</span><b id="phv"></b></div><input type="range" id="phi" min="0" max="360" step="1" title="Which way the plane faces: turns it around the vertical axis"></div>
+      <div class="grp"><button class="tool" id="snap">Snap to the best plane (PC1 &amp; PC2)</button><button class="linkbtn" id="rview" style="text-align:left">Reset the 3D view</button></div>
+      <div class="grp"><label class="chk" style="margin:0"><input type="checkbox" id="showaxes" checked>Show principal axes</label><label class="chk" style="margin:0"><input type="checkbox" id="showlines">Show lines from points to the plane</label></div>
+    </div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div id="cview">
+        <div class="head" id="chead">Points, cluster centres and shaded regions</div>
+        <div class="cwrap"><canvas id="scatter"></canvas></div>
+        <div class="legend" style="flex-direction:column;align-items:flex-start;gap:5px">
+          <span><b>Dots:</b> the data points, coloured by cluster (grey before the first assignment)</span>
+          <span><b>Large numbered circles:</b> cluster centres</span>
+          <span id="lgell"><b>Ellipses:</b> one and two standard deviations of each Gaussian</span>
+          <span id="lgtrail" style="display:none"><b>Faint dots:</b> where each centre was in the last 40 draws (the wider the cloud, the less certain the centre)</span>
+          <span><b>Light shading:</b> the region each cluster currently claims</span>
+        </div>
+        <div id="detail" style="min-height:64px"></div>
+      </div>
+
+      <div id="pview" style="display:none">
+        <div class="pgrid">
+          <div><div class="ph">3D cloud &mdash; drag to rotate the view</div><canvas id="c3d"></canvas></div>
+          <div><div class="ph">Seen from the plane (2D projection)</div><canvas id="c2d"></canvas></div>
+        </div>
+        <div class="legend" style="flex-direction:column;align-items:flex-start;gap:5px">
+          <span><b>Blue-edged sheet:</b> the projection plane, always through the centre of the cloud</span>
+          <span><b>Tilt:</b> 0&deg; = plane lying flat, 90&deg; = standing upright. <b>Direction:</b> which way the plane faces (turns it around the vertical axis)</span>
+          <span><b>PC1, PC2, PC3:</b> the principal axes of the cloud (longest to shortest)</span>
+          <span><b>Right panel:</b> each point's position on the plane; the plane's horizontal and vertical directions are fixed by its tilt and direction</span>
+        </div>
+        <div id="pbars" style="margin-top:14px"></div>
+        <div class="note" id="pnote" style="margin-top:10px"></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Topic</div>
+        <label class="radio"><input type="radio" name="topic" value="cluster" checked><span>Clustering<small>k-means or Gaussian mixture, step by step</small></span></label>
+        <label class="radio"><input type="radio" name="topic" value="pca"><span>PCA on a 3D cloud<small>rotate the projection plane and see what it keeps</small></span></label>
+
+        <div id="cset">
+          <div class="sub">Method</div>
+          <label class="radio"><input type="radio" name="method" value="km" checked><span>k-means<small>each point belongs to one cluster; centres are cluster means</small></span></label>
+          <label class="radio"><input type="radio" name="method" value="gmm"><span>Gaussian mixture (EM)<small>each point belongs to every cluster a little; clusters are ellipses; one best-fit answer</small></span></label>
+          <label class="radio"><input type="radio" name="method" value="vi"><span>Gaussian mixture (Variational Inference)<small>Bayesian: keeps a distribution over each cluster's parameters, fitted by a fast approximation; unused clusters can fade out</small></span></label>
+          <label class="radio"><input type="radio" name="method" value="gibbs"><span>Gaussian mixture (Gibbs sampling)<small>Bayesian: draws random assignments and parameters, so you can see their uncertainty</small></span></label>
+          <div id="bset" style="display:none">
+            <div class="sub">Prior</div>
+            <div class="slider"><div class="row"><span>Weight concentration &alpha;<sub>0</sub></span><b id="a0v"></b></div><input type="range" id="a0s" min="0" max="3" step="1"><div class="hint">Small: clusters that are not needed fade out, so K is only an upper limit. Large: the points are spread over all K clusters.</div></div>
+          </div>
+          <div class="row2"><button class="linkbtn" id="seed">Restart with different initial centres</button></div>
+          <div class="hint">The initial centres are K randomly chosen data points. Choose the data, the number of points and K in the bar above. k-means and EM always use all K clusters; the two Bayesian methods treat K as an upper limit.</div>
+        </div>
+
+        <div id="pset" style="display:none">
+          <div class="sub">Data</div>
+          <div class="row2" style="margin-top:6px"><select id="pdata" style="width:100%"></select></div>
+          <div class="row2"><button class="linkbtn" id="pseed">Draw a new random sample</button></div>
+        </div>
+      </div>
+
+      <div class="head" style="margin-top:22px">Progress</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+    </div>
+  </div>
+
+  <div class="chartbox" id="cchart">
+    <div class="ct" id="charttitle"></div>
+    <div class="chartframe"><canvas id="chart"></canvas></div>
+    <div class="note" id="chartnote"></div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is, and is not.</b> Every data set here is made up by the page: random points drawn from a few simple shapes. The algorithms are exact and small, but real data is rarely this tidy, and the pictures only show 2D and 3D. The numbers quoted below come from my own runs of this code.</div>
+
+    <h3>Clustering</h3>
+    <p>Clustering means splitting unlabelled points into groups of points that are close to each other. Both methods here need you to choose the number of clusters <i>K</i> and both start from <i>K</i> randomly chosen data points, so a different start can end in a different answer. Each method repeats two half-steps until nothing changes any more. The Step button does one half-step, so you can see both.</p>
+
+    <h3>k-means</h3>
+    <ul>
+      <li><b>Assign:</b> every point joins the cluster with the nearest centre.</li>
+      <li><b>Update:</b> every centre moves to the mean of the points that joined it. A centre that has no points keeps its old place.</li>
+    </ul>
+    <p>The quantity k-means lowers is the sum of the squared distances from each point to its centre (inertia). Neither half-step can raise it, so it falls until the assignments stop changing (Lloyd's algorithm; see Lloyd 1982). It stops at a local minimum, not necessarily the best one. On "Three round blobs" with K = 3, I ran 8 different initial centres: 3 of the 8 ended more than 1% above the best inertia found. The shaded regions are the cells of nearest-centre territory, which are straight-edged, so k-means is best at compact, roundish groups of similar size.</p>
+
+    <h3>Gaussian mixture and EM</h3>
+    <p>A Gaussian mixture says the data came from <i>K</i> bell-shaped clouds. Each cloud has a weight (how many points it explains), a centre and a covariance (how wide it is and in which direction it is stretched). The ellipses show one and two standard deviations. EM (expectation-maximisation) fits these by repeating two half-steps:</p>
+    <ul>
+      <li><b>E-step:</b> for each point, compute the probability that each cloud produced it (its <i>responsibilities</i>, which add up to 1). Dots are coloured by blending the cluster colours with these probabilities.</li>
+      <li><b>M-step:</b> re-estimate every cloud's weight, centre and covariance from the points, with each point counted in proportion to its responsibility.</li>
+    </ul>
+    <div class="eqb">r<sub>ik</sub> = w<sub>k</sub> N(x<sub>i</sub> | &mu;<sub>k</sub>, &Sigma;<sub>k</sub>) / &Sigma;<sub>j</sub> w<sub>j</sub> N(x<sub>i</sub> | &mu;<sub>j</sub>, &Sigma;<sub>j</sub>)<br>&mu;<sub>k</sub> = &Sigma;<sub>i</sub> r<sub>ik</sub> x<sub>i</sub> / &Sigma;<sub>i</sub> r<sub>ik</sub>, &nbsp; &Sigma;<sub>k</sub> = &Sigma;<sub>i</sub> r<sub>ik</sub> (x<sub>i</sub> &minus; &mu;<sub>k</sub>)(x<sub>i</sub> &minus; &mu;<sub>k</sub>)<sup>T</sup> / &Sigma;<sub>i</sub> r<sub>ik</sub>, &nbsp; w<sub>k</sub> = &Sigma;<sub>i</sub> r<sub>ik</sub> / n</div>
+    <p>The chart shows the average log-likelihood of the data under the current mixture, which EM tries to raise. In theory it never decreases (Dempster, Laird and Rubin 1977). This page adds 0.001 to the diagonal of every covariance so that a cloud cannot shrink onto a few points. That small floor means the plain log-likelihood can dip very slightly: in 192 runs of mine (4 data sets &times; K = 1 to 6 &times; 8 initial centres, 150 EM iterations each), 49 showed at least one dip, the largest about 9&times;10<sup>&minus;6</sup> in the average log-likelihood, far too small to see on the chart. The page stops when the log-likelihood changes by less than 10<sup>&minus;6</sup> in one iteration.</p>
+    <p>k-means can be seen as a stripped-down relative of this: if every cloud is forced to be round and equally narrow, and the narrowness goes to zero, the responsibilities become hard 0-or-1 assignments (Bishop 2006, chapter 9). The extra freedom of the mixture costs more iterations: on the four data sets here, 8 runs of mine took 2 to 19 k-means iterations but 9 to 217 EM iterations.</p>
+
+    <h3>Two Bayesian ways to fit the same mixture: variational inference and Gibbs sampling</h3>
+    <p>EM returns one answer: the weights, centres and covariances that make the data most likely. The two methods below are Bayesian. They put a prior on those parameters and ask for the posterior: the whole range of parameter values that are plausible given the data. Both use the same prior, which is my own choice and not a standard one. The weights get a Dirichlet prior whose concentration &alpha;<sub>0</sub> is the slider in the Settings panel. Each cluster's centre and precision (inverse covariance) get a normal&ndash;Wishart prior centred on the average of the data, with a guess for a cluster's variance of a quarter of the data's average variance per axis, and a strength of 1 point for the centre and 2 for the covariance, so the data dominate it.</p>
+    <p><b>Variational inference (VI).</b> The exact posterior over assignments and parameters is hard to compute. VI instead looks for the closest distribution of a simpler form, in which the assignments are independent of the parameters (mean-field), with closeness measured by the KL divergence. Maximising the evidence lower bound (ELBO) is the same as minimising that divergence (Blei, Kucukelbir and McAuliffe 2017; Bishop 2006, section 10.2). The two half-steps look like EM: update the responsibilities, using averages over the uncertainty in each cluster's parameters, then update each cluster's parameter distribution from the points it claims plus the prior. The ellipses show the average centre and the inverse of the average precision; the chart shows the ELBO divided by the number of points.</p>
+    <p><b>Gibbs sampling.</b> Instead of approximating the posterior, draw random samples from it. One iteration first draws every point's cluster at random given the current parameters, then draws new weights, centres and covariances at random given those assignments. Both draws come from exact conditional distributions of this model, so after enough iterations the draws follow the posterior (Geman and Geman 1984 introduced Gibbs sampling; Diebolt and Robert 1994 applied it to mixtures). What you see is one random mixture per iteration, so it wobbles. The faint dots show where each centre was in the last 40 draws, and the chart shows the average log-likelihood of the current draw, which fluctuates around a level instead of converging. This page simply stops after 500 iterations and runs one chain from one random start, with no burn-in removed and no convergence test.</p>
+    <p><b>What the Bayesian methods add.</b> With a small &alpha;<sub>0</sub> they can leave surplus clusters empty, so K acts as an upper limit. A cluster counts as &ldquo;in use&rdquo; when it holds at least one point (VI: one point's worth of weight); unused clusters are not drawn. On &ldquo;Three round blobs&rdquo; (240 points) with K = 6 and K = 10, VI with &alpha;<sub>0</sub> = 0.1 ended with exactly 3 clusters in use in all 8 starts (ARI 1.00), whereas EM, which must use all K, had a mean ARI of 0.72 for K = 6 and 0.46 for K = 10. Gibbs sampling with &alpha;<sub>0</sub> = 0.01 and K = 6 also ended with 3 clusters in use in all 8 runs (mean ARI 0.98, lowest 0.95). With &alpha;<sub>0</sub> = 10, neither method pruned anything in my runs: VI used all 6 (ARI 0.80) or all 10 clusters (0.65), and Gibbs all 6 (0.67). VI results for &alpha;<sub>0</sub> from 0.001 to 1 were nearly the same. The pruning depends on this prior and these data: on &ldquo;Overlapping blobs&rdquo; with K = 6, VI kept 3 or 4 clusters in use although the data came from 3 groups.</p>
+    <p><b>Limits of the Bayesian methods.</b> VI is still a local method: with K = 3 on the three blobs, 2 of my 8 starts ended with only 2 clusters in use, having merged two groups, so press Restart. Mean-field VI is known to understate uncertainty; on the well-separated blobs the Gibbs spread of the centres was about 0.08 to 0.09 and VI's implied spread about 0.08, so the difference was small there, but I did not test harder cases. Gibbs sampling is slower and needs many iterations; its average log-likelihood sat at about &minus;3.24 on the blobs, about 0.05 below the best EM value (&minus;3.198 at K = 3), which is expected, because a typical posterior draw is not the likelihood maximum. In principle the colours of the clusters can swap between draws (label switching); I did not look for it. The numbers behind these statements come from 8 starts per setting.</p>
+    <p><b>How I checked them.</b> The ELBO never decreased in 192 runs of 80 iterations (4 data sets, K = 2, 3, 6, 10, four values of &alpha;<sub>0</sub>, 3 starts); the worst change was &minus;2&times;10<sup>&minus;12</sup>, i.e. rounding. For three fitted states, the ELBO computed from the formulas agreed with a separate Monte-Carlo estimate in Python (scipy) to within 0.02 (values near &minus;870, &minus;834 and &minus;749). The fitted means and covariances matched scikit-learn's BayesianGaussianMixture with the same priors, means to 3&times;10<sup>&minus;7</sup> and covariances to about 10<sup>&minus;6</sup>, when my run was started from the same optimum. For the sampler, the Gamma and Wishart draws reproduced their exact expectations, and a Geweke &ldquo;getting it right&rdquo; test (alternating the sampler with fresh data simulated from the model) reproduced the prior for the weights, centres, covariances and precisions; and on the blobs the Gibbs posterior means of the centres agreed with VI to within 0.012.</p>
+
+    <h3>What to try</h3>
+    <p>To compare methods fairly I used the adjusted Rand index (ARI), which is 1 when the clusters match the true groups the page generated and about 0 for a random split. All numbers below are for 240 points, the suggested K, and 8 different initial centres.</p>
+    <ul>
+      <li><b>Tilted elongated clusters.</b> k-means cuts straight between nearby centres and keeps getting this wrong (ARI 0.61 to 0.64). The mixture can stretch its ellipses along the groups and reached 0.87 in all 8 runs.</li>
+      <li><b>Three round blobs.</b> Both do well from a good start. k-means had a mean ARI of 0.79 (range 0.44 to 1.00) and the mixture 0.93 (range 0.45 to 1.00); the bad starts are the local minima, so press &ldquo;Restart with different initial centres&rdquo; a few times.</li>
+      <li><b>Overlapping blobs.</b> The true groups overlap, so no method can recover them cleanly: ARI 0.50 to 0.59 for k-means and 0.24 to 0.47 for the mixture. A low score here is a property of the data, not a bug.</li>
+      <li><b>Two moons.</b> Both methods assume blob-like clusters and fail on curved ones: k-means scored 0.30 and the mixture 0.25 to 0.54.</li>
+      <li><b>Too many or too few clusters.</b> Set K to 1 or 10 on three blobs with k-means or EM. Nothing tells the algorithm that K is wrong: the best sum of squared distances over 8 starts falls from 1810 (K = 1) to 86 (K = 10), and the best average log-likelihood of EM rises from &minus;3.198 (K = 3) to &minus;2.994 (K = 10).</li>
+      <li><b>Let the data choose K.</b> Set K = 10 on three blobs, pick variational inference or Gibbs sampling, and watch clusters drop out (the counter in the Progress panel). Then move &alpha;<sub>0</sub> to 10 and restart: all clusters stay in use.</li>
+      <li><b>See the uncertainty.</b> With Gibbs sampling, lower the number of points to 60 and watch the faint dots: the centres move around much more than with 1000 points.</li>
+    </ul>
+
+    <h3>PCA on a 3D cloud</h3>
+    <p>Principal component analysis (PCA) finds the directions in which a cloud of points varies most. It centres the cloud, computes the 3&times;3 covariance matrix, and takes its eigenvectors: the first principal axis (PC1) is the direction of largest variance, PC2 is the largest among the directions at right angles to PC1, and PC3 is what remains. Each eigenvalue is the variance along its axis. The sheet in the 3D view is a plane through the centre of the cloud; the right-hand panel shows every point as seen on that plane.</p>
+    <p>Projecting onto a plane keeps part of the variance and loses the rest. For a plane with orthonormal directions <i>u</i> and <i>v</i>, the variance kept is <i>u</i><sup>T</sup>C<i>u</i> + <i>v</i><sup>T</sup>C<i>v</i>, where C is the covariance matrix; the lost variance is the total minus this, and it equals the average squared distance of the points from the plane (up to the factor n/(n&minus;1)). So the plane that keeps the most variance is also the plane that lies closest to the points in the least-squares sense (Pearson 1901). That best plane is the one spanned by PC1 and PC2. The &ldquo;Snap&rdquo; button moves the plane there, and the bars show how much your plane keeps compared with it.</p>
+    <p>I checked the covariance and eigenvectors against numpy, and the formula for the kept variance against a direct computation on the projected points. In 2000 random planes, none kept more than the PC1&ndash;PC2 plane. Every random sample is built from mirror-image pairs of points about the centre of the cloud, so the cloud is exactly balanced about its centre in every view.</p>
+
+    <h3>What to try</h3>
+    <ul>
+      <li><b>Flat disc, tilted.</b> Most of the variance lies in a plane that is not aligned with the screen. Rotate the plane by hand until the bar is near the tick, then snap to see how close you got.</li>
+      <li><b>Round ball.</b> All directions have nearly the same variance (about 43%, 32% and 24% for the default sample), so no plane is much better than any other: the best plane keeps 76% of the variance, while a randomly chosen plane keeps two thirds on average. The order of the principal axes is largely chance.</li>
+      <li><b>Cigar.</b> One axis carries about 87% of the variance (default sample), so any plane that contains the long axis keeps at least that much.</li>
+      <li><b>Two groups split along a thin direction.</b> The two colours differ only along PC3, which has little variance. In the default sample the three axes carry 60%, 28% and 12% of the variance, and the groups' centres differ by 1.8 along PC3 but only by 0.6 along PC1 and 0.2 along PC2, so the best plane for variance squeezes the two groups on top of each other. PCA never looks at the colours: variance and usefulness for telling groups apart are different things. Tilt the plane so that it contains PC3 and the groups separate again.</li>
+    </ul>
+
+    <h3>Limits</h3>
+    <ul>
+      <li>k-means and EM need K in advance and depend on the starting centres. Neither is guaranteed to find the best solution. The Bayesian methods treat K as an upper limit, but their priors are my own choices and the results depend on them; I only varied &alpha;<sub>0</sub>.</li>
+      <li>The mixture here uses full covariances and one fixed way to start (random data points as centres, round clouds of equal size). Other ways to start can give other answers.</li>
+      <li>PCA only finds straight, linear directions. It cannot unroll a curved shape, and it is not told about groups or labels.</li>
+      <li>The data are small, made-up samples, and the numbers in the text vary with the sample.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>S. P. Lloyd, "Least squares quantization in PCM", <i>IEEE Transactions on Information Theory</i> 28 (2), 129&ndash;137, 1982.</li>
+      <li>A. P. Dempster, N. M. Laird and D. B. Rubin, "Maximum likelihood from incomplete data via the EM algorithm", <i>Journal of the Royal Statistical Society, Series B</i> 39 (1), 1&ndash;38, 1977.</li>
+      <li>K. Pearson, "On lines and planes of closest fit to systems of points in space", <i>Philosophical Magazine</i> 2 (11), 559&ndash;572, 1901.</li>
+      <li>C. M. Bishop, <i>Pattern Recognition and Machine Learning</i>, Springer, 2006, chapter 9 (sections 9.1 K-means, 9.2 Mixtures of Gaussians) and chapter 10 (section 10.2, Variational mixture of Gaussians).</li>
+      <li>D. M. Blei, A. Kucukelbir and J. D. McAuliffe, "Variational inference: a review for statisticians", <i>Journal of the American Statistical Association</i> 112 (518), 859&ndash;877, 2017.</li>
+      <li>S. Geman and D. Geman, "Stochastic relaxation, Gibbs distributions, and the Bayesian restoration of images", <i>IEEE Transactions on Pattern Analysis and Machine Intelligence</i> 6 (6), 721&ndash;741, 1984.</li>
+      <li>J. Diebolt and C. P. Robert, "Estimation of finite mixture distributions through Bayesian sampling", <i>Journal of the Royal Statistical Society, Series B</i> 56 (2), 363&ndash;375, 1994.</li>
+    </ul>
+  </div>
+</div>
+<script>/* Clustering (k-means, Gaussian mixture by EM) and PCA on a 3D cloud */
+const CL = (function () {
+  function rng(seed) { let t = (seed >>> 0) || 1; return function () { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+  function gauss(r) { let u = 0, v = 0; while (u === 0) u = r(); v = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); }
+
+  /* ---------- 2D datasets: X = [x0,y0,x1,y1,...], y = true cluster, K = suggested number of clusters ---------- */
+  const DATASETS = {
+    blobs: {name: "Three round blobs", K: 3},
+    overlap: {name: "Overlapping blobs", K: 3},
+    stretched: {name: "Tilted elongated clusters", K: 3},
+    moons: {name: "Two moons", K: 2}
+  };
+  function makeData(name, n, r) {
+    const X = new Float64Array(2 * n), y = new Int32Array(n);
+    const put = (i, a, b, c) => { X[2 * i] = a; X[2 * i + 1] = b; y[i] = c; };
+    for (let i = 0; i < n; i++) {
+      if (name === "blobs") { const c = i % 3, m = [[-2.4, -1.2], [0.5, 2.0], [2.6, -1.0]][c]; put(i, m[0] + 0.7 * gauss(r), m[1] + 0.7 * gauss(r), c); }
+      else if (name === "overlap") { const c = i % 3, m = [[-1.3, -0.6], [0.7, 1.0], [1.6, -0.9]][c]; put(i, m[0] + 0.95 * gauss(r), m[1] + 0.95 * gauss(r), c); }
+      else if (name === "stretched") { const c = i % 3, m = [[-2.2, -1], [0, 1.5], [2, -1]][c], a = m[0] + 0.8 * gauss(r), b = m[1] + 0.8 * gauss(r); put(i, 0.62 * (1.5 * a - 0.9 * b), 0.62 * (0.3 * a + 0.7 * b), c); }
+      else { const c = i % 2, a = Math.PI * r(), R = 1.9, x = c ? R * (1 - Math.cos(a)) : R * Math.cos(a), yy = c ? R * (0.5 - Math.sin(a)) : R * Math.sin(a); put(i, x - 0.5 * R + 0.17 * gauss(r), yy - 0.25 * R + 0.17 * gauss(r), c); }
+    }
+    return {X, y, n};
+  }
+
+  /* ---------- k-means (Lloyd) ---------- */
+  function pickCenters(X, n, K, r) {          // K distinct data points
+    const idx = []; while (idx.length < K) { const i = Math.min(n - 1, (r() * n) | 0); if (!idx.includes(i)) idx.push(i); }
+    const C = new Float64Array(2 * K); idx.forEach((i, k) => { C[2 * k] = X[2 * i]; C[2 * k + 1] = X[2 * i + 1]; }); return C;
+  }
+  function kAssign(X, n, C, K) {            // returns {lab, inertia}
+    const lab = new Int32Array(n); let inertia = 0;
+    for (let i = 0; i < n; i++) { let b = 0, bd = Infinity; for (let k = 0; k < K; k++) { const dx = X[2 * i] - C[2 * k], dy = X[2 * i + 1] - C[2 * k + 1], d = dx * dx + dy * dy; if (d < bd) { bd = d; b = k; } } lab[i] = b; inertia += bd; }
+    return {lab, inertia};
+  }
+  function kUpdate(X, n, lab, K, C) {       // mean of each cluster; an empty cluster keeps its old centre
+    const N = new Float64Array(2 * K), cnt = new Int32Array(K);
+    for (let i = 0; i < n; i++) { const k = lab[i]; N[2 * k] += X[2 * i]; N[2 * k + 1] += X[2 * i + 1]; cnt[k]++; }
+    const out = new Float64Array(2 * K); for (let k = 0; k < K; k++) { if (cnt[k]) { out[2 * k] = N[2 * k] / cnt[k]; out[2 * k + 1] = N[2 * k + 1] / cnt[k]; } else { out[2 * k] = C[2 * k]; out[2 * k + 1] = C[2 * k + 1]; } }
+    return out;
+  }
+  function inertiaOf(X, n, C, K) { return kAssign(X, n, C, K).inertia; }
+
+  /* ---------- Gaussian mixture (full covariances) fitted by EM ---------- */
+  const REG = 1e-3;                          // added to the diagonal of every covariance to stop a component collapsing onto few points
+  function gInit(X, n, K, r) {
+    const mu = pickCenters(X, n, K, r); let mx = 0, my = 0; for (let i = 0; i < n; i++) { mx += X[2 * i]; my += X[2 * i + 1]; } mx /= n; my /= n;
+    let vx = 0, vy = 0; for (let i = 0; i < n; i++) { vx += (X[2 * i] - mx) ** 2; vy += (X[2 * i + 1] - my) ** 2; } const v = 0.5 * (vx + vy) / (2 * n);
+    const cov = new Float64Array(3 * K), w = new Float64Array(K); for (let k = 0; k < K; k++) { cov[3 * k] = v; cov[3 * k + 1] = 0; cov[3 * k + 2] = v; w[k] = 1 / K; }
+    return {mu, cov, w, K};                  // cov stored as [sxx, sxy, syy] per component
+  }
+  function logPdf(x, y, mu, cov, k) {
+    const a = cov[3 * k], b = cov[3 * k + 1], c = cov[3 * k + 2], det = a * c - b * b, dx = x - mu[2 * k], dy = y - mu[2 * k + 1];
+    const q = (c * dx * dx - 2 * b * dx * dy + a * dy * dy) / det; return -Math.log(2 * Math.PI) - 0.5 * Math.log(det) - 0.5 * q;
+  }
+  function gE(X, n, g) {                    // E-step: responsibilities (n*K) and mean log-likelihood
+    const K = g.K, R = new Float64Array(n * K); let ll = 0;
+    for (let i = 0; i < n; i++) {
+      let mx = -Infinity; for (let k = 0; k < K; k++) { const l = Math.log(g.w[k]) + logPdf(X[2 * i], X[2 * i + 1], g.mu, g.cov, k); R[i * K + k] = l; if (l > mx) mx = l; }
+      let s = 0; for (let k = 0; k < K; k++) { R[i * K + k] = Math.exp(R[i * K + k] - mx); s += R[i * K + k]; } for (let k = 0; k < K; k++) R[i * K + k] /= s; ll += mx + Math.log(s);
+    }
+    return {R, ll: ll / n};
+  }
+  function gM(X, n, R, K) {                 // M-step: weights, means, covariances from responsibilities
+    const mu = new Float64Array(2 * K), cov = new Float64Array(3 * K), w = new Float64Array(K);
+    for (let k = 0; k < K; k++) {
+      let s = 0, mx = 0, my = 0; for (let i = 0; i < n; i++) { const r = R[i * K + k]; s += r; mx += r * X[2 * i]; my += r * X[2 * i + 1]; }
+      mx /= s; my /= s; let a = 0, b = 0, c = 0; for (let i = 0; i < n; i++) { const r = R[i * K + k], dx = X[2 * i] - mx, dy = X[2 * i + 1] - my; a += r * dx * dx; b += r * dx * dy; c += r * dy * dy; }
+      mu[2 * k] = mx; mu[2 * k + 1] = my; cov[3 * k] = a / s + REG; cov[3 * k + 1] = b / s; cov[3 * k + 2] = c / s + REG; w[k] = s / n;
+    }
+    return {mu, cov, w, K};
+  }
+  function ellipse(cov, k) {                // semi-axes (std devs) and angle of the covariance ellipse
+    const a = cov[3 * k], b = cov[3 * k + 1], c = cov[3 * k + 2], t = 0.5 * (a + c), d = Math.sqrt(Math.max(0, 0.25 * (a - c) * (a - c) + b * b));
+    return {s1: Math.sqrt(Math.max(1e-12, t + d)), s2: Math.sqrt(Math.max(1e-12, t - d)), ang: 0.5 * Math.atan2(2 * b, a - c)};
+  }
+
+
+  /* ---------- special functions ---------- */
+  function digamma(x) { let r = 0; while (x < 10) { r -= 1 / x; x += 1; } const f = 1 / (x * x); return r + Math.log(x) - 0.5 / x - f * (1 / 12 - f * (1 / 120 - f * (1 / 252 - f * (1 / 240 - f / 132)))); }
+  const LGC = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  function lgamma(x) { if (x < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * x))) - lgamma(1 - x); x -= 1; let a = LGC[0]; const t = x + 7.5; for (let i = 1; i < 9; i++) a += LGC[i] / (x + i); return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a); }
+
+  /* ---------- Bayesian Gaussian mixture (2D): priors shared by variational inference and Gibbs sampling ----------
+     weights ~ Dirichlet(a0,...,a0);  for every cluster: precision L ~ Wishart(W0, nu0),  mean | L ~ Normal(m0, (b0 L)^-1).
+     Symmetric 2x2 matrices are stored as [xx, xy, yy]. */
+  const PRIOR_SCALE = 0.25;                  // prior guess for a cluster's variance, as a fraction of the data's average per-axis variance
+  function bPrior(X, n, a0) {
+    let mx = 0, my = 0; for (let i = 0; i < n; i++) { mx += X[2 * i]; my += X[2 * i + 1]; } mx /= n; my /= n;
+    let vx = 0, vy = 0; for (let i = 0; i < n; i++) { vx += (X[2 * i] - mx) ** 2; vy += (X[2 * i + 1] - my) ** 2; } const v = 0.5 * (vx + vy) / n, nu0 = 2;
+    return {a0, b0: 1, m0: [mx, my], nu0, Wi0: [nu0 * PRIOR_SCALE * v, 0, nu0 * PRIOR_SCALE * v]};     // Wi0 = W0^-1
+  }
+  const inv2 = M => { const d = M[0] * M[2] - M[1] * M[1]; return [M[2] / d, -M[1] / d, M[0] / d]; };
+  const lnB2 = (W, nu) => -0.5 * nu * Math.log(W[0] * W[2] - W[1] * W[1]) - nu * Math.LN2 - 0.5 * Math.log(Math.PI) - lgamma(nu / 2) - lgamma((nu - 1) / 2);   // log normaliser of the Wishart, D = 2
+  function bStats(X, n, R, K, P) {           // N_k, mean and scatter (sum of r * outer product about the mean) of every cluster, for weights R (n*K)
+    const Nk = new Float64Array(K), xb = new Float64Array(2 * K), Sc = new Float64Array(3 * K);
+    for (let k = 0; k < K; k++) {
+      let s = 0, mx = 0, my = 0; for (let i = 0; i < n; i++) { const r = R[i * K + k]; s += r; mx += r * X[2 * i]; my += r * X[2 * i + 1]; }
+      if (s > 1e-10) { mx /= s; my /= s; } else { mx = P.m0[0]; my = P.m0[1]; }
+      let a = 0, b = 0, c = 0; for (let i = 0; i < n; i++) { const r = R[i * K + k], dx = X[2 * i] - mx, dy = X[2 * i + 1] - my; a += r * dx * dx; b += r * dx * dy; c += r * dy * dy; }
+      Nk[k] = s; xb[2 * k] = mx; xb[2 * k + 1] = my; Sc[3 * k] = a; Sc[3 * k + 1] = b; Sc[3 * k + 2] = c;
+    }
+    return {Nk, xb, Sc};
+  }
+  function bPost(st, K, P) {                 // posterior hyper-parameters given the (soft or hard) counts: the same formula for both methods
+    const alpha = new Float64Array(K), beta = new Float64Array(K), m = new Float64Array(2 * K), nu = new Float64Array(K), W = new Float64Array(3 * K);
+    for (let k = 0; k < K; k++) {
+      const N = st.Nk[k], bk = P.b0 + N, ex = st.xb[2 * k] - P.m0[0], ey = st.xb[2 * k + 1] - P.m0[1], f = P.b0 * N / bk;
+      alpha[k] = P.a0 + N; beta[k] = bk; nu[k] = P.nu0 + N;
+      m[2 * k] = (P.b0 * P.m0[0] + N * st.xb[2 * k]) / bk; m[2 * k + 1] = (P.b0 * P.m0[1] + N * st.xb[2 * k + 1]) / bk;
+      const Wi = [P.Wi0[0] + st.Sc[3 * k] + f * ex * ex, P.Wi0[1] + st.Sc[3 * k + 1] + f * ex * ey, P.Wi0[2] + st.Sc[3 * k + 2] + f * ey * ey], w = inv2(Wi);
+      W[3 * k] = w[0]; W[3 * k + 1] = w[1]; W[3 * k + 2] = w[2];
+    }
+    return {K, alpha, beta, m, nu, W, Nk: st.Nk};
+  }
+
+  /* ----- variational inference (mean-field, coordinate ascent) ----- */
+  function viInit(X, n, K, r, P) {           // same start as EM: K data points as centres, equal weights, round clusters, written as a posterior worth n/K points per cluster
+    const g0 = gInit(X, n, K, r), v = g0.cov[0], alpha = new Float64Array(K), beta = new Float64Array(K), nu = new Float64Array(K), W = new Float64Array(3 * K), Nk = new Float64Array(K);
+    for (let k = 0; k < K; k++) { Nk[k] = n / K; alpha[k] = P.a0 + n / K; beta[k] = P.b0 + n / K; nu[k] = P.nu0 + n / K; W[3 * k] = 1 / (nu[k] * v); W[3 * k + 1] = 0; W[3 * k + 2] = 1 / (nu[k] * v); }
+    return {K, alpha, beta, m: Float64Array.from(g0.mu), nu, W, Nk};
+  }
+  function viLogs(q) {                       // E[ln pi_k] and E[ln |Lambda_k|]
+    const K = q.K, lpi = new Float64Array(K), lL = new Float64Array(K); let ah = 0; for (let k = 0; k < K; k++) ah += q.alpha[k]; const dah = digamma(ah);
+    for (let k = 0; k < K; k++) { lpi[k] = digamma(q.alpha[k]) - dah; lL[k] = digamma(q.nu[k] / 2) + digamma((q.nu[k] - 1) / 2) + 2 * Math.LN2 + Math.log(q.W[3 * k] * q.W[3 * k + 2] - q.W[3 * k + 1] ** 2); }
+    return {lpi, lL};
+  }
+  function viE(X, n, q) {                    // update q(z): responsibilities
+    const K = q.K, {lpi, lL} = viLogs(q), R = new Float64Array(n * K);
+    for (let i = 0; i < n; i++) {
+      let mx = -Infinity;
+      for (let k = 0; k < K; k++) { const dx = X[2 * i] - q.m[2 * k], dy = X[2 * i + 1] - q.m[2 * k + 1], quad = q.W[3 * k] * dx * dx + 2 * q.W[3 * k + 1] * dx * dy + q.W[3 * k + 2] * dy * dy; const l = lpi[k] + 0.5 * lL[k] - Math.log(2 * Math.PI) - 0.5 * (2 / q.beta[k] + q.nu[k] * quad); R[i * K + k] = l; if (l > mx) mx = l; }
+      let s = 0; for (let k = 0; k < K; k++) { R[i * K + k] = Math.exp(R[i * K + k] - mx); s += R[i * K + k]; } for (let k = 0; k < K; k++) R[i * K + k] /= s;
+    }
+    return R;
+  }
+  function viM(X, n, R, K, P) { return bPost(bStats(X, n, R, K, P), K, P); }      // update q(weights, means, precisions)
+  function viElbo(X, n, R, q, P) {           // evidence lower bound (Bishop 2006, eqs 10.70-10.77), D = 2
+    const K = q.K, D = 2, st = bStats(X, n, R, K, P), {lpi, lL} = viLogs(q), lnC = (a, k) => lgamma(k * a) - k * lgamma(a);
+    let ah = 0; for (let k = 0; k < K; k++) ah += q.alpha[k];
+    let t1 = 0, t2 = 0, sl = 0, t4 = 0, t6 = 0, t7 = 0;
+    const lnBW0 = lnB2(inv2(P.Wi0), P.nu0);
+    for (let k = 0; k < K; k++) {
+      const a = q.W[3 * k], b = q.W[3 * k + 1], c = q.W[3 * k + 2], nu = q.nu[k], bk = q.beta[k], N = st.Nk[k];
+      const ex = st.xb[2 * k] - q.m[2 * k], ey = st.xb[2 * k + 1] - q.m[2 * k + 1], dq = a * ex * ex + 2 * b * ex * ey + c * ey * ey;
+      const trS = a * st.Sc[3 * k] + 2 * b * st.Sc[3 * k + 1] + c * st.Sc[3 * k + 2];
+      t1 += 0.5 * (N * (lL[k] - D / bk - nu * dq - D * Math.log(2 * Math.PI)) - nu * trS);
+      t2 += N * lpi[k]; sl += lpi[k];
+      const fx = q.m[2 * k] - P.m0[0], fy = q.m[2 * k + 1] - P.m0[1], dm = a * fx * fx + 2 * b * fx * fy + c * fy * fy, trW0 = P.Wi0[0] * a + 2 * P.Wi0[1] * b + P.Wi0[2] * c;
+      t4 += 0.5 * (D * Math.log(P.b0 / (2 * Math.PI)) + lL[k] - D * P.b0 / bk - P.b0 * nu * dm) + 0.5 * (P.nu0 - D - 1) * lL[k] - 0.5 * nu * trW0;
+      t6 += (q.alpha[k] - 1) * lpi[k];
+      const Hk = -lnB2([a, b, c], nu) - 0.5 * (nu - D - 1) * lL[k] + nu * D / 2;
+      t7 += 0.5 * lL[k] + 0.5 * D * Math.log(bk / (2 * Math.PI)) - D / 2 - Hk;
+    }
+    t4 += K * lnBW0;
+    const t3 = lnC(P.a0, K) + (P.a0 - 1) * sl; let t5 = 0; for (let i = 0; i < n * K; i++) if (R[i] > 0) t5 += R[i] * Math.log(R[i]);
+    let lg = 0; for (let k = 0; k < K; k++) lg += lgamma(q.alpha[k]); t6 += lgamma(ah) - lg;
+    return t1 + t2 + t3 + t4 - t5 - t6 - t7;
+  }
+  function viToG(q) {                        // the picture of q: posterior-mean weights and centres, covariance = inverse of the mean precision
+    const K = q.K, mu = Float64Array.from(q.m), cov = new Float64Array(3 * K), w = new Float64Array(K); let ah = 0; for (let k = 0; k < K; k++) ah += q.alpha[k];
+    for (let k = 0; k < K; k++) { const i = inv2([q.W[3 * k], q.W[3 * k + 1], q.W[3 * k + 2]]); cov[3 * k] = i[0] / q.nu[k]; cov[3 * k + 1] = i[1] / q.nu[k]; cov[3 * k + 2] = i[2] / q.nu[k]; w[k] = q.alpha[k] / ah; }
+    return {mu, cov, w, K};
+  }
+
+  /* ----- Gibbs sampling ----- */
+  function gammaLog(a, r) {                  // log of a Gamma(a, 1) draw (Marsaglia-Tsang); working with logs stays finite for very small a
+    if (a < 1) return gammaLog(a + 1, r) + Math.log(Math.max(r(), 1e-300)) / a;
+    const d = a - 1 / 3, c = 1 / Math.sqrt(9 * d);
+    for (;;) { let x, v; do { x = gauss(r); v = 1 + c * x; } while (v <= 0); v = v * v * v; const u = r(); if (Math.log(u) < 0.5 * x * x + d - d * v + d * Math.log(v)) return Math.log(d * v); }
+  }
+  function wishart2(W, nu, r) {              // Bartlett decomposition, 2x2: returns L = [xx, xy, yy] with L ~ Wishart(W, nu)
+    const l11 = Math.sqrt(W[0]), l21 = W[1] / l11, l22 = Math.sqrt(Math.max(1e-300, W[2] - l21 * l21));
+    const a11 = Math.sqrt(2 * Math.exp(gammaLog(nu / 2, r))), a22 = Math.sqrt(2 * Math.exp(gammaLog((nu - 1) / 2, r))), a21 = gauss(r);
+    const m11 = l11 * a11, m21 = l21 * a11 + l22 * a21, m22 = l22 * a22; return [m11 * m11, m11 * m21, m21 * m21 + m22 * m22];
+  }
+  function gbStart(X, n, K, r) { const g = gInit(X, n, K, r); g.lw = new Float64Array(K).fill(-Math.log(K)); return g; }
+  function gbZ(X, n, g, r) {                 // sample every point's cluster from its conditional distribution
+    const K = g.K, z = new Int32Array(n), l = new Float64Array(K);
+    for (let i = 0; i < n; i++) {
+      let mx = -Infinity; for (let k = 0; k < K; k++) { l[k] = g.lw[k] + logPdf(X[2 * i], X[2 * i + 1], g.mu, g.cov, k); if (l[k] > mx) mx = l[k]; }
+      let s = 0; for (let k = 0; k < K; k++) { l[k] = Math.exp(l[k] - mx); s += l[k]; } let u = r() * s, b = K - 1; for (let k = 0; k < K; k++) { u -= l[k]; if (u < 0) { b = k; break; } } z[i] = b;
+    }
+    return z;
+  }
+  function gbTheta(X, n, z, K, P, r) {       // sample weights, centres and covariances given the assignments
+    const R = new Float64Array(n * K); for (let i = 0; i < n; i++) R[i * K + z[i]] = 1;
+    const q = bPost(bStats(X, n, R, K, P), K, P), mu = new Float64Array(2 * K), cov = new Float64Array(3 * K), lw = new Float64Array(K), w = new Float64Array(K);
+    let mx = -Infinity; for (let k = 0; k < K; k++) { lw[k] = gammaLog(q.alpha[k], r); if (lw[k] > mx) mx = lw[k]; }
+    let s = 0; for (let k = 0; k < K; k++) s += Math.exp(lw[k] - mx); const ls = mx + Math.log(s); for (let k = 0; k < K; k++) { lw[k] -= ls; w[k] = Math.exp(lw[k]); }
+    for (let k = 0; k < K; k++) {
+      const L = wishart2([q.W[3 * k], q.W[3 * k + 1], q.W[3 * k + 2]], q.nu[k], r), S = inv2(L);
+      cov[3 * k] = S[0]; cov[3 * k + 1] = S[1]; cov[3 * k + 2] = S[2];
+      const s11 = Math.sqrt(S[0] / q.beta[k]), s21 = S[1] / q.beta[k] / s11, s22 = Math.sqrt(Math.max(1e-300, S[2] / q.beta[k] - s21 * s21)), z1 = gauss(r), z2 = gauss(r);
+      mu[2 * k] = q.m[2 * k] + s11 * z1; mu[2 * k + 1] = q.m[2 * k + 1] + s21 * z1 + s22 * z2;
+    }
+    return {mu, cov, w, lw, K, Nk: q.Nk};
+  }
+
+  /* ---------- PCA on a 3D cloud ---------- */
+  const PCA_SETS = {
+    disc: {name: "Flat disc, tilted", sd: [2.3, 1.3, 0.3]},
+    cigar: {name: "Cigar", sd: [2.5, 0.65, 0.5]},
+    ball: {name: "Round ball", sd: [1.5, 1.5, 1.5]},
+    hidden: {name: "Two groups split along a thin direction", sd: [2.3, 1.5, 0.5], groups: true}
+  };
+  function matMul(A, B) { const C = new Array(9).fill(0); for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) for (let k = 0; k < 3; k++) C[3 * i + j] += A[3 * i + k] * B[3 * k + j]; return C; }
+  function rotX(a) { const c = Math.cos(a), s = Math.sin(a); return [1, 0, 0, 0, c, -s, 0, s, c]; }
+  function rotY(a) { const c = Math.cos(a), s = Math.sin(a); return [c, 0, s, 0, 1, 0, -s, 0, c]; }
+  function rotZ(a) { const c = Math.cos(a), s = Math.sin(a); return [c, -s, 0, s, c, 0, 0, 0, 1]; }
+  const TILT = matMul(rotZ(0.7), matMul(rotY(0.5), rotX(0.9)));       // fixed rotation so the cloud's axes are not the coordinate axes
+  function makeCloud(name, n, r) {          // points come in mirror pairs (p and -p about the centre), so the cloud is exactly balanced about its centre
+    const spec = PCA_SETS[name], half = Math.floor(n / 2); n = 2 * half; const P = new Float64Array(3 * n), c = new Float64Array(n);
+    for (let j = 0; j < half; j++) {
+      const g = [spec.sd[0] * gauss(r), spec.sd[1] * gauss(r), spec.sd[2] * gauss(r)], grp = j % 2;
+      if (spec.groups) g[2] = (grp ? 1 : -1) * 0.9 + 0.25 * gauss(r);          // two groups differ only along the third (thin) axis
+      for (let s = 0; s < 2; s++) {
+        const sg = s ? -1 : 1, i = 2 * j + s;
+        for (let a = 0; a < 3; a++) P[3 * i + a] = sg * (TILT[3 * a] * g[0] + TILT[3 * a + 1] * g[1] + TILT[3 * a + 2] * g[2]);
+        c[i] = spec.groups ? (s ? 1 - grp : grp) : sg * g[0];                  // colour: the group, or position along the longest axis
+      }
+    }
+    if (!spec.groups) { let lo = Infinity, hi = -Infinity; for (let i = 0; i < n; i++) { lo = Math.min(lo, c[i]); hi = Math.max(hi, c[i]); } for (let i = 0; i < n; i++) c[i] = (c[i] - lo) / (hi - lo); }
+    return {P, c, n};
+  }
+  function jacobi3(A) {                     // eigen-decomposition of a symmetric 3x3 matrix (rows of A, flat 9)
+    const a = A.slice(), V = [1, 0, 0, 0, 1, 0, 0, 0, 1];
+    for (let sweep = 0; sweep < 60; sweep++) {
+      let off = Math.abs(a[1]) + Math.abs(a[2]) + Math.abs(a[5]); if (off < 1e-15) break;
+      for (const [p, q] of [[0, 1], [0, 2], [1, 2]]) {
+        const apq = a[3 * p + q]; if (Math.abs(apq) < 1e-300) continue;
+        const th = (a[3 * q + q] - a[3 * p + p]) / (2 * apq), t = Math.sign(th || 1) / (Math.abs(th) + Math.sqrt(th * th + 1)), c = 1 / Math.sqrt(t * t + 1), s = t * c;
+        for (let k = 0; k < 3; k++) { const akp = a[3 * k + p], akq = a[3 * k + q]; a[3 * k + p] = c * akp - s * akq; a[3 * k + q] = s * akp + c * akq; }
+        for (let k = 0; k < 3; k++) { const apk = a[3 * p + k], aqk = a[3 * q + k]; a[3 * p + k] = c * apk - s * aqk; a[3 * q + k] = s * apk + c * aqk; }
+        for (let k = 0; k < 3; k++) { const vkp = V[3 * k + p], vkq = V[3 * k + q]; V[3 * k + p] = c * vkp - s * vkq; V[3 * k + q] = s * vkp + c * vkq; }
+      }
+    }
+    const ev = [a[0], a[4], a[8]], ord = [0, 1, 2].sort((i, j) => ev[j] - ev[i]);
+    return {values: ord.map(i => ev[i]), vectors: ord.map(i => [V[i], V[3 + i], V[6 + i]])};   // vectors[j] = j-th eigenvector (unit)
+  }
+  function pcaFit(P, n) {
+    const m = [0, 0, 0]; for (let i = 0; i < n; i++) for (let a = 0; a < 3; a++) m[a] += P[3 * i + a] / n;
+    const C = new Array(9).fill(0); for (let i = 0; i < n; i++) for (let a = 0; a < 3; a++) for (let b = 0; b < 3; b++) C[3 * a + b] += (P[3 * i + a] - m[a]) * (P[3 * i + b] - m[b]) / (n - 1);
+    const e = jacobi3(C); for (const v of e.vectors) { let k = 0; for (let a = 1; a < 3; a++) if (Math.abs(v[a]) > Math.abs(v[k])) k = a; if (v[k] < 0) for (let a = 0; a < 3; a++) v[a] = -v[a]; }   // sign: largest component positive
+    return {mean: m, cov: C, values: e.values, vectors: e.vectors};
+  }
+  // plane through the mean with normal n(theta, phi); (u, v) is an orthonormal basis of the plane
+  function planeBasis(theta, phi) {
+    const ct = Math.cos(theta), st = Math.sin(theta), cp = Math.cos(phi), sp = Math.sin(phi);
+    return {n: [st * cp, st * sp, ct], u: [ct * cp, ct * sp, -st], v: [-sp, cp, 0]};
+  }
+  const quad = (C, a) => { let s = 0; for (let i = 0; i < 3; i++) for (let j = 0; j < 3; j++) s += a[i] * C[3 * i + j] * a[j]; return s; };
+  function captured(C, u, v) { return quad(C, u) + quad(C, v); }           // variance kept by projecting onto the plane (u, v)
+  function anglesOfNormal(nv) { let n = nv.slice(); if (n[2] < 0) n = n.map(x => -x); return {theta: Math.acos(Math.max(-1, Math.min(1, n[2]))), phi: Math.atan2(n[1], n[0])}; }
+
+  return {digamma, lgamma, bPrior, bStats, bPost, viInit, viE, viM, viElbo, viToG, viLogs, gammaLog, wishart2, gbStart, gbZ, gbTheta, rng, gauss, DATASETS, makeData, pickCenters, kAssign, kUpdate, inertiaOf, REG, gInit, gE, gM, ellipse, logPdf, PCA_SETS, makeCloud, pcaFit, planeBasis, captured, anglesOfNormal, jacobi3};
+})();
+if (typeof module !== "undefined") module.exports = CL;
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const CC = ["#0877bd", "#e8590c", "#2f9e44", "#7048e8", "#d6336c", "#b8860b", "#0c8599", "#8c5a2b", "#74b816", "#c92a2a"], A0S = [0.01, 0.1, 1, 10];
+const CRGB = CC.map(h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)));
+const GREY = "#9aa5ad", XR = 5, YR = 3.75, MAXIT = 500, EM_TOL = 1e-6, PI = Math.PI;
+const S = {topic: "cluster", method: "km", cdata: "blobs", n: 240, K: 3, seed: 1, speed: "normal", running: false, lastT: 0,
+  X: null, y: null, nn: 0, C: null, lab: null, g: null, R: null, q: null, P: null, gr: null, trail: [], a0i: 1, phase: 0, iter: 0, hist: [], changed: null, converged: false, ver: 0, shade: null, shadeVer: -1,
+  pset: "disc", pn: 300, pseed: 1, cloud: null, fit: null, theta: 70 * PI / 180, phi: 30 * PI / 180, yaw: 0.7, pitch: 0.35, axes: true, lines: false, drag: null};
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const pct = v => (100 * v).toFixed(1) + "%";
+
+/* ======================= clustering ======================= */
+function loadData() { const d = CL.makeData(S.cdata, S.n, CL.rng(1)); S.X = d.X; S.y = d.y; S.nn = d.n; }
+function elboPP() { return CL.viElbo(S.X, S.nn, CL.viE(S.X, S.nn, S.q), S.q, S.P) / S.nn; }
+function actives() {                 // which clusters are in use (the Bayesian methods can leave some empty)
+  const K = S.K, a = new Array(K).fill(true);
+  if (S.method === "vi" && S.q) for (let k = 0; k < K; k++) a[k] = S.q.Nk[k] >= 1;
+  else if (S.method === "gibbs" && S.lab) { const c = new Array(K).fill(0); for (let i = 0; i < S.nn; i++) c[S.lab[i]]++; for (let k = 0; k < K; k++) a[k] = c[k] >= 1; }
+  return a;
+}
+function resetC() {
+  S.running = false; S.phase = 0; S.iter = 0; S.lab = null; S.R = null; S.changed = null; S.converged = false; S.trail = []; S.ver++;
+  const r = CL.rng(S.seed);
+  if (S.method === "km") { S.C = CL.pickCenters(S.X, S.nn, S.K, r); S.hist = [CL.inertiaOf(S.X, S.nn, S.C, S.K)]; }
+  else if (S.method === "gmm") { S.g = CL.gInit(S.X, S.nn, S.K, r); S.hist = [CL.gE(S.X, S.nn, S.g).ll]; }
+  else if (S.method === "vi") { S.P = CL.bPrior(S.X, S.nn, A0S[S.a0i]); S.q = CL.viInit(S.X, S.nn, S.K, r, S.P); S.g = CL.viToG(S.q); S.hist = [elboPP()]; }
+  else { S.P = CL.bPrior(S.X, S.nn, A0S[S.a0i]); S.g = CL.gbStart(S.X, S.nn, S.K, r); S.gr = CL.rng(S.seed + 1000); S.hist = [CL.gE(S.X, S.nn, S.g).ll]; }
+}
+const doneC = () => S.converged || S.iter >= MAXIT;
+function stepC() {
+  S.ver++;
+  if (S.method === "km") {
+    if (S.phase === 0) {
+      const a = CL.kAssign(S.X, S.nn, S.C, S.K); S.changed = S.lab ? a.lab.reduce((t, v, i) => t + (v !== S.lab[i] ? 1 : 0), 0) : S.nn;
+      const had = !!S.lab; S.lab = a.lab; S.phase = 1; if (had && S.changed === 0) { S.converged = true; S.running = false; }
+    } else { S.C = CL.kUpdate(S.X, S.nn, S.lab, S.K, S.C); S.iter++; S.hist.push(CL.inertiaOf(S.X, S.nn, S.C, S.K)); S.phase = 0; }
+  } else if (S.method === "gmm") {
+    if (S.phase === 0) { S.R = CL.gE(S.X, S.nn, S.g).R; S.phase = 1; }
+    else {
+      const prev = S.hist[S.hist.length - 1]; S.g = CL.gM(S.X, S.nn, S.R, S.K); S.iter++; const ll = CL.gE(S.X, S.nn, S.g).ll; S.hist.push(ll); S.phase = 0;
+      if (Math.abs(ll - prev) < EM_TOL) { S.converged = true; S.running = false; }
+    }
+  } else if (S.method === "vi") {
+    if (S.phase === 0) { S.R = CL.viE(S.X, S.nn, S.q); S.phase = 1; }
+    else {
+      const prev = S.hist[S.hist.length - 1]; S.q = CL.viM(S.X, S.nn, S.R, S.K, S.P); S.g = CL.viToG(S.q); S.iter++; const L = elboPP(); S.hist.push(L); S.phase = 0;
+      if (Math.abs(L - prev) < EM_TOL) { S.converged = true; S.running = false; }
+    }
+  } else {
+    if (S.phase === 0) { S.lab = CL.gbZ(S.X, S.nn, S.g, S.gr); S.phase = 1; }
+    else {
+      S.g = CL.gbTheta(S.X, S.nn, S.lab, S.K, S.P, S.gr); S.iter++; S.hist.push(CL.gE(S.X, S.nn, S.g).ll); S.phase = 0;
+      S.trail.push({mu: Float64Array.from(S.g.mu), act: actives()}); if (S.trail.length > 40) S.trail.shift();
+    }
+  }
+  if (S.iter >= MAXIT) S.running = false;
+}
+function centersNow() { return S.method === "km" ? S.C : S.g.mu; }
+function shadeCanvas() {
+  if (S.shade && S.shadeVer === S.ver) return S.shade; const GW_ = 120, GH_ = 90, c = S.shade || document.createElement("canvas"); c.width = GW_; c.height = GH_;
+  const ctx = c.getContext("2d"), im = ctx.createImageData(GW_, GH_), K = S.K, act = actives();
+  for (let j = 0; j < GH_; j++) for (let i = 0; i < GW_; i++) {
+    const x = -XR + (i + 0.5) / GW_ * 2 * XR, y = YR - (j + 0.5) / GH_ * 2 * YR; let b = 0, bv = Infinity;
+    if (S.method === "km") { for (let k = 0; k < K; k++) { const dx = x - S.C[2 * k], dy = y - S.C[2 * k + 1], d = dx * dx + dy * dy; if (d < bv) { bv = d; b = k; } } }
+    else { bv = -Infinity; for (let k = 0; k < K; k++) { if (!act[k]) continue; const l = Math.log(S.g.w[k]) + CL.logPdf(x, y, S.g.mu, S.g.cov, k); if (l > bv) { bv = l; b = k; } } }
+    const o = 4 * (j * GW_ + i), col = CRGB[b]; im.data[o] = col[0]; im.data[o + 1] = col[1]; im.data[o + 2] = col[2]; im.data[o + 3] = 38;
+  }
+  ctx.putImageData(im, 0, 0); S.shade = c; S.shadeVer = S.ver; return c;
+}
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+function drawScatter() {
+  const {c, w, h} = prep($("scatter")), sx = w / (2 * XR), X = x => (x + XR) * sx, Y = y => h / 2 - y * sx, K = S.K, gm = S.method !== "km", soft = S.method === "gmm" || S.method === "vi", act = actives();
+  const rad = Math.max(2.4, Math.min(3.6, 3.6 - (S.nn - 240) / 400));
+  c.imageSmoothingEnabled = true; c.drawImage(shadeCanvas(), 0, 0, w, h);
+  c.strokeStyle = "#eee"; c.lineWidth = 1; c.beginPath(); c.moveTo(X(0), 0); c.lineTo(X(0), h); c.moveTo(0, Y(0)); c.lineTo(w, Y(0)); c.stroke();
+  for (let i = 0; i < S.nn; i++) {
+    let col = GREY;
+    if (soft && S.R) { let r = 0, g = 0, b = 0; for (let k = 0; k < K; k++) { const p = S.R[i * K + k]; r += p * CRGB[k][0]; g += p * CRGB[k][1]; b += p * CRGB[k][2]; } col = `rgb(${r | 0},${g | 0},${b | 0})`; }
+    else if (!soft && S.lab) col = CC[S.lab[i]];
+    c.fillStyle = col; c.globalAlpha = 0.9; c.beginPath(); c.arc(X(S.X[2 * i]), Y(S.X[2 * i + 1]), rad, 0, 2 * PI); c.fill(); c.globalAlpha = 1; c.strokeStyle = "#fff"; c.lineWidth = 0.7; c.stroke();
+  }
+  if (S.method === "gibbs") for (const t of S.trail) for (let k = 0; k < K; k++) if (t.act[k]) { c.fillStyle = CC[k]; c.globalAlpha = 0.4; c.beginPath(); c.arc(X(t.mu[2 * k]), Y(t.mu[2 * k + 1]), 3.2, 0, 2 * PI); c.fill(); c.globalAlpha = 1; }
+  if (gm) for (let k = 0; k < K; k++) {
+    if (!act[k]) continue;
+    const e = CL.ellipse(S.g.cov, k), cx = X(S.g.mu[2 * k]), cy = Y(S.g.mu[2 * k + 1]);
+    c.strokeStyle = CC[k]; c.lineWidth = 2.4; c.setLineDash([]); c.beginPath(); c.ellipse(cx, cy, e.s1 * sx, e.s2 * sx, -e.ang, 0, 2 * PI); c.stroke();
+    c.lineWidth = 1.6; c.setLineDash([5, 4]); c.beginPath(); c.ellipse(cx, cy, 2 * e.s1 * sx, 2 * e.s2 * sx, -e.ang, 0, 2 * PI); c.stroke(); c.setLineDash([]);
+  }
+  const C = centersNow();
+  for (let k = 0; k < K; k++) {
+    if (!act[k]) continue; const cx = X(C[2 * k]), cy = Y(C[2 * k + 1]);
+    c.fillStyle = CC[k]; c.strokeStyle = "#fff"; c.lineWidth = 3; c.beginPath(); c.arc(cx, cy, 9.5, 0, 2 * PI); c.stroke(); c.fill(); c.strokeStyle = "#1b3b4f"; c.lineWidth = 1.5; c.stroke();
+    c.fillStyle = "#fff"; c.font = "bold 10px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(k + 1, cx, cy + 0.5);
+  }
+}
+function drawChartC() {
+  const {c, w, h} = prep($("chart")), km = S.method === "km", H = S.hist, L = 70, R = 10, T = 10, B = 42, PW = w - L - R, PH = h - T - B;
+  let lo = Math.min(...H), hi = Math.max(...H); if (hi - lo < 1e-9) { lo -= 0.5; hi += 0.5; } const pad = 0.08 * (hi - lo); lo -= pad; hi += pad;
+  const xmax = Math.max(10, Math.ceil(S.iter / 5) * 5), X = v => L + PW * v / xmax, Y = v => T + PH * (1 - (v - lo) / (hi - lo));
+  c.font = "10.5px Roboto,Arial,sans-serif"; c.fillStyle = "#888"; c.textAlign = "right"; c.textBaseline = "middle";
+  for (let i = 0; i <= 4; i++) { const v = lo + (hi - lo) * i / 4; c.strokeStyle = "#ececec"; c.beginPath(); c.moveTo(L, Y(v)); c.lineTo(L + PW, Y(v)); c.stroke(); c.fillText(km ? fm(v, 0) : fm(v, 3), L - 5, Y(v)); }
+  c.textBaseline = "top"; for (let i = 0; i <= 5; i++) { const v = xmax * i / 5; c.textAlign = i === 0 ? "left" : i === 5 ? "right" : "center"; c.fillText(Math.round(v), X(v), T + PH + 5); }
+  c.fillStyle = "#555"; c.font = "11.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "bottom"; c.fillText("Iteration", L + PW / 2, h - 2);
+  c.save(); c.translate(3, T + PH / 2); c.rotate(-PI / 2); c.textBaseline = "top"; c.fillText({km: "Sum of squared distances", gmm: "Average log-likelihood", vi: "ELBO per point", gibbs: "Average log-likelihood"}[S.method], 0, 0); c.restore();
+  c.strokeStyle = "#0877bd"; c.lineWidth = 2; c.beginPath(); H.forEach((v, i) => i ? c.lineTo(X(i), Y(v)) : c.moveTo(X(i), Y(v))); c.stroke();
+  c.fillStyle = "#0877bd"; H.forEach((v, i) => { c.beginPath(); c.arc(X(i), Y(v), H.length > 60 ? 1.5 : 3, 0, 2 * PI); c.fill(); });
+  $("charttitle").textContent = {km: "Sum of squared distances from each point to its centre (lower is better)", gmm: "Average log-likelihood of the data under the mixture (higher is better)", vi: "Evidence lower bound (ELBO) divided by the number of points (higher is better)", gibbs: "Average log-likelihood of the data under the current random draw (it fluctuates; there is no single best value)"}[S.method];
+  $("chartnote").textContent = S.method === "gibbs" ? "Horizontal axis: number of complete iterations (one draw of the assignments plus one draw of the parameters). The first point is the starting state." : "Horizontal axis: number of complete iterations (one assign/E-step plus one update/M-step). The first point is the starting state.";
+}
+function detailC() {
+  const km = S.method === "km", first = S.iter === 0 && S.phase === 0, K = S.K, used = actives().filter(Boolean).length; let t;
+  const hid = used < K ? ` ${K - used} cluster${K - used === 1 ? " is" : "s are"} no longer drawn: ${S.method === "vi" ? "claiming less than one point's worth of weight" : "no point chose them in this draw"}.` : "";
+  if (S.converged) t = km ? `<b>Converged.</b> In the last assignment no point changed cluster, so another update would not move any centre.` : S.method === "vi" ? `<b>Converged.</b> One more iteration changed the ELBO per point by less than ${EM_TOL.toExponential(0).replace("e-", "e−")}. ${used} of ${K} clusters are in use.${used < K ? " If the data really has fewer groups than K, that is the method working as intended; otherwise this start merged two groups, so try Restart." : ""}` : `<b>Converged.</b> One more iteration changed the average log-likelihood by less than ${EM_TOL.toExponential(0).replace("e-", "e−")}.`;
+  else if (S.iter >= MAXIT) t = S.method === "gibbs" ? `<b>Stopped</b> after ${MAXIT} iterations. Gibbs sampling has no point at which it is done: it keeps drawing. Press play to start again.` : `<b>Stopped</b> after ${MAXIT} iterations.`;
+  else if (km) t = first ? `<b>Start.</b> ${K} centres sit on randomly chosen data points. The shading shows which centre is nearest to each place. Next half-step: <b>assign</b> every point to its nearest centre.`
+    : S.phase === 1 ? `<b>Assigned.</b> Every point took the colour of its nearest centre${S.changed === S.nn ? "" : ` (${S.changed} point${S.changed === 1 ? "" : "s"} changed cluster)`}. Next half-step: <b>update</b> each centre to the mean of its points.`
+    : `<b>Updated.</b> Each centre moved to the mean of its points, and the shading moved with it. Next half-step: <b>assign</b> the points again.`;
+  else if (S.method === "gmm") t = first ? `<b>Start.</b> ${K} round Gaussians of equal size and weight sit on randomly chosen data points. Next half-step: <b>E-step</b>, work out how likely each Gaussian is to have produced each point.`
+    : S.phase === 1 ? `<b>E-step done.</b> Each dot is coloured by blending the cluster colours with its responsibilities, so a dot between two clusters looks mixed. Next half-step: <b>M-step</b>, refit every Gaussian using those responsibilities.`
+    : `<b>M-step done.</b> The Gaussians moved, stretched or turned to fit their points better. Next half-step: <b>E-step</b> again.`;
+  else if (S.method === "vi") t = first ? `<b>Start.</b> ${K} round Gaussians of equal size and weight sit on randomly chosen data points. Next half-step: <b>update the responsibilities</b>: how strongly each cluster claims each point.`
+    : S.phase === 1 ? `<b>Responsibilities updated.</b> Each dot is coloured by blending the cluster colours with its responsibilities. Next half-step: <b>update the parameters</b>: every cluster's centre, size and weight get a new distribution, built from the points it claims plus the prior.`
+    : `<b>Parameters updated.</b> The picture shows the average of each cluster's distribution.${hid} Next half-step: <b>update the responsibilities</b> again.`;
+  else t = first ? `<b>Start.</b> ${K} round Gaussians of equal size and weight sit on randomly chosen data points. Next half-step: <b>sample the assignments</b>: every point picks one cluster at random, with probabilities set by how likely each Gaussian is to have produced it.`
+    : S.phase === 1 ? `<b>Assignments sampled.</b> Every dot took a randomly drawn cluster, so a point between two clusters can switch from one iteration to the next. Next half-step: <b>sample the parameters</b>: draw new weights, centres and covariances at random, given these assignments and the prior.`
+    : `<b>Parameters sampled.</b> The Gaussians shown are one random draw, so they wobble from iteration to iteration; the faint dots mark where each centre was in the last 40 draws.${hid} Next half-step: <b>sample the assignments</b> again.`;
+  $("detail").innerHTML = t;
+}
+function progressC() {
+  const km = S.method === "km", last = S.hist[S.hist.length - 1], K = S.K, chg = S.hist.length > 1 ? (S.hist[S.hist.length - 1] - S.hist[S.hist.length - 2]).toExponential(1).replace("e-", "e−") : "&ndash;"; let h = "";
+  if (km) {
+    h += `<div class="sec">k-means</div><div>Iterations done</div><b>${S.iter}</b><div>Sum of squared distances</div><b>${fm(last, 1)}</b><div>Points that changed cluster, last assignment</div><b>${S.changed === null ? "&ndash;" : S.changed}</b>`;
+    const cnt = new Array(K).fill(0); if (S.lab) for (let i = 0; i < S.nn; i++) cnt[S.lab[i]]++;
+    h += `<div class="sec">Cluster sizes</div>`; for (let k = 0; k < K; k++) h += `<div><span style="color:${CC[k]}">&#9679;</span> cluster ${k + 1}</div><b>${S.lab ? cnt[k] : "&ndash;"}</b>`;
+  } else if (S.method === "gmm") {
+    h += `<div class="sec">Gaussian mixture (EM)</div><div>Iterations done</div><b>${S.iter}</b><div>Average log-likelihood</div><b>${fm(last, 4)}</b><div>Change in the last iteration</div><b>${chg}</b>`;
+    h += `<div class="sec">Weight of each Gaussian</div>`; for (let k = 0; k < K; k++) h += `<div><span style="color:${CC[k]}">&#9679;</span> Gaussian ${k + 1}</div><b>${fm(S.g.w[k], 3)}</b>`;
+  } else if (S.method === "vi") {
+    const used = actives().filter(Boolean).length;
+    h += `<div class="sec">Variational Inference</div><div>Iterations done</div><b>${S.iter}</b><div>ELBO per point</div><b>${fm(last, 4)}</b><div>Change in the last iteration</div><b>${chg}</b><div>Clusters in use (at least 1 point's weight)</div><b>${used} of ${K}</b>`;
+    h += `<div class="sec">Average weight and points of each Gaussian</div>`; for (let k = 0; k < K; k++) h += `<div><span style="color:${CC[k]}">&#9679;</span> Gaussian ${k + 1}</div><b>${fm(S.g.w[k], 3)} &middot; ${fm(S.q.Nk[k], 1)} pts</b>`;
+  } else {
+    const used = actives().filter(Boolean).length, tail = S.hist.slice(1).slice(-50), mean = tail.length ? tail.reduce((a, b) => a + b, 0) / tail.length : 0, cnt = new Array(K).fill(0); if (S.lab) for (let i = 0; i < S.nn; i++) cnt[S.lab[i]]++;
+    h += `<div class="sec">Gibbs sampling</div><div>Iterations done</div><b>${S.iter}</b><div>Average log-likelihood, this draw</div><b>${fm(last, 4)}</b><div>Mean over the last ${tail.length} draws</div><b>${tail.length ? fm(mean, 4) : "&ndash;"}</b><div>Clusters in use (at least 1 point)</div><b>${used} of ${K}</b>`;
+    h += `<div class="sec">Points in each cluster (this draw)</div>`; for (let k = 0; k < K; k++) h += `<div><span style="color:${CC[k]}">&#9679;</span> cluster ${k + 1}</div><b>${S.lab ? cnt[k] : "&ndash;"}</b>`;
+  }
+  $("nums").innerHTML = h;
+}
+function statusC() {
+  const nx = S.method === "km" ? (S.phase ? "update centres" : "assign points") : S.method === "gmm" ? (S.phase ? "M-step" : "E-step") : S.method === "vi" ? (S.phase ? "update parameters" : "update responsibilities") : (S.phase ? "sample parameters" : "sample assignments");
+  $("status").innerHTML = `Iteration ${S.iter} <small>&mdash; ${S.converged ? "converged" : S.iter >= MAXIT ? "stopped" : "next: " + nx}</small>`;
+  $("play").disabled = S.running; $("pause").disabled = !S.running; $("step").disabled = S.running;
+}
+/* ======================= PCA ======================= */
+function defaultView() {   // a three-quarter view: looks along a mix of the three principal axes
+  const v = S.fit.vectors; let d = [0, 1, 2].map(a => 0.5 * v[0][a] + 0.55 * v[1][a] + 0.7 * v[2][a]); const l = Math.hypot(...d); d = d.map(x => x / l); if (d[2] > 0) d = d.map(x => -x);
+  S.pitch = Math.asin(Math.max(-1, Math.min(1, -d[2]))); S.yaw = Math.atan2(d[0], d[1]);
+}
+function loadCloud() { S.cloud = CL.makeCloud(S.pset, S.pn, CL.rng(S.pseed)); S.fit = CL.pcaFit(S.cloud.P, S.cloud.n); defaultView(); }
+function ptColor(c) { const st = [[232, 89, 12], [142, 99, 201], [8, 119, 189]], t = Math.max(0, Math.min(1, c)) * 2, i = Math.min(1, Math.floor(t)), f = t - i, a = st[i], b = st[i + 1]; return `rgb(${(a[0] + (b[0] - a[0]) * f) | 0},${(a[1] + (b[1] - a[1]) * f) | 0},${(a[2] + (b[2] - a[2]) * f) | 0})`; }
+function cam(v) {
+  const cy = Math.cos(S.yaw), sy = Math.sin(S.yaw), cp = Math.cos(S.pitch), sp = Math.sin(S.pitch);
+  const x1 = v[0] * cy - v[1] * sy, y1 = v[0] * sy + v[1] * cy, y2 = y1 * cp - v[2] * sp, z2 = y1 * sp + v[2] * cp; return [x1, -z2, y2];
+}
+const dot3 = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+function planeNow() { return CL.planeBasis(S.theta, S.phi); }
+function draw3D() {
+  const {c, w, h} = prep($("c3d")), s = w / 15, cx = w / 2, cy = h / 2, P = S.cloud.P, n = S.cloud.n, m = S.fit.mean, B = planeNow();
+  const sc = v => { const q = cam(v); return [cx + s * q[0], cy + s * q[1], q[2]]; };
+  const cyw = Math.cos(S.yaw), syw = Math.sin(S.yaw), cpw = Math.cos(S.pitch), spw = Math.sin(S.pitch), dW = [syw * cpw, cyw * cpw, -spw];
+  const camSide = -dot3(dW, B.n), pts = [];
+  for (let i = 0; i < n; i++) { const q = [P[3 * i] - m[0], P[3 * i + 1] - m[1], P[3 * i + 2] - m[2]], sp = sc(q), side = dot3(q, B.n) * camSide; pts.push({i, q, x: sp[0], y: sp[1], d: sp[2], front: side > 0}); }
+  const drawPts = list => { list.sort((a, b) => b.d - a.d); for (const p of list) { c.fillStyle = ptColor(S.cloud.c[p.i]); c.beginPath(); c.arc(p.x, p.y, 3.2, 0, 2 * PI); c.fill(); c.strokeStyle = "rgba(255,255,255,.8)"; c.lineWidth = 0.6; c.stroke(); } };
+  drawPts(pts.filter(p => !p.front));
+  if (S.lines) { c.strokeStyle = "rgba(60,70,80,.38)"; c.lineWidth = 1; c.beginPath(); for (const p of pts) { const t = dot3(p.q, B.n), pr = sc([p.q[0] - t * B.n[0], p.q[1] - t * B.n[1], p.q[2] - t * B.n[2]]); c.moveTo(p.x, p.y); c.lineTo(pr[0], pr[1]); } c.stroke(); }
+  const E = 5.2, cor = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(([a, b]) => sc([E * (a * B.u[0] + b * B.v[0]), E * (a * B.u[1] + b * B.v[1]), E * (a * B.u[2] + b * B.v[2])]));
+  c.fillStyle = "rgba(8,119,189,0.11)"; c.strokeStyle = "#0877bd"; c.lineWidth = 1.6; c.beginPath(); cor.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1])); c.closePath(); c.fill(); c.stroke();
+  c.strokeStyle = "rgba(8,119,189,0.28)"; c.lineWidth = 1; c.beginPath();
+  for (const t of [-0.5, 0, 0.5]) { const a = sc([E * (t * B.u[0] - B.v[0]), E * (t * B.u[1] - B.v[1]), E * (t * B.u[2] - B.v[2])]), b = sc([E * (t * B.u[0] + B.v[0]), E * (t * B.u[1] + B.v[1]), E * (t * B.u[2] + B.v[2])]); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]);
+    const a2 = sc([E * (-B.u[0] + t * B.v[0]), E * (-B.u[1] + t * B.v[1]), E * (-B.u[2] + t * B.v[2])]), b2 = sc([E * (B.u[0] + t * B.v[0]), E * (B.u[1] + t * B.v[1]), E * (B.u[2] + t * B.v[2])]); c.moveTo(a2[0], a2[1]); c.lineTo(b2[0], b2[1]); }
+  c.stroke();
+  drawPts(pts.filter(p => p.front));
+  if (S.axes) S.fit.vectors.forEach((v, k) => {
+    const L = 2.3 * Math.sqrt(S.fit.values[k]), a = sc([-L * v[0], -L * v[1], -L * v[2]]), b = sc([L * v[0], L * v[1], L * v[2]]);
+    c.strokeStyle = "#1b3b4f"; c.lineWidth = [3.2, 2.6, 2.2][k]; c.beginPath(); c.moveTo(a[0], a[1]); c.lineTo(b[0], b[1]); c.stroke();
+    c.fillStyle = "#1b3b4f"; c.font = "bold 12px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; const dx = b[0] - a[0], dy = b[1] - a[1], l = Math.hypot(dx, dy) || 1; c.fillText("PC" + (k + 1), b[0] + 14 * dx / l, b[1] + 14 * dy / l);
+  });
+}
+function draw2D() {
+  const {c, w, h} = prep($("c2d")), s = w / 16, cx = w / 2, cy = h / 2, P = S.cloud.P, n = S.cloud.n, m = S.fit.mean, B = planeNow();
+  c.strokeStyle = "#e4e4e4"; c.lineWidth = 1; c.beginPath(); c.moveTo(0, cy); c.lineTo(w, cy); c.moveTo(cx, 0); c.lineTo(cx, h); c.stroke();
+  for (let i = 0; i < n; i++) { const q = [P[3 * i] - m[0], P[3 * i + 1] - m[1], P[3 * i + 2] - m[2]]; c.fillStyle = ptColor(S.cloud.c[i]); c.globalAlpha = 0.9; c.beginPath(); c.arc(cx + s * dot3(q, B.u), cy - s * dot3(q, B.v), 3.2, 0, 2 * PI); c.fill(); c.globalAlpha = 1; c.strokeStyle = "rgba(255,255,255,.8)"; c.lineWidth = 0.6; c.stroke(); }
+}
+function pcaNums() {
+  const f = S.fit, B = planeNow(), tot = f.values[0] + f.values[1] + f.values[2], cap = CL.captured(f.cov, B.u, B.v), best = f.values[0] + f.values[1];
+  let h = `<div class="vbar"><span>Variance along PC1</span><span class="tr"><span class="fl" style="width:${100 * f.values[0] / tot}%"></span></span><b>${pct(f.values[0] / tot)}</b>`;
+  h += `<span>Variance along PC2</span><span class="tr"><span class="fl" style="width:${100 * f.values[1] / tot}%"></span></span><b>${pct(f.values[1] / tot)}</b>`;
+  h += `<span>Variance along PC3</span><span class="tr"><span class="fl" style="width:${100 * f.values[2] / tot}%"></span></span><b>${pct(f.values[2] / tot)}</b>`;
+  h += `<span><b style="text-align:left;color:#e8590c">Kept by your plane</b></span><span class="tr"><span class="fl o" style="width:${100 * cap / tot}%"></span><span class="mk" style="left:${100 * best / tot}%"></span></span><b>${pct(cap / tot)}</b></div>`;
+  $("pbars").innerHTML = h;
+  $("pnote").innerHTML = `The dark tick marks the most any plane can keep (PC1 + PC2: ${pct(best / tot)}). Your plane loses ${pct(1 - cap / tot)} of the variance; the best plane loses ${pct(f.values[2] / tot)}.` +
+    (S.pset === "hidden" ? ` <b>Colours:</b> the two groups differ only along PC3.` : S.pset === "ball" ? ` The three principal axes are almost equally long, so their order is largely chance.` : ` <b>Colours:</b> position along the longest axis.`);
+  let g = `<div class="sec">Variance along each principal axis</div>`;
+  f.values.forEach((v, k) => { g += `<div>PC${k + 1}</div><b>${fm(v, 2)} (${pct(v / tot)})</b>`; });
+  g += `<div class="sec">Your plane</div><div>Variance kept</div><b>${fm(cap, 2)} (${pct(cap / tot)})</b><div>Variance lost</div><b>${fm(tot - cap, 2)} (${pct(1 - cap / tot)})</b>`;
+  g += `<div class="sec">Best possible plane</div><div>Variance kept</div><b>${fm(best, 2)} (${pct(best / tot)})</b><div>Variance lost</div><b>${fm(f.values[2], 2)} (${pct(f.values[2] / tot)})</b>`;
+  $("nums").innerHTML = g;
+}
+function drawP() { draw3D(); draw2D(); pcaNums(); $("thv").textContent = Math.round(S.theta * 180 / PI) + "°"; $("phv").textContent = Math.round(S.phi * 180 / PI) + "°"; }
+
+/* ======================= common ======================= */
+function drawC() { drawScatter(); drawChartC(); detailC(); progressC(); statusC(); }
+function draw() { if (S.topic === "cluster") drawC(); else drawP(); }
+function frame(ts) {
+  requestAnimationFrame(frame); if (!S.running || S.topic !== "cluster") return;
+  const gap = {slow: 900, normal: 400, fast: 0}[S.speed], per = S.speed === "fast" ? 2 : 1; if (ts - S.lastT < gap) return; S.lastT = ts; for (let i = 0; i < per && S.running; i++) stepC(); drawC();
+}
+$("play").onclick = () => { if (S.running) return; if (doneC()) resetC(); S.running = true; S.lastT = 0; drawC(); };
+$("pause").onclick = () => { S.running = false; drawC(); };
+$("reset").onclick = () => { resetC(); drawC(); };
+$("step").onclick = () => { if (S.running) return; if (doneC()) resetC(); stepC(); drawC(); };
+$("speed").onchange = () => { S.speed = $("speed").value; };
+
+Object.entries(CL.DATASETS).forEach(([k, v]) => { const o = document.createElement("option"); o.value = k; o.textContent = v.name; $("cdata").appendChild(o); });
+Object.entries(CL.PCA_SETS).forEach(([k, v]) => { const o = document.createElement("option"); o.value = k; o.textContent = v.name; $("pdata").appendChild(o); });
+function syncSliders() { $("a0s").value = S.a0i; $("a0v").textContent = A0S[S.a0i]; $("n").value = S.n; $("nv").textContent = S.n; $("K").value = S.K; $("kv").textContent = S.K; $("theta").value = Math.round(S.theta * 180 / PI); $("phi").value = Math.round(S.phi * 180 / PI); }
+$("cdata").onchange = () => { S.cdata = $("cdata").value; S.K = CL.DATASETS[S.cdata].K; loadData(); resetC(); syncSliders(); drawC(); };
+$("n").oninput = () => { S.n = +$("n").value; $("nv").textContent = S.n; loadData(); resetC(); drawC(); };
+$("K").oninput = () => { S.K = +$("K").value; $("kv").textContent = S.K; resetC(); drawC(); };
+$("seed").onclick = () => { S.seed++; resetC(); drawC(); };
+$("a0s").oninput = () => { S.a0i = +$("a0s").value; $("a0v").textContent = A0S[S.a0i]; resetC(); drawC(); };
+document.querySelectorAll("input[name=method]").forEach(r => r.onchange = () => { if (!r.checked) return; S.method = r.value; $("lgell").style.display = S.method !== "km" ? "" : "none"; $("lgtrail").style.display = S.method === "gibbs" ? "" : "none"; $("bset").style.display = S.method === "vi" || S.method === "gibbs" ? "" : "none"; resetC(); drawC(); });
+document.querySelectorAll("input[name=topic]").forEach(r => r.onchange = () => {
+  if (!r.checked) return; S.topic = r.value; S.running = false; const cl = S.topic === "cluster";
+  $("cview").style.display = cl ? "" : "none"; $("cchart").style.display = cl ? "" : "none"; $("pview").style.display = cl ? "none" : ""; $("cset").style.display = cl ? "" : "none"; $("pset").style.display = cl ? "none" : ""; $("bar").style.display = cl ? "" : "none"; $("pbar").style.display = cl ? "none" : ""; draw();
+});
+$("pdata").onchange = () => { S.pset = $("pdata").value; loadCloud(); drawP(); };
+$("pseed").onclick = () => { S.pseed++; loadCloud(); drawP(); };
+$("theta").oninput = () => { S.theta = +$("theta").value * PI / 180; drawP(); };
+$("phi").oninput = () => { S.phi = +$("phi").value * PI / 180; drawP(); };
+$("snap").onclick = () => { const a = CL.anglesOfNormal(S.fit.vectors[2]); S.theta = a.theta; S.phi = (a.phi + 2 * PI) % (2 * PI); syncSliders(); drawP(); };
+$("showaxes").onchange = () => { S.axes = $("showaxes").checked; drawP(); };
+$("showlines").onchange = () => { S.lines = $("showlines").checked; drawP(); };
+$("rview").onclick = () => { defaultView(); drawP(); };
+const c3 = $("c3d");
+c3.addEventListener("pointerdown", e => { S.drag = {x: e.clientX, y: e.clientY}; c3.classList.add("drag"); try { c3.setPointerCapture(e.pointerId); } catch (x) {} });
+c3.addEventListener("pointermove", e => { if (!S.drag) return; S.yaw += (e.clientX - S.drag.x) * 0.008; S.pitch = Math.max(-1.45, Math.min(1.45, S.pitch + (e.clientY - S.drag.y) * 0.008)); S.drag = {x: e.clientX, y: e.clientY}; draw3D(); });
+const endDrag = () => { S.drag = null; c3.classList.remove("drag"); };
+c3.addEventListener("pointerup", endDrag); c3.addEventListener("pointercancel", endDrag);
+window.addEventListener("resize", draw);
+
+loadData(); loadCloud(); resetC(); syncSliders(); $("cdata").value = S.cdata; $("lgell").style.display = "none"; drawC(); requestAnimationFrame(frame);
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>
