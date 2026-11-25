@@ -18,9 +18,9 @@ nav: false
 <div class="sb-card-body">
 <h3 class="sb-card-title">{{ g.title }}</h3>
 <div class="sb-dl">
-<a href="{{ base | append: '-1x.png' | relative_url }}" download="{{ g.title }}@1x.png"><span aria-hidden="true">↓</span> Download .png</a>
-<a href="{{ base | append: '-2x.png' | relative_url }}" download="{{ g.title }}@2x.png"><span aria-hidden="true">↓</span> Download HQ image</a>
-<a href="{{ base | append: '.pdf' | relative_url }}" download="{{ g.title }}.pdf"><span aria-hidden="true">↓</span> Download .pdf</a>
+<a class="sb-btn sb-btn-primary" href="{{ base | append: '-1x.png' | relative_url }}" download="{{ g.title }}@1x.png"><span aria-hidden="true">↓</span> Download .png</a>
+<a class="sb-btn sb-btn-secondary" href="{{ base | append: '-2x.png' | relative_url }}" download="{{ g.title }}@2x.png"><span aria-hidden="true">↓</span> Download HQ image</a>
+<a class="sb-btn sb-btn-primary" href="{{ base | append: '.pdf' | relative_url }}" download="{{ g.title }}.pdf"><span aria-hidden="true">↓</span> Download .pdf</a>
 </div>
 </div>
 </article>

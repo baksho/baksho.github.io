@@ -14,3 +14,5 @@ _data/citations.yml
 assets/playgrounds/*.html
 # uses a Jekyll variable include ({% include {{ note_file }} %}) that the liquid plugin would rewrite
 _layouts/note.liquid
+# flat HTML on purpose: indented HTML inside a Markdown page becomes a code block
+_includes/courses.liquid

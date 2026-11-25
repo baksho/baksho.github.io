@@ -157,7 +157,7 @@ collections:
   projects:
     output: true
   teachings:
-    output: true
+    output: false # courses are listed on /teaching/ only; they have no page of their own
 
 # -----------------------------------------------------------------------------
 # Jekyll settings

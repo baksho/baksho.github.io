@@ -59,6 +59,12 @@ layout: default
 </section>
 
 <!-- The page itself. The name, role line and icons above fly into the three slots below as you scroll. -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <filter id="sbRough" x="-5%" y="-40%" width="110%" height="180%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.045 0.28" numOctaves="2" seed="7" result="n"/>
+    <feDisplacementMap in="SourceGraphic" in2="n" scale="3.6" xChannelSelector="R" yChannelSelector="G"/>
+  </filter>
+</svg>
 <div class="container sb-body">
   <div class="post">
     <header class="post-header sb-dockhead">
@@ -66,15 +72,15 @@ layout: default
         <h1 class="post-title sb-trav sb-trav-name" data-kind="name" data-ph="sbPhName">
           <span class="first font-weight-bold">{{ site.first_name }}</span><span class="last"> {{ site.last_name }}</span>
           {% assign fn = site.first_name %}
-          {% assign fn_head = fn | size | minus: 3 %}
-          <!-- hero-only version: serif, full stop, hand-drawn underline under the last letters -->
+          {% assign fn_head = fn | size | minus: 4 %}
+          <!-- hero-only version: serif, full stop, hand-drawn marker highlight over the lower part of the last letters -->
           <span class="sb-serif" aria-hidden="true">
             {{- fn | slice: 0, fn_head -}}
             <span class="sb-ul">
-              {{- fn | slice: fn_head, 3 }}
+              {{- fn | slice: fn_head, 4 }}
               <svg viewBox="0 0 108 30" preserveAspectRatio="none" focusable="false">
-                <path class="u1" pathLength="1" d="M4 10C28 7.5 62 9.5 103 7.5"/>
-                <path class="u2" pathLength="1" d="M8 21C34 19 70 21 98 18.5"/>
+                <path class="u1" pathLength="1" d="M2 7.5C14 3.6 28 10.6 48 6.4S86 2.8 106 6.2"/>
+                <path class="u2" pathLength="1" d="M101 19.4C84 16 62 21.4 42 18.2S14 17.6 8 20.4"/>
               </svg></span
             >.</span
           >

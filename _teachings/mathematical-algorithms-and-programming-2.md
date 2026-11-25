@@ -1,7 +1,10 @@
 ---
 layout: course
 title: Mathematical Algorithms and Programming 2
-description: Teaching assistant (Student Hilfswissenschaftler) at the Institut für Analysis und Algebra, TU Braunschweig. I led tutorials and graded assignments.
+role: Teaching assistant (Student Hilfswissenschaftler)
+institution: Institut für Analysis und Algebra, TU Braunschweig
+level: Bachelor
+description: Led tutorials and graded assignments.
 year: 2025
 term: Summer semester 2025
 location: TU Braunschweig, Germany

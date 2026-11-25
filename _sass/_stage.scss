@@ -78,14 +78,15 @@
       color: var(--global-text-color);
       white-space: nowrap;
     }
-    // full stop after the name, in the slowly cycling colour
+    // blinking underscore after the name, like the prompt on the landing page, in the slowly cycling colour
     .sb-dot {
       display: inline-block;
-      width: 5px;
-      height: 5px;
-      margin-left: 2px;
-      border-radius: 50%;
-      background: var(--sb-c1, #5af0b8);
+      margin-left: 1px;
+      font-family: var(--sb-mono);
+      font-weight: 700;
+      line-height: 1;
+      color: var(--sb-c1, #5af0b8);
+      animation: sb-blink 1.05s steps(1, end) infinite;
     }
     &:hover .sb-logo {
       transform: scale(1.06);
@@ -707,6 +708,8 @@ html.sb-reveal .sb-hero::after {
   line-height: 1.4;
   color: var(--global-text-color);
   margin: 0 0 4px;
+  position: relative;
+  top: 9px; // sits a little lower, closer to the name (visual only, the layout does not move)
 }
 // invisible stand-ins: they hold the room in the hero and tell the script where each traveller starts
 .sb-ph {
@@ -728,14 +731,14 @@ html.sb-reveal .sb-hero::after {
 }
 .sb-ph-icons {
   height: 24px;
-  margin-top: 34px;
+  margin-top: 22px;
 }
 .sb-bio {
   font-size: clamp(14px, 1.1vw, 16.5px);
-  line-height: 1.85;
+  line-height: 1.6;
   color: var(--global-text-color-light);
   max-width: 480px;
-  margin: 0 0 30px;
+  margin: 0 0 20px;
 }
 .sb-actions {
   display: flex;
@@ -869,23 +872,24 @@ html.sb-reveal .sb-hero::after {
     display: inline-block;
     svg {
       position: absolute;
-      left: -3%;
-      bottom: -0.15em;
-      width: 106%;
+      left: -2%;
+      bottom: -0.09em;
+      width: 104%;
       height: 0.46em;
       overflow: visible;
     }
     path {
       fill: none;
       stroke: var(--c, #5af0b8);
-      stroke-linecap: round;
+      stroke-linecap: butt;
       stroke-linejoin: round;
-      stroke-opacity: 0.5;
+      stroke-opacity: 0.42;
+      filter: url(#sbRough);
       stroke-dasharray: 1;
       stroke-dashoffset: 1;
     }
     .u1 {
-      stroke-width: 10;
+      stroke-width: 13;
     }
     .u2 {
       stroke-width: 8;

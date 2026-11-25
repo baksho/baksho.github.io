@@ -2,65 +2,79 @@
  * Teachings/Courses styles
  *****************************/
 
-.courses {
-  margin-top: 30px;
-}
+/* Teaching page: a year label on the left, courses as plain rows on the right (no cards, no links) */
 
-.year {
-  margin-top: 40px;
-  margin-bottom: 20px;
-  border-bottom: 1px solid var(--global-divider-color);
-  padding-bottom: 10px;
+.sb-teach {
+  margin-top: 1.6rem;
 }
-
-.course-list {
+.sb-teach-year {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 20px;
+  grid-template-columns: 5.5rem 1fr;
+  gap: 1.2rem;
+  padding: 1.6rem 0;
+  border-top: 1px solid var(--global-divider-color);
 }
-
-.course-item {
-  border: 1px solid var(--global-divider-color);
-  border-radius: 5px;
-  padding: 15px;
-  background-color: var(--global-bg-color);
-  transition: transform 0.2s ease-in-out;
-
-  &:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-  }
-}
-
-.course-title {
-  margin-top: 0;
-  margin-bottom: 10px;
-}
-
-.course-meta {
-  font-size: 0.9rem;
+.sb-teach-yr {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
   color: var(--global-text-color-light);
-  margin-bottom: 10px;
 }
-
-.course-term,
-.course-instructor {
-  margin-right: 15px;
+.sb-teach-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.8rem;
 }
-
-.course-description {
-  font-size: 0.9rem;
-  margin-bottom: 15px;
-
-  p {
-    margin-bottom: 0;
+.sb-teach-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.45rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  color: var(--global-text-color-light);
+}
+.sb-teach-level {
+  padding: 0.14rem 0.6rem;
+  border: 1px solid var(--global-text-color-light);
+  border-radius: 999px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-size: 0.64rem;
+  color: var(--global-text-color);
+}
+.sb-teach-title {
+  margin: 0 0 0.3rem;
+  font-size: 1.2rem;
+  font-weight: 650;
+  line-height: 1.35;
+  color: var(--global-text-color);
+}
+.sb-teach-role {
+  margin: 0 0 0.3rem;
+  font-size: 0.92rem;
+  color: var(--global-text-color-light);
+}
+.sb-teach-desc {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--global-text-color);
+}
+@media (max-width: 575px) {
+  .sb-teach-year {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
   }
 }
 
 .course-info {
   margin-bottom: 30px;
 }
-
 .course-schedule {
   margin-bottom: 30px;
 }

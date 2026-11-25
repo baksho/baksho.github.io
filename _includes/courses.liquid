@@ -1,37 +1,28 @@
-{% if site.teachings %}
-  <div class="courses">
-    {% assign courses_by_year = site.teachings | sort: 'year' | reverse | group_by: 'year' %}
-
-    {% for year_group in courses_by_year %}
-      <h2 class="year">{{ year_group.name }}</h2>
-      <div class="course-list">
-        {% assign year_courses = year_group.items | sort: 'term' %}
-        {% for course in year_courses %}
-          <div class="course-item">
-            <h3 class="course-title">
-              <a href="{{ course.url | relative_url }}">{{ course.title }}</a>
-            </h3>
-
-            <div class="course-meta">
-              {% if course.term %}
-                <span class="course-term">{{ course.term }}</span>
-              {% endif %}
-
-              {% if course.instructor %}
-                <span class="course-instructor">{{ course.instructor }}</span>
-              {% endif %}
-            </div>
-
-            {% if course.description %}
-              <div class="course-description">
-                {{ course.description | markdownify }}
-              </div>
-            {% endif %}
-          </div>
-        {% endfor %}
-      </div>
-    {% endfor %}
-  </div>
-{% else %}
-  <p>No courses available yet.</p>
-{% endif %}
+{%- comment -%}
+  Teaching page. One entry per file in _teachings/. Front matter used: title, role, institution, level (Bachelor | Master), term, year, description.
+  The courses have no page of their own (collection output is off), so nothing here is a link.
+  The HTML is deliberately written without indentation or blank lines: indented HTML inside a Markdown page turns into a code block.
+{%- endcomment -%}
+{%- if site.teachings.size > 0 -%}
+<div class="sb-teach">
+{%- assign courses_by_year = site.teachings | sort: 'year' | reverse | group_by: 'year' -%}
+{%- for year_group in courses_by_year %}
+<section class="sb-teach-year">
+<h2 class="sb-teach-yr">{{ year_group.name }}</h2>
+<div class="sb-teach-list">
+{%- assign year_courses = year_group.items | sort: 'term' -%}
+{%- for course in year_courses %}
+<article class="sb-teach-item">
+<div class="sb-teach-tags">{% if course.level %}<span class="sb-teach-level">{{ course.level }} level</span>{% endif %}{% if course.term %}<span>{{ course.term }}</span>{% endif %}</div>
+<h3 class="sb-teach-title">{{ course.title }}</h3>
+<p class="sb-teach-role">{{ course.role }}{% if course.institution %}<span class="sb-teach-sep"> · </span>{{ course.institution }}{% endif %}</p>
+{% if course.description %}<p class="sb-teach-desc">{{ course.description }}</p>{% endif %}
+</article>
+{%- endfor %}
+</div>
+</section>
+{%- endfor %}
+</div>
+{%- else -%}
+<p>No courses yet.</p>
+{%- endif -%}

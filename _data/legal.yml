@@ -3,7 +3,8 @@
 # § 5 DDG requires a postal address at which you can be served (no P.O. box). A phone number is optional if the
 # email address is the direct contact; delete the "phone" line to hide it from the Impressum.
 name: Suvinava Basak
-street: Güldenstr. 8A
-postcode_city: 38100 Braunschweig
+street: "[Street and house number]"
+postcode_city: "[Postal code and city]"
 country: Germany
 email: suvinava.basak@outlook.com
+phone: "[Phone number]"
