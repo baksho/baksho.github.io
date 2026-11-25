@@ -159,7 +159,7 @@ ninja.data = [{
               window.location.href = "/projects/4_amr_transformers/";
             },},{id: "teachings-mathematical-algorithms-and-programming-2",
           title: 'Mathematical Algorithms and Programming 2',
-          description: "Teaching assistant (Student Hilfswissenschaftler) at the Institut für Analysis und Algebra, TU Braunschweig. I led tutorials and graded assignments.",
+          description: "Led tutorials and graded assignments.",
           section: "Teachings",handler: () => {
               window.location.href = "/teachings/mathematical-algorithms-and-programming-2/";
             },},{
