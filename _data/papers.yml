@@ -1,0 +1,23 @@
+# Research notes (shown on /notes/). One entry per paper; categories appear in the order of _data/paper_categories.yml.
+# Per paper you also need (same id):
+#   _includes/notes/<id>-summary.html   the full quick summary (opens in the pop-up)
+#   _includes/notes/<id>-note.html      the detailed research note
+#   _pages/notes/<id>.md                the page for the detailed note (permalink /notes/<id>/)
+- id: calibration
+  title: On Calibration of Modern Neural Networks
+  authors: Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger
+  venue: ICML 2017
+  doi: https://doi.org/10.5555/3305381.3305518
+  category: trustworthy-ml
+  glyph: "↗  ∿  ◌"
+  takeaway: Calibration is distinct from classification accuracy. Temperature scaling offers a simple, effective way to improve the reliability of predicted probabilities without changing the predicted class, but its success must be evaluated in the intended deployment setting.
+  interpretation: A neural network can be accurate yet overconfident, and a simple one-parameter transformation can often make its confidence estimates substantially more trustworthy.
+- id: ai-for-science
+  title: Scientific Discovery in the Age of Artificial Intelligence
+  authors: Hanchen Wang, Tianfan Fu, Yuanqi Du, Marinka Zitnik, and colleagues
+  venue: Nature 2023
+  doi: https://doi.org/10.1038/s41586-023-06221-2
+  category: ai4s
+  glyph: "⌘  ◇  ⊹"
+  takeaway: AI's greatest potential lies not simply in predicting outcomes, but in helping scientists generate, evaluate, and test hypotheses more efficiently. Realizing that potential requires reliable methods, scientific knowledge, rigorous validation, and collaboration across disciplines.
+  interpretation: This paper provides a conceptual map of how AI can transform scientific discovery, while explaining why predictive performance alone is not enough to establish scientific reliability or understanding.

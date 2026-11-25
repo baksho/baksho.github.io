@@ -81,8 +81,8 @@
     // full stop after the name, in the slowly cycling colour
     .sb-dot {
       display: inline-block;
-      width: 8px;
-      height: 8px;
+      width: 5px;
+      height: 5px;
       margin-left: 2px;
       border-radius: 50%;
       background: var(--sb-c1, #5af0b8);
@@ -706,7 +706,7 @@ html.sb-reveal .sb-hero::after {
   font-weight: 500;
   line-height: 1.4;
   color: var(--global-text-color);
-  margin: 0 0 22px;
+  margin: 0 0 4px;
 }
 // invisible stand-ins: they hold the room in the hero and tell the script where each traveller starts
 .sb-ph {
@@ -720,9 +720,11 @@ html.sb-reveal .sb-hero::after {
 }
 .sb-ph-role {
   font: 400 clamp(11px, 0.95vw, 14px) / 1.5 var(--sb-mono);
+  font-weight: 700;
+  color: var(--global-text-color);
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin: 0 0 30px;
+  margin: 0 0 18px;
 }
 .sb-ph-icons {
   height: 24px;
@@ -861,15 +863,16 @@ html.sb-reveal .sb-hero::after {
     opacity: var(--o-a, 1);
     pointer-events: none;
   }
+  // two semi-transparent marker strokes under the last letters
   .sb-ul {
     position: relative;
     display: inline-block;
     svg {
       position: absolute;
-      left: -2%;
-      bottom: -0.1em;
-      width: 104%;
-      height: 0.24em;
+      left: -3%;
+      bottom: -0.15em;
+      width: 106%;
+      height: 0.46em;
       overflow: visible;
     }
     path {
@@ -877,14 +880,15 @@ html.sb-reveal .sb-hero::after {
       stroke: var(--c, #5af0b8);
       stroke-linecap: round;
       stroke-linejoin: round;
-      vector-effect: non-scaling-stroke;
-      stroke-width: 3px;
+      stroke-opacity: 0.5;
       stroke-dasharray: 1;
       stroke-dashoffset: 1;
     }
+    .u1 {
+      stroke-width: 10;
+    }
     .u2 {
-      stroke-width: 2px;
-      opacity: 0.85;
+      stroke-width: 8;
     }
   }
 }
@@ -922,9 +926,10 @@ html.sb-reveal .sb-ul .u2 {
     left: 0;
     top: 0;
     white-space: nowrap;
-    font: 400 clamp(11px, 0.95vw, 14px) / 1.5 var(--sb-mono);
+    font: 700 clamp(11px, 0.95vw, 14px) / 1.5 var(--sb-mono);
     letter-spacing: 0.1em;
     text-transform: uppercase;
+    color: var(--global-text-color);
     color: var(--global-text-color-light);
     opacity: var(--o-a, 0);
     pointer-events: none;

@@ -33,9 +33,9 @@ latest_posts:
 
 I am a statistical machine learning researcher interested in the mathematical and empirical foundations of deep learning: generalization, optimization, uncertainty quantification, calibration and learning under distribution shift. I combine theoretical analysis of neural-network behavior with computational experiments, and apply it to biomedical machine learning.
 
-I am an M.Sc. student in Data Science at [TU Braunschweig](https://www.tu-braunschweig.de/en) and am writing my thesis on end-to-end calibration of neural networks in a biomedical context, supervised by Prof. Dr. Nicole Mücke at the Institute for Statistics and Foundations of Machine Learning. I also work as a student research assistant at [Medizinische Hochschule Hannover](https://www.mhh.de/en), where I develop an LLM- and knowledge-graph-aware multi-agent RAG system for scientific hypothesis generation from heterogeneous biomedical evidence.
+I am an M.Sc. student in Data Science at [TU Braunschweig](https://www.tu-braunschweig.de/en) and have recently submitted my Master's thesis, titled "End-to-end Calibration of Neural Networks in a Biomedical Context", supervised by Prof. Dr. Nicole Mücke at the Institute for Statistics and Foundations of Machine Learning. I also work as a student research assistant at [Medizinische Hochschule Hannover](https://www.mhh.de/en), where I develop an LLM- and knowledge-graph-aware multi-agent RAG system for scientific hypothesis generation from heterogeneous biomedical evidence.
 
-Before my master's I worked in industry for several years, first at Ericsson and then as a strategy consultant at Wipro, with an MBA from IIM Indore in between. I am a recipient of the Deutschlandstipendium (2025/26).
+Before my master's I worked in industry for several years, first at Ericsson and then as a strategy consultant at Wipro, with an MBA from IIM Indore in between. I am also a recipient of the Deutschlandstipendium (2025/26), a merit-based scholarship.
 
 <!-- The icon row under the name (see _layouts/about.liquid) replaces the old text link row. To bring it back, delete these comment markers:
 <div class="link-row">

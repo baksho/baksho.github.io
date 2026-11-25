@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Grid World Playground</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 32px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 32px}
+  #bar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:13px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:500}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:210px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Grid World Playground</h1>
+  <p class="blurb">An agent walks on a small grid and wants to reach the blue goal and avoid the orange pit. Each cell shows how good it is to stand there (colour and number) and which move looks best (arrow). Watch these fill in as <b>value iteration</b> plans with the known rules of the world, or as <b>Q-learning</b> learns them by trial and error. Use the <b>Settings</b> panel on the right: you can also repaint the world.</p>
+
+  <div id="bar">
+    <div class="grp tr">
+      <button class="btn" id="reset" title="Reset: forget everything learned (does not start)">&#8635;</button>
+      <button class="btn" id="play" title="Start / resume">&#9654;</button>
+      <button class="btn" id="pause" title="Pause" disabled>&#10074;&#10074;</button>
+      <button class="btn" id="step" title="One sweep (value iteration) or one move (Q-learning)">Step</button>
+    </div>
+    <div class="grp"><label for="speed">Speed</label><select id="speed"><option value="slow">Slow (watch)</option><option value="normal" selected>Normal</option><option value="fast">Fast</option></select></div>
+    <div id="status"></div>
+  </div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="gridhead">Value of each cell and its best action</div>
+      <div id="gridwrap"><svg id="grid" xmlns="http://www.w3.org/2000/svg"></svg></div>
+      <div class="legend" style="flex-direction:column;align-items:flex-start;gap:5px">
+        <span><i class="bar"></i><span id="lgscale">worse &nbsp;&larr;&nbsp; value &nbsp;&rarr;&nbsp; better</span></span>
+        <span><b>number:</b> value of the cell</span>
+        <span><b>arrow:</b> best action (no arrow: no preference yet)</span>
+        <span><b>S:</b> start</span>
+        <span id="lgagent" style="display:none"><i style="display:inline-block;width:14px;height:14px;border-radius:50%;background:#f5a623;border:2.5px solid #1b3b4f;box-sizing:border-box"></i><b>Orange dot:</b> the agent, the learner that moves around and updates its Q-values</span>
+      </div>
+      <div id="detail"></div>
+      <div id="lastup"></div>
+      <div class="chartbox">
+        <div class="ct" id="charttitle"></div>
+        <div class="chartframe"><canvas id="chart"></canvas></div>
+        <div class="note" id="chartnote"></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings &mdash; algorithm, world and rules</div>
+      <div class="card setcard">
+        <div class="sub">Algorithm</div>
+        <label class="radio"><input type="radio" name="algo" value="vi" checked><span>Value iteration<small>plans: it is given the rules of the world and sweeps over every cell</small></span></label>
+        <label class="radio"><input type="radio" name="algo" value="q"><span>Q-learning<small>learns: an agent that does not know the rules tries moves and updates from what happens</small></span></label>
+
+        <div class="sub">World</div>
+        <div class="row2" style="margin-top:6px"><select id="preset" style="max-width:100%"></select></div>
+        <div class="tools" id="tools">
+          <button class="tool on" data-tool="inspect">Inspect</button>
+          <button class="tool" data-tool="wall">Wall</button>
+          <button class="tool" data-tool="goal">Goal +1</button>
+          <button class="tool" data-tool="pit">Pit &minus;1</button>
+          <button class="tool" data-tool="start">Start</button>
+          <button class="tool" data-tool="erase">Erase</button>
+        </div>
+        <div class="hint">Pick a brush, then click or drag on the grid. Changing the world restarts learning.</div>
+
+        <div class="sub">Rules of the world</div>
+        <div class="slider"><div class="row"><span>Discount &gamma;</span><b id="gv"></b></div><input type="range" id="gamma" min="0" max="1" step="0.01"><div class="hint">How much a reward one step later is worth compared with now. Low: short-sighted.</div></div>
+        <div class="slider"><div class="row"><span>Slip chance</span><b id="sv"></b></div><input type="range" id="slip" min="0" max="0.5" step="0.05"><div class="hint">Chance that a move goes sideways instead (split evenly between the two sides).</div></div>
+        <div class="slider"><div class="row"><span>Cost per move</span><b id="cv"></b></div><input type="range" id="cost" min="0" max="0.2" step="0.01"><div class="hint">Every move costs this much, which makes shorter routes better.</div></div>
+
+        <div id="qparams" style="display:none">
+          <div class="sub">Q-learning settings</div>
+          <div class="slider"><div class="row"><span>Learning rate &alpha;</span><b id="av"></b></div><input type="range" id="alpha" min="0.01" max="0.5" step="0.01"><div class="hint">How far each update moves a Q-value toward its new target. Low: steady but slow.</div></div>
+          <div class="slider"><div class="row"><span>Exploration &epsilon;</span><b id="ev"></b></div><input type="range" id="eps" min="0" max="1" step="0.05"><div class="hint">Chance of a random move instead of the best-known one.</div></div>
+          <div class="row2"><button class="linkbtn" id="seed">Restart with a different random seed</button></div>
+        </div>
+      </div>
+
+      <div class="head" style="margin-top:22px">Progress</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is, and is not.</b> It is a small, exact toy: a few dozen cells, a table with one number per cell and action, and no neural network. It shows the ideas behind value iteration and Q-learning. It does not show how these methods are used on large problems, where the table is replaced by a learned function.</div>
+
+    <h3>The world</h3>
+    <p>The agent stands on one cell and picks one of four moves: up, right, down or left. Moving into a wall or off the edge leaves it where it is. With the <b>slip chance</b> set to <i>p</i>, the chosen move happens with probability 1 &minus; <i>p</i>, and with probability <i>p</i>/2 each the agent instead goes to one of the two sides. Every move costs a small amount. Entering the goal gives +1 and entering the pit gives &minus;1; either one ends the episode. Walls cannot be entered.</p>
+    <p>This is a Markov decision process: the result of a move depends only on the current cell and the move, not on the earlier path.</p>
+
+    <h3>What a value is</h3>
+    <p>The <b>value</b> <i>V</i>(<i>s</i>) of a cell is the total reward you can expect from there on if you always play the best moves, where a reward <i>k</i> steps ahead counts with weight &gamma;<sup>k</sup>. The <b>Q-value</b> <i>Q</i>(<i>s</i>, <i>a</i>) is the same quantity if you first make move <i>a</i>, then play the best moves. The value is the best Q-value, and the arrow points to the move with the best Q-value. If several moves tie, several arrows are drawn; if all four tie (for example before anything has been learned), no arrow is drawn.</p>
+
+    <h3>Value iteration</h3>
+    <p>Value iteration is given the rules of the world, meaning the probabilities and the rewards. It starts with every value at 0 and repeats a <b>sweep</b>: for every cell, replace the value by the best one-step lookahead using the previous values.</p>
+    <div class="eqb">V<sub>new</sub>(s) = max<sub>a</sub> &Sigma;<sub>s'</sub> P(s' | s, a) &middot; [ r + &gamma; V(s') ]</div>
+    <p>After <i>k</i> sweeps the values are the best you can do when looking <i>k</i> moves ahead, so good news spreads outward from the goal one cell per sweep. For &gamma; &lt; 1 the largest change per sweep shrinks steadily (the update is a contraction, see Sutton and Barto, section 4.4), and the page stops once it falls below 10<sup>&minus;6</sup>. Hover over a cell to see the four lookahead values behind its arrow.</p>
+
+    <h3>Q-learning</h3>
+    <p>Q-learning is not told the rules. A single agent walks around, and after every move from cell <i>s</i> with action <i>a</i>, landing in <i>s'</i> with reward <i>r</i>, it nudges one table entry toward a new target:</p>
+    <div class="eqb">Q(s, a) &larr; Q(s, a) + &alpha; &middot; [ r + &gamma; max<sub>a'</sub> Q(s', a') &minus; Q(s, a) ]</div>
+    <p>If <i>s'</i> is the goal or the pit, the target is just <i>r</i>. The agent picks a random move with probability &epsilon; and otherwise the best move it currently knows (&epsilon;-greedy). Because the target uses the best next move whatever the agent actually does next, Q-learning learns the values of the best strategy even while exploring. Watkins and Dayan proved that the Q-values converge to the optimal ones with probability 1 under conditions on how often every action is tried and on a learning rate that shrinks over time. This page uses a constant &alpha; instead, so the estimates keep jittering (see below). An episode that has not ended after 200 moves is cut off and restarted from the start cell.</p>
+    <p>The chart for Q-learning compares its values with the optimal values, which the page computes with value iteration in the background. The agent never sees them.</p>
+
+    <h3>What to try</h3>
+    <ul>
+      <li><b>Classic 4&times;3 with &gamma; = 1.</b> This is the textbook world (0.8 / 0.1 / 0.1 moves, cost 0.04). Value iteration gives 0.705 at the start cell, 0.812, 0.868 and 0.918 along the top row, and 0.388 in the bottom-right corner next to the pit. I compared nine cells with the values I remember from Russell and Norvig's textbook and they agree to three decimals; please check them against your copy of the book. With the default &gamma; = 0.95 the start value is 0.501 and the sweeps stop after 25.</li>
+      <li><b>Discount.</b> On the classic world, &gamma; = 0.5 gives a start value of about &minus;0.05, against 0.50 at &gamma; = 0.95, because a far-away goal hardly counts.</li>
+      <li><b>Slip chance on &ldquo;Cliff edge&rdquo;.</b> With slip 0, the best route runs along the row right above the pits. With slip 0.2 (cost 0.04, &gamma; = 0.95), the best route moves one row further up, away from the pits, and the start value drops from about 0.43 to about &minus;0.01.</li>
+      <li><b>Learning rate.</b> On the classic world, I ran Q-learning for 300,000 moves with &epsilon; = 0.2 from five random seeds. With &alpha; = 0.1 the largest value error ended between 0.17 and 0.25 and 7 to 9 of the 9 arrows were optimal. With &alpha; = 0.02 the error ended between 0.02 and 0.08 and all 9 arrows were optimal in every run. The arrows that were wrong with &alpha; = 0.1 lost between 0.03 and 0.10 in value, so they were close calls.</li>
+      <li><b>Different random seeds.</b> Q-learning only visits cells its random path reaches, and early arrows can be wrong. Restart with another seed to see how much the early path depends on luck.</li>
+      <li><b>Paint your own world</b>, for example a wall that blocks the short route, and compare how the two algorithms react.</li>
+    </ul>
+
+    <h3>Limits</h3>
+    <ul>
+      <li>The table has one entry per cell and action, so this does not scale to large problems.</li>
+      <li>Value iteration here is given the true rules and is not simulating an agent; Q-learning learns without them. They are compared on the same world, but they are not doing the same job.</li>
+      <li>Q-learning runs for at most 300,000 moves, and a constant &alpha; leaves some noise at the end.</li>
+      <li>Results are for this made-up world and these settings. Other worlds can behave differently.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>R. S. Sutton and A. G. Barto, <i>Reinforcement Learning: An Introduction</i>, 2nd edition, MIT Press, 2018 (value iteration: section 4.4; Q-learning: section 6.5).</li>
+      <li>C. J. C. H. Watkins and P. Dayan, "Q-learning", <i>Machine Learning</i> 8 (3&ndash;4), 279&ndash;292, 1992. doi:10.1007/BF00992698.</li>
+      <li>R. Bellman, <i>Dynamic Programming</i>, Princeton University Press, 1957.</li>
+      <li>S. Russell and P. Norvig, <i>Artificial Intelligence: A Modern Approach</i>, Pearson (the 4&times;3 grid world).</li>
+    </ul>
+  </div>
+</div>
+<script>/* Grid world: environment, value iteration, Q-learning */
+const GW = (function () {
+  const EMPTY = 0, WALL = 1, GOAL = 2, PIT = 3;
+  const DX = [0, 1, 0, -1], DY = [-1, 0, 1, 0];   // actions: up, right, down, left
+  const ANAME = ["up", "right", "down", "left"];
+  const TOL = 1e-9;
+
+  // a layout is rows of characters: '.' empty, '#' wall, '+' goal, '-' pit, 'S' start
+  function parse(rows) {
+    const H = rows.length, W = rows[0].length, cells = new Uint8Array(W * H); let start = 0;
+    for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
+      const c = rows[y][x], i = y * W + x;
+      cells[i] = c === "#" ? WALL : c === "+" ? GOAL : c === "-" ? PIT : EMPTY;
+      if (c === "S") start = i;
+    }
+    return {W, H, cells, start};
+  }
+  const isTerm = (env, s) => env.cells[s] === GOAL || env.cells[s] === PIT;
+  const isWall = (env, s) => env.cells[s] === WALL;
+  const live = (env, s) => env.cells[s] === EMPTY;       // a state where the agent chooses actions
+
+  function move(env, s, a) {
+    const x = s % env.W, y = (s / env.W) | 0, nx = x + DX[a], ny = y + DY[a];
+    if (nx < 0 || ny < 0 || nx >= env.W || ny >= env.H) return s;
+    const t = ny * env.W + nx; return env.cells[t] === WALL ? s : t;
+  }
+  function reward(env, s2) { return -env.cost + (env.cells[s2] === GOAL ? 1 : env.cells[s2] === PIT ? -1 : 0); }
+
+  // outcomes of choosing action a in state s: [{s2, p, r}]
+  function outcomes(env, s, a) {
+    const out = [{a2: a, p: 1 - env.slip}];
+    if (env.slip > 0) { out.push({a2: (a + 1) % 4, p: env.slip / 2}); out.push({a2: (a + 3) % 4, p: env.slip / 2}); }
+    return out.map(o => { const s2 = move(env, s, o.a2); return {s2, p: o.p, r: reward(env, s2)}; });
+  }
+
+  // ----- value iteration -----
+  function qFromV(env, V, s) {
+    const q = [0, 0, 0, 0];
+    for (let a = 0; a < 4; a++) { let t = 0; for (const o of outcomes(env, s, a)) t += o.p * (o.r + (isTerm(env, o.s2) ? 0 : env.gamma * V[o.s2])); q[a] = t; }
+    return q;
+  }
+  // one synchronous sweep: V_{k+1}(s) = max_a sum p (r + gamma V_k(s'))
+  function sweep(env, V) {
+    const n = env.W * env.H, N = new Float64Array(n); let d = 0;
+    for (let s = 0; s < n; s++) if (live(env, s)) { const v = Math.max(...qFromV(env, V, s)); N[s] = v; d = Math.max(d, Math.abs(v - V[s])); }
+    return {V: N, delta: d};
+  }
+  function solve(env, theta = 1e-12, cap = 20000) {
+    let V = new Float64Array(env.W * env.H), k = 0, d = 1;
+    while (d > theta && k < cap) { const r = sweep(env, V); V = r.V; d = r.delta; k++; }
+    const n = env.W * env.H, Q = new Float64Array(n * 4);
+    for (let s = 0; s < n; s++) if (live(env, s)) { const q = qFromV(env, V, s); for (let a = 0; a < 4; a++) Q[s * 4 + a] = q[a]; }
+    return {V, Q, sweeps: k, delta: d};
+  }
+
+  // ----- greedy actions and comparison with the optimum -----
+  function bestActions(q) {
+    const mx = Math.max(...q), mn = Math.min(...q);
+    if (mx - mn < TOL) return [];                          // all equal: no preference yet
+    const r = []; for (let a = 0; a < 4; a++) if (q[a] >= mx - TOL) r.push(a); return r;
+  }
+  // how many live states have a greedy choice that is optimal (every tied-best action is optimal)
+  function agreement(env, qOf, star) {
+    let ok = 0, n = 0;
+    for (let s = 0; s < env.W * env.H; s++) if (live(env, s)) {
+      n++; const q = qOf(s), mx = Math.max(...q), tied = []; for (let a = 0; a < 4; a++) if (q[a] >= mx - TOL) tied.push(a);
+      const qs = [0, 1, 2, 3].map(a => star.Q[s * 4 + a]), ms = Math.max(...qs);
+      if (tied.every(a => qs[a] >= ms - 1e-7)) ok++;
+    }
+    return {ok, n};
+  }
+  function maxErr(env, Vhat, star) { let e = 0; for (let s = 0; s < env.W * env.H; s++) if (live(env, s)) e = Math.max(e, Math.abs(Vhat[s] - star.V[s])); return e; }
+
+  // ----- Q-learning -----
+  const MAXLEN = 200;
+  function newAgent(env) { return {Q: new Float64Array(env.W * env.H * 4), n: new Int32Array(env.W * env.H * 4), s: env.start, steps: 0, episodes: 0, epLen: 0, epRet: 0, rets: [], last: null}; }
+  function vOfQ(env, Q) { const V = new Float64Array(env.W * env.H); for (let s = 0; s < V.length; s++) if (live(env, s)) V[s] = Math.max(Q[s * 4], Q[s * 4 + 1], Q[s * 4 + 2], Q[s * 4 + 3]); return V; }
+  function qOf(ag, s) { return [ag.Q[s * 4], ag.Q[s * 4 + 1], ag.Q[s * 4 + 2], ag.Q[s * 4 + 3]]; }
+  function pickAction(ag, s, eps, rnd) {
+    if (rnd() < eps) return Math.min(3, (rnd() * 4) | 0);
+    const q = qOf(ag, s), mx = Math.max(...q), best = []; for (let a = 0; a < 4; a++) if (q[a] >= mx - 1e-12) best.push(a);
+    return best[Math.min(best.length - 1, (rnd() * best.length) | 0)];
+  }
+  function step(env, ag, alpha, eps, rnd) {
+    const s = ag.s, explore = rnd() < eps, a = explore ? Math.min(3, (rnd() * 4) | 0) : pickAction(ag, s, 0, rnd);
+    const u = rnd(), o = outcomes(env, s, a); let acc = 0, pick = o[o.length - 1];
+    for (const x of o) { acc += x.p; if (u < acc) { pick = x; break; } }
+    const s2 = pick.s2, r = pick.r, term = isTerm(env, s2);
+    const old = ag.Q[s * 4 + a], target = r + (term ? 0 : env.gamma * Math.max(...qOf(ag, s2)));
+    ag.Q[s * 4 + a] = old + alpha * (target - old);
+    ag.n[s * 4 + a]++; ag.steps++; ag.epLen++; ag.epRet += r;
+    const info = {s, a, s2, r, target, old, nw: ag.Q[s * 4 + a], term, explore, ended: false};
+    if (term || ag.epLen >= MAXLEN) { ag.rets.push(ag.epRet); ag.episodes++; ag.epLen = 0; ag.epRet = 0; ag.s = env.start; info.ended = true; info.truncated = !term; }
+    else ag.s = s2;
+    ag.last = info; return info;
+  }
+  function rng(seed) { let t = (seed >>> 0) || 1; return function () { t += 0x6D2B79F5; let r = Math.imul(t ^ (t >>> 15), 1 | t); r ^= r + Math.imul(r ^ (r >>> 7), 61 | r); return ((r ^ (r >>> 14)) >>> 0) / 4294967296; }; }
+
+  return {EMPTY, WALL, GOAL, PIT, DX, DY, ANAME, TOL, MAXLEN, parse, isTerm, isWall, live, move, reward, outcomes, qFromV, sweep, solve, bestActions, agreement, maxErr, newAgent, vOfQ, qOf, pickAction, step, rng};
+})();
+if (typeof module !== "undefined") module.exports = GW;
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const CS = 80, MAXSTEPS = 300000, SWEEP_STOP = 1e-6;
+const PRESETS = [
+  {name: "Classic 4×3 (textbook)", rows: ["...+", ".#.-", "S..."]},
+  {name: "Cliff edge 7×4", rows: [".......", ".......", ".......", "S-----+"]},
+  {name: "Two rooms 7×5", rows: ["...#...", "...#..+", "S......", "...#...", "...#..-"]},
+  {name: "Maze 7×5", rows: ["S.#....", ".##.##.", "...#...", ".#...#.", "...#..+"]}
+];
+const S = {algo: "vi", tool: "inspect", gamma: 0.95, slip: 0.2, cost: 0.04, alpha: 0.05, eps: 0.2, seed: 1, speed: "normal",
+  running: false, hover: -1, painting: false, preset: 0, custom: false, W: 0, H: 0, cells: null, start: 0,
+  env: null, star: null, V: null, sweeps: 0, delta: null, ag: null, rnd: null, pts: [], stride: 100, lastT: 0};
+const esc = t => String(t).replace(/[&<>]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;"}[c]));
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const rc = s => `row ${((s / S.W) | 0) + 1}, column ${(s % S.W) + 1}`;
+
+function loadPreset(i) {
+  const L = GW.parse(PRESETS[i].rows); S.W = L.W; S.H = L.H; S.cells = L.cells; S.start = L.start; S.preset = i; S.custom = false;
+  const sel = $("preset"); const c = sel.querySelector("option[value=custom]"); if (c) c.remove(); sel.value = i;
+}
+function buildEnv() {
+  S.env = {W: S.W, H: S.H, cells: S.cells, start: S.start, gamma: S.gamma, slip: S.slip, cost: S.cost};
+  S.star = GW.solve(S.env, 1e-12);
+}
+function resetRun() {
+  buildEnv(); S.running = false; S.pts = []; S.stride = 100; S.lastT = 0;
+  const n = S.W * S.H; S.V = new Float64Array(n); S.sweeps = 0; S.delta = null;
+  S.ag = GW.newAgent(S.env); S.rnd = GW.rng(S.seed);
+}
+const done = () => S.algo === "vi" ? (S.delta !== null && S.delta < SWEEP_STOP) : S.ag.steps >= MAXSTEPS;
+
+/* ---------- learning steps ---------- */
+function doSweep() {
+  const r = GW.sweep(S.env, S.V); S.V = r.V; S.delta = r.delta; S.sweeps++;
+  S.pts.push([S.sweeps, Math.log10(Math.max(r.delta, 1e-12))]);
+}
+function qErr() { return GW.maxErr(S.env, GW.vOfQ(S.env, S.ag.Q), S.star); }
+function recQ() {
+  S.pts.push([S.ag.steps, Math.log10(Math.max(qErr(), 1e-4))]);
+  if (S.pts.length > 1500) { S.pts = S.pts.filter((_, i) => i % 2 === 0); S.stride *= 2; }
+}
+function doQ(n) {
+  const t0 = performance.now(); let k = 0;
+  while (k < n && S.ag.steps < MAXSTEPS && performance.now() - t0 < 20) { GW.step(S.env, S.ag, S.alpha, S.eps, S.rnd); k++; if (S.ag.steps % S.stride === 0) recQ(); }
+}
+function advance(n) { if (S.algo === "vi") doSweep(); else doQ(n); }
+function finish() { if (done()) { S.running = false; if (S.algo === "q") recQ(); } }
+
+/* ---------- drawing ---------- */
+function valuesNow() { return S.algo === "vi" ? S.V : GW.vOfQ(S.env, S.ag.Q); }
+function qAt(s) { return S.algo === "vi" ? GW.qFromV(S.env, S.V, s) : GW.qOf(S.ag, s); }
+function heat(t) { const a = Math.min(1, Math.abs(t)) * 0.82; return t >= 0 ? `rgba(8,119,189,${a.toFixed(3)})` : `rgba(232,89,12,${a.toFixed(3)})`; }
+function arrow(cx, cy, a, col) {
+  const dx = GW.DX[a], dy = GW.DY[a], px = -dy, py = dx, tip = 21, base = 11, w = 7;
+  const tx = cx + dx * tip, ty = cy + dy * tip, bx = cx + dx * base, by = cy + dy * base, sx = cx - dx * 13, sy = cy - dy * 13;
+  return `<line x1="${sx}" y1="${sy}" x2="${bx}" y2="${by}" stroke="${col}" stroke-width="3.5" stroke-linecap="round"/>` +
+    `<polygon points="${tx},${ty} ${bx + px * w},${by + py * w} ${bx - px * w},${by - py * w}" fill="${col}"/>`;
+}
+function drawGrid() {
+  const W = S.W, H = S.H, V = valuesNow(); let scale = 1;
+  for (let s = 0; s < W * H; s++) if (GW.live(S.env, s)) scale = Math.max(scale, Math.abs(V[s]));
+  let g = ""; 
+  for (let s = 0; s < W * H; s++) {
+    const x = (s % W) * CS, y = ((s / W) | 0) * CS, cx = x + CS / 2, cy = y + CS / 2 - 4, k = S.cells[s];
+    if (k === GW.WALL) { g += `<rect x="${x}" y="${y}" width="${CS}" height="${CS}" fill="#6b747c" stroke="#fff" stroke-width="1"/>`; continue; }
+    if (k === GW.GOAL || k === GW.PIT) {
+      g += `<rect x="${x}" y="${y}" width="${CS}" height="${CS}" fill="${k === GW.GOAL ? "#0877bd" : "#e8590c"}" stroke="#fff" stroke-width="1"/><text x="${x + CS / 2}" y="${y + CS / 2 + 8}" text-anchor="middle" font-size="24" font-weight="700" fill="#fff">${k === GW.GOAL ? "+1" : "−1"}</text>`;
+      continue;
+    }
+    const t = V[s] / scale, dark = Math.abs(t) > 0.62, col = dark ? "#fff" : "#222";
+    g += `<rect x="${x}" y="${y}" width="${CS}" height="${CS}" fill="#fff" stroke="#e4e7e9" stroke-width="1"/><rect x="${x}" y="${y}" width="${CS}" height="${CS}" fill="${heat(t)}"/>`;
+    GW.bestActions(qAt(s)).forEach(a => { g += arrow(cx, cy, a, dark ? "#fff" : "#1b3b4f"); });
+    g += `<text x="${x + CS / 2}" y="${y + CS - 8}" text-anchor="middle" font-size="12.5" fill="${col}" style="font-variant-numeric:tabular-nums">${fm(V[s])}</text>`;
+    if (s === S.start) g += `<text x="${x + 7}" y="${y + 15}" font-size="12" font-weight="700" fill="${dark ? "#fff" : "#555"}">S</text>`;
+  }
+  if (S.algo === "q") { const s = S.ag.s, x = (s % W) * CS + CS / 2, y = ((s / W) | 0) * CS + CS / 2 - 4; g += `<circle cx="${x}" cy="${y}" r="10" fill="#f5a623" stroke="#1b3b4f" stroke-width="2.5"/>`; }
+  if (S.hover >= 0) { const x = (S.hover % W) * CS, y = ((S.hover / W) | 0) * CS; g += `<rect x="${x + 1.5}" y="${y + 1.5}" width="${CS - 3}" height="${CS - 3}" fill="none" stroke="#1b3b4f" stroke-width="3"/>`; }
+  const svg = $("grid"); svg.setAttribute("viewBox", `0 0 ${W * CS} ${H * CS}`); svg.style.maxWidth = (W * 116) + "px"; svg.innerHTML = g;
+  $("lgscale").innerHTML = `${fm(-scale, 2)} &nbsp;&larr;&nbsp; value &nbsp;&rarr;&nbsp; ${fm(scale, 2)}`;
+}
+function drawDetail() {
+  const s = S.hover, box = $("detail");
+  if (s < 0) { box.innerHTML = `Hover over a cell to see the numbers behind its arrow.`; return; }
+  const k = S.cells[s];
+  if (k === GW.WALL) { box.innerHTML = `<b>Wall</b> (${rc(s)}). It cannot be entered: a move into it leaves the agent where it is.`; return; }
+  if (k === GW.GOAL) { box.innerHTML = `<b>Goal</b> (${rc(s)}). Entering it gives reward +1 and ends the episode.`; return; }
+  if (k === GW.PIT) { box.innerHTML = `<b>Pit</b> (${rc(s)}). Entering it gives reward −1 and ends the episode.`; return; }
+  const q = qAt(s), V = valuesNow()[s], best = GW.bestActions(q);
+  let t = `<b>Cell (${rc(s)})</b>${s === S.start ? " &mdash; start cell" : ""}: value ${fm(V, 3)}<br>`;
+  t += S.algo === "vi" ? `<span class="hint">One-step lookahead from the current values: the average over slips of reward + &gamma; &times; value of the cell you land in.</span>`
+    : `<span class="hint">Q-values learned so far, and how many times each move was tried from this cell.</span>`;
+  t += `<table>`;
+  for (let a = 0; a < 4; a++) t += `<tr${best.includes(a) ? ' class="best"' : ""}><td>${GW.ANAME[a]}</td><td>${fm(q[a], 3)}</td>${S.algo === "q" ? `<td class="hint">tried ${S.ag.n[s * 4 + a]}×</td>` : ""}</tr>`;
+  box.innerHTML = t + `</table>`;
+}
+function drawLast() {
+  const el = $("lastup"); if (S.algo !== "q") { el.innerHTML = S.sweeps ? `Each sweep recomputes every cell from the previous values, so changes spread outward from the goal and the pit.` : `Press play or Step. Every value starts at 0.`; return; }
+  const L = S.ag.last; if (!L) { el.innerHTML = `Press play or Step. The orange dot is the agent; every Q-value starts at 0.`; return; }
+  const cell = s => `row ${((s / S.W) | 0) + 1}, column ${(s % S.W) + 1}`;
+  el.innerHTML = `<b>Last move:</b> in ${cell(L.s)} it chose <b>${GW.ANAME[L.a]}</b> (${L.explore ? "random" : "best known"}), landed in ${cell(L.s2)} and got reward ${fm(L.r)}. ` +
+    `Target = ${fm(L.r)}${L.term ? "" : ` + ${fm(S.gamma)} &times; best Q there`} = ${fm(L.target, 3)}; Q(${GW.ANAME[L.a]}) moved from ${fm(L.old, 3)} to ${fm(L.nw, 3)}.` +
+    (L.ended ? ` ${L.truncated ? "Episode cut off after 200 moves." : "Episode over."} Back to the start.` : "");
+}
+function niceCeil(x) { const p = Math.pow(10, Math.floor(Math.log10(x))), m = x / p; return (m <= 1 ? 1 : m <= 2 ? 2 : m <= 5 ? 5 : 10) * p; }
+const kfmt = v => v >= 1000 ? (v / 1000) + "k" : String(v);
+function drawChart() {
+  const cv = $("chart"), w = cv.clientWidth || 600, hgt = 210, d = window.devicePixelRatio || 1; cv.width = Math.round(w * d); cv.height = Math.round(hgt * d);
+  const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, hgt);
+  const vi = S.algo === "vi", lo = vi ? -7 : -3, hi = 1, L = 40, R = 10, T = 8, B = 24, PW = w - L - R, PH = hgt - T - B;
+  const xmax = vi ? Math.max(40, Math.ceil(S.sweeps / 20) * 20) : Math.max(1000, niceCeil(S.ag.steps)), X = v => L + PW * v / xmax, Y = v => T + PH * (1 - (Math.max(lo, Math.min(hi, v)) - lo) / (hi - lo));
+  c.font = "10.5px Roboto,Arial,sans-serif"; c.textBaseline = "middle"; c.textAlign = "right";
+  for (let k = lo; k <= hi; k++) { c.strokeStyle = "#ececec"; c.beginPath(); c.moveTo(L, Y(k)); c.lineTo(L + PW, Y(k)); c.stroke(); c.fillStyle = "#888"; c.fillText(k === 0 ? "1" : k === 1 ? "10" : "1e" + k.toString().replace("-", "−"), L - 5, Y(k)); }
+  c.textBaseline = "top"; for (let i = 0; i <= 4; i++) { const v = xmax * i / 4; c.textAlign = i === 0 ? "left" : i === 4 ? "right" : "center"; c.fillStyle = "#888"; c.fillText(vi ? String(Math.round(v)) : kfmt(Math.round(v)), X(v), T + PH + 5); }
+  if (vi) { c.setLineDash([4, 3]); c.strokeStyle = "#999"; c.beginPath(); c.moveTo(L, Y(Math.log10(SWEEP_STOP))); c.lineTo(L + PW, Y(Math.log10(SWEEP_STOP))); c.stroke(); c.setLineDash([]); c.fillStyle = "#888"; c.textAlign = "right"; c.textBaseline = "bottom"; c.fillText("stops below this", L + PW - 2, Y(Math.log10(SWEEP_STOP)) - 2); }
+  c.strokeStyle = "#0877bd"; c.lineWidth = 2; c.beginPath(); S.pts.forEach((p, i) => i ? c.lineTo(X(p[0]), Y(p[1])) : c.moveTo(X(p[0]), Y(p[1]))); c.stroke(); c.lineWidth = 1;
+  if (!S.pts.length) { c.fillStyle = "#aaa"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("Nothing yet: press play.", L + PW / 2, T + PH / 2); }
+  $("charttitle").textContent = vi ? "Largest change in any value, per sweep (log scale)" : "Largest error of the learned values compared with the optimal ones (log scale)";
+  $("chartnote").textContent = vi ? "The values stop changing once the sweeps have spread the goal and pit information through the whole grid." : "Error is the largest difference, over all cells, between the agent's best Q-value and the optimal value from value iteration. With a constant learning rate it levels off instead of reaching zero.";
+}
+function drawProgress() {
+  const A = S.algo, V = valuesNow(), star = S.star, ag = GW.agreement(S.env, s => qAt(s), star);
+  const st = S.env.start, n = $("nums"); let h = "";
+  if (A === "vi") {
+    h += `<div class="sec">Value iteration</div><div>Sweeps done</div><b>${S.sweeps}</b><div>Largest change in the last sweep</div><b>${S.delta === null ? "&ndash;" : S.delta.toExponential(1).replace("e-", "e−")}</b>`;
+  } else {
+    const r = S.ag.rets.slice(-50), avg = r.length ? r.reduce((a, b) => a + b, 0) / r.length : null;
+    h += `<div class="sec">Q-learning</div><div>Moves made</div><b>${S.ag.steps.toLocaleString("en-US")}</b><div>Episodes finished</div><b>${S.ag.episodes.toLocaleString("en-US")}</b><div>Average return, last 50 episodes</div><b>${avg === null ? "&ndash;" : fm(avg)}</b><div>Largest value error</div><b>${fm(qErr(), 3)}</b>`;
+  }
+  h += `<div class="sec">Compared with the optimum</div><div>Cells whose arrow is optimal</div><b>${ag.ok} of ${ag.n}</b><div>Value at the start cell, now</div><b>${fm(V[st], 3)}</b><div>Value at the start cell, optimal</div><b>${fm(star.V[st], 3)}</b>`;
+  n.innerHTML = h;
+}
+function drawStatus() {
+  $("status").innerHTML = S.algo === "vi" ? `Sweep ${S.sweeps}${done() ? ' <small>&mdash; converged</small>' : ""}` : `Move ${S.ag.steps.toLocaleString("en-US")} <small>of ${MAXSTEPS.toLocaleString("en-US")}${done() ? " &mdash; finished" : ""}</small>`;
+  $("play").disabled = S.running; $("pause").disabled = !S.running; $("step").disabled = S.running;
+}
+function draw() { drawGrid(); drawDetail(); drawLast(); drawChart(); drawProgress(); drawStatus(); }
+
+/* ---------- loop ---------- */
+function frame(ts) {
+  requestAnimationFrame(frame); if (!S.running) return;
+  if (S.algo === "vi") { const gap = {slow: 600, normal: 180, fast: 0}[S.speed]; if (ts - S.lastT < gap) return; S.lastT = ts; advance(1); }
+  else { const gap = {slow: 140, normal: 0, fast: 0}[S.speed], per = {slow: 1, normal: 120, fast: 1000}[S.speed]; if (ts - S.lastT < gap) return; S.lastT = ts; advance(per); }
+  finish(); draw();
+}
+$("play").onclick = () => { if (S.running) return; if (done()) { resetRun(); } S.running = true; draw(); };
+$("pause").onclick = () => { S.running = false; draw(); };
+$("reset").onclick = () => { resetRun(); draw(); };
+$("step").onclick = () => { if (S.running) return; if (done()) resetRun(); advance(1); finish(); draw(); };
+$("speed").onchange = () => { S.speed = $("speed").value; };
+
+/* ---------- settings ---------- */
+function bindSlider(id, key, shown, fmtf, resets) {
+  const el = $(id), out = $(shown); el.value = S[key]; out.textContent = fmtf(S[key]);
+  el.oninput = () => { S[key] = +el.value; out.textContent = fmtf(S[key]); if (resets) { resetRun(); } draw(); };
+}
+bindSlider("gamma", "gamma", "gv", v => v.toFixed(2), true);
+bindSlider("slip", "slip", "sv", v => v.toFixed(2), true);
+bindSlider("cost", "cost", "cv", v => v.toFixed(2), true);
+bindSlider("alpha", "alpha", "av", v => v.toFixed(2), false);
+bindSlider("eps", "eps", "ev", v => v.toFixed(2), false);
+document.querySelectorAll("input[name=algo]").forEach(r => r.onchange = () => {
+  if (!r.checked) return; S.algo = r.value; $("qparams").style.display = S.algo === "q" ? "" : "none"; resetRun();
+  $("lgagent").style.display = S.algo === "q" ? "" : "none"; $("gridhead").textContent = S.algo === "vi" ? "Value of each cell and its best action" : "Learned value of each cell and its best action"; draw();
+});
+$("seed").onclick = () => { S.seed++; resetRun(); draw(); };
+PRESETS.forEach((p, i) => { const o = document.createElement("option"); o.value = i; o.textContent = p.name; $("preset").appendChild(o); });
+$("preset").onchange = () => { const v = $("preset").value; if (v === "custom") return; loadPreset(+v); S.hover = -1; resetRun(); draw(); };
+document.querySelectorAll(".tool").forEach(b => b.onclick = () => {
+  S.tool = b.dataset.tool; document.querySelectorAll(".tool").forEach(x => x.classList.toggle("on", x === b)); $("grid").classList.toggle("paint", S.tool !== "inspect");
+});
+
+/* ---------- grid mouse ---------- */
+function cellAt(e) {
+  const r = $("grid").getBoundingClientRect(), x = (e.clientX - r.left) / r.width * S.W, y = (e.clientY - r.top) / r.height * S.H;
+  if (x < 0 || y < 0 || x >= S.W || y >= S.H) return -1; return Math.floor(y) * S.W + Math.floor(x);
+}
+function paint(s) {
+  if (s < 0 || S.tool === "inspect") return; const k = S.cells[s]; let nk = k, ns = S.start;
+  if (S.tool === "wall") { if (s === S.start) return; nk = GW.WALL; }
+  else if (S.tool === "goal") { if (s === S.start) return; nk = GW.GOAL; }
+  else if (S.tool === "pit") { if (s === S.start) return; nk = GW.PIT; }
+  else if (S.tool === "erase") { nk = GW.EMPTY; }
+  else if (S.tool === "start") { if (k !== GW.EMPTY) return; ns = s; }
+  if (nk === k && ns === S.start) return;
+  S.cells = S.cells.slice(); S.cells[s] = nk; S.start = ns;
+  if (!S.custom) { S.custom = true; const o = document.createElement("option"); o.value = "custom"; o.textContent = "Custom (edited)"; $("preset").appendChild(o); $("preset").value = "custom"; }
+  resetRun();
+}
+$("grid").addEventListener("pointerdown", e => { const s = cellAt(e); if (S.tool !== "inspect") { S.painting = true; try { $("grid").setPointerCapture(e.pointerId); } catch (x) {} paint(s); } S.hover = s; draw(); });
+$("grid").addEventListener("pointermove", e => { const s = cellAt(e); if (S.painting) paint(s); if (s !== S.hover || S.painting) { S.hover = s; if (!S.running) draw(); else { drawDetail(); } } });
+$("grid").addEventListener("pointerup", () => { S.painting = false; });
+$("grid").addEventListener("pointerleave", () => { if (!S.painting) { S.hover = -1; if (!S.running) draw(); else drawDetail(); } });
+window.addEventListener("resize", drawChart);
+
+loadPreset(0); resetRun(); draw(); requestAnimationFrame(frame);
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>

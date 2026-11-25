@@ -1,25 +1,84 @@
-# Bookshelf (shown on /books/). Covers live in assets/img/books/.
-# ongoing: true shows an "Ongoing" badge. Remove the line once you have finished the book.
-- title: The Psychology of Money
-  author: Morgan Housel
+# Bookshelf (shown on /books/). Two shelves: "academic" and "novels" (see _pages/books.md).
+# status: ongoing -> "Ongoing" badge, planned -> "Planned" badge, no status line -> finished (no badge).
+# cover: file in assets/img/books/. If a book has no cover, a typographic cover is drawn automatically.
+- title: "An Introduction to Statistical Learning"
+  author: "Gareth James, Daniela Witten, Trevor Hastie, Robert Tibshirani, Jonathan Taylor"
+  category: academic
+  cover: an-introduction-to-statistical-learning.webp
+- title: "Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow"
+  author: "Aurélien Géron"
+  category: academic
+  cover: hands-on-machine-learning-with-scikit-learn-keras-and-tensorflow.webp
+- title: "Deep Learning"
+  author: "Ian Goodfellow, Yoshua Bengio, Aaron Courville"
+  category: academic
+  cover: deep-learning.webp
+- title: "Designing Machine Learning Systems"
+  author: "Chip Huyen"
+  category: academic
+  cover: designing-machine-learning-systems.webp
+- title: "Hands-On Large Language Models"
+  author: "Jay Alammar, Maarten Grootendorst"
+  category: academic
+  cover: hands-on-large-language-model.webp
+  status: ongoing
+- title: "Build a Large Language Model (From Scratch)"
+  author: "Sebastian Raschka"
+  category: academic
+  cover: build-a-large-language-model-from-scratch.webp
+  status: ongoing
+- title: "Build a Reasoning Model (From Scratch)"
+  author: "Sebastian Raschka"
+  category: academic
+  cover: build-a-reasoning-model-from-scratch.webp
+  status: planned
+- title: "Prompt Engineering for LLMs"
+  author: "John Berryman, Albert Ziegler"
+  category: academic
+  cover: prompt-engineering-for-llms.webp
+  status: planned
+- title: "AI Engineering"
+  author: "Chip Huyen"
+  category: academic
+  cover: ai-engineering.webp
+  status: planned
+- title: "Building LLMs for Production"
+  author: "Louis-François Bouchard, Louie Peters"
+  category: academic
+  cover: building-llms-for-production.webp
+  status: planned
+- title: "LLM Engineer's Handbook"
+  author: "Paul Iusztin, Maxime Labonne"
+  category: academic
+  cover: llm-engineer's-handbook.webp
+  status: planned
+- title: "The Psychology of Money"
+  author: "Morgan Housel"
+  category: novels
   cover: the-psychology-of-money.webp
-  ongoing: true
-- title: The Alchemist
-  author: Paulo Coelho
+  status: ongoing
+- title: "The Alchemist"
+  author: "Paulo Coelho"
+  category: novels
   cover: the-alchemist.webp
-  ongoing: true
-- title: A Thousand Splendid Suns
-  author: Khaled Hosseini
+  status: ongoing
+- title: "A Thousand Splendid Suns"
+  author: "Khaled Hosseini"
+  category: novels
   cover: a-thousand-splendid-suns.webp
-- title: The Art of War
-  author: Sun Tzu
+- title: "The Art of War"
+  author: "Sun Tzu"
+  category: novels
   cover: the-art-of-war.webp
-- title: To Kill a Mockingbird
-  author: Harper Lee
+- title: "To Kill a Mockingbird"
+  author: "Harper Lee"
+  category: novels
   cover: to-kill-a-mockingbird.webp
-- title: Man's Search for Meaning
-  author: Viktor E. Frankl
+- title: "Man's Search for Meaning"
+  author: "Viktor E. Frankl"
+  category: novels
   cover: mans-search-for-meaning.webp
-- title: Looking for Alaska
-  author: John Green
+- title: "Looking for Alaska"
+  author: "John Green"
+  category: novels
   cover: looking-for-alaska.webp

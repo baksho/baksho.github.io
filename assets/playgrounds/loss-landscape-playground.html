@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Loss Landscape Explorer</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:700}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  #cv{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cv.grab{cursor:grab}#cv.drag{cursor:grabbing}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #aaa}
+  .rg{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid #222;vertical-align:-2px}.rg.th{border-width:3px}
+  .ln{display:inline-block;width:26px;height:0;border-top:2px solid #222;vertical-align:middle}.ln.da{border-top-style:dashed;border-top-width:1.5px}
+  .bd{display:inline-block;width:26px;height:10px;border-radius:2px}
+  #detail{min-height:70px}
+  #nums{grid-template-columns:1fr;gap:6px}
+  #nums .pr{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  #nums .pr b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  #nums .sec{grid-column:1/-1}
+  #bar{margin-bottom:0;align-items:flex-end}#cctl{align-items:flex-end}
+  #cctl{flex:1;gap:12px 20px}
+  #cctl .sl{flex:1 1 0;min-width:118px}
+  #cctl{flex-wrap:nowrap}
+  .kopts{display:flex;gap:16px;align-items:flex-start;min-height:34px}
+  .kopts label{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-weight:400;font-size:13px;margin:0;color:#222}
+  .kopts input{margin:3px 0 0}
+  .kopts small{display:block;color:#777;font-size:11.5px;line-height:1.25;margin-top:1px;max-width:112px}
+  input.num{width:52px;font-size:12.5px;padding:1px 5px;text-align:right;border:1px solid #ccc;border-radius:3px;background:#fff;color:#222;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  #hover{margin-top:6px;color:#555;min-height:20px;font-variant-numeric:tabular-nums}
+  .seg{display:flex;gap:6px;margin:8px 0 2px}.seg .tool{flex:1;text-align:center}
+  .tool.o.on{background:#e8590c;border-color:#e8590c}.tool.b.on{background:#0877bd;border-color:#0877bd}
+
+  #cv{aspect-ratio:16/10;cursor:default}
+  .pgrid{margin-top:20px}
+  .pgrid .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+  .pgrid .ph select{min-width:0;max-width:62%}
+  .pgrid canvas{aspect-ratio:1/1;cursor:default}
+  #cl2{aspect-ratio:1/1}
+  .fbtns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:12px 0 0}
+  .fbtns button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:9px 0;font-size:13px;cursor:pointer;color:#222;font-variant-numeric:tabular-nums}
+  .fbtns button:hover:not(:disabled){background:var(--navy);color:#fff;border-color:var(--navy)}
+  .fbtns button:disabled{opacity:.45;cursor:default}
+  table.tbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px}
+  table.tbl th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+  table.tbl td{text-align:right;padding:3px 8px 3px 0}
+  table.tbl tr.sel td{font-weight:700;color:#0b5f96}
+  table.tbl tr.ref td{color:#777;font-style:italic}
+  .cap{font-size:12px;color:#666;line-height:1.45;margin-top:8px}
+  .cap b{color:#333;font-weight:700}
+  #lam{margin-left:14px}
+  .msec{display:none}
+  .msec.on{display:block}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  #detail p{margin:0 0 6px}
+  #detail p:last-child{margin-bottom:0}
+  .bad{color:#b4430a}
+
+  /* ---- Bayes additions ---- */
+  #bar{align-items:flex-end}
+  .btns3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
+  .btns3 button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:8px 0;font-size:12.5px;cursor:pointer;color:#222}
+  .btns3 button:hover{background:#eef5fb}
+  .btns3 button.span2{grid-column:span 2}
+  .btns3 button.h{background:var(--navy);border-color:var(--navy);color:#fff}.btns3 button.h:hover{background:#12293a}
+  #cv.clk{cursor:crosshair}
+  #cv{aspect-ratio:2/1}
+  .lgd{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .lgd span{display:inline-flex;align-items:center;gap:6px}
+  .lgd i{display:inline-block;width:20px;height:0;border-top:2px solid #333}
+  .lgd i.d{border-top-style:dashed}.lgd i.o{border-top-style:dotted}
+  .lgd b.sq{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .lgd b.dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+
+  /* ---- node classification additions ---- */
+  #bar{gap:14px 24px;align-items:center}
+  #btns{flex:0 0 auto}
+  #endb{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{min-width:130px}
+  #cctl{flex-wrap:wrap}
+  #cctl .sl{flex:1 1 140px;max-width:240px}
+  #cctl input[type=range]{height:12px}
+  #cctl input[type=range]::-webkit-slider-thumb{width:10px;height:10px;margin-top:-3.5px}
+  #cctl input[type=range]::-moz-range-thumb{width:10px;height:10px}
+  #cctl input.num{width:44px;font-size:12px}
+  #cctl .sl.off{opacity:.4;pointer-events:none}
+  #grid{aspect-ratio:760/505;height:auto}
+  #grid .nd{cursor:pointer}
+  .srow{margin:9px 0 2px}
+  .srow .row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#555;gap:8px}
+  .srow .row input.num{width:46px;font-size:12px}
+  .srow.off{opacity:.4;pointer-events:none}
+  .mtab{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12.5px;margin:4px 0 2px}
+  .mtab th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  .mtab th:first-child,.mtab td:first-child{text-align:left}
+  .mtab td{text-align:right;padding:3px 8px 3px 0}
+  .mtab tr.sel td{font-weight:700;color:#0b5f96}
+  #detail{min-height:84px}
+  .pgrid canvas{aspect-ratio:1/1}
+  .sw2{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;margin-right:4px}
+
+  /* ---- loss landscape additions ---- */
+    .lgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .lp .ph{display:flex;justify-content:space-between;align-items:baseline;gap:8px;font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 6px;min-height:18px}
+  .lp .ph .s{font-size:11.5px;letter-spacing:0;text-transform:none;color:#888;font-weight:400}
+  .lp canvas{display:block;width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff;touch-action:pan-y}
+  .lp canvas.d3{cursor:grab;touch-action:none}.lp canvas.d3.drag{cursor:grabbing}
+  .lp canvas.ct{cursor:crosshair}
+  .lp.hid{display:none}
+  .mtab td.dim,.mtab th.dim{color:#aaa}
+  #cbar{display:block;width:260px;height:34px}
+  #legend{align-items:flex-start;gap:6px 22px}
+  .sw3{display:inline-block;width:12px;height:12px;border-radius:2px;background:#e8590c;vertical-align:-2px;margin-right:4px}
+  #sweepmsg{font-size:12px;color:#888}
+  .pgrid canvas{cursor:default}
+  .setcard .row2 select{min-width:0;flex:0 1 auto}
+  .setcard .row2{gap:6px}
+  .lp canvas{aspect-ratio:3/2}
+  .pgrid canvas{aspect-ratio:3/2}
+  .lgrid.cmp .lp canvas{aspect-ratio:3/2}
+  #stwrap{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:6px}
+  #stwrap .sl{width:100%}
+  #cctl .crow{display:flex;flex-wrap:nowrap;gap:10px 16px;align-items:flex-end}
+  #cctl .crow .sl{flex:1 1 90px;min-width:0;max-width:230px}
+  #bar #cctl{flex:1.5 1 0}
+  #cctl .sl .row{align-items:flex-start;gap:4px;font-size:12px}
+  #cctl .sl .row span{white-space:nowrap}
+  #cctl input.num{width:44px}
+  #cctl .crow{gap:10px 12px}
+  #w_bpre select{min-width:150px}
+  .setcard .off{opacity:.4;pointer-events:none}
+  #w_epoch .row{display:none}
+  #status input.num{width:70px;font-size:20px;font-weight:300;padding:0 6px;text-align:center;letter-spacing:.02em}
+  #stwrap{flex:0 0 250px}
+  #stwrap .sl{width:100%}
+  #bar #cctl{flex:1 1 0}
+  #cctl .crow{gap:10px 28px}
+  #bar #cctl .crow .sl{max-width:none;flex:1 1 0}
+  #cctl .crow{gap:10px 28px;width:100%}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Loss Landscape Explorer</h1>
+  <p class="blurb">A small neural network is trained on a 2-D toy problem, and then its <b>training loss is evaluated on a plane through weight space</b>: the loss at <i>θ + α·d₁ + β·d₂</i> for two random directions <i>d₁, d₂</i> and a grid of α, β. Look at it as a <b>contour map</b> or a <b>3-D surface</b>. Change the <b>width</b> or <b>depth</b>, scrub through <b>training epochs</b>, compare a second model <b>side by side</b>, and put numbers on "sharp" and "flat": the largest Hessian eigenvalue and the loss increase under random weight perturbations. The page also shows where this picture is misleading: the same function can be made to look arbitrarily sharp by rescaling its weights.</p>
+
+  <div id="bar"><div class="grp tr" id="btns"><button class="btn" id="play" title="Play through training">&#9654;</button><button class="btn" id="step" title="Next saved epoch (+10)">Step</button><button class="btn" id="reset" title="Back to the initial weights (epoch 0)">&#8634;</button><button class="btn" id="endb" title="Jump to the last epoch">To end</button></div><div id="stwrap"><div id="status"></div><div id="cr0"></div></div><div id="cctl"><div class="crow" id="cr1"></div></div></div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="chead"></div>
+      <div class="lgrid" id="lgrid">
+        <div class="lp" id="lp1"><div class="ph"><span class="t"></span><span class="s"></span></div><canvas></canvas></div>
+        <div class="lp" id="lp2"><div class="ph"><span class="t"></span><span class="s"></span></div><canvas></canvas></div>
+        <div class="lp" id="lp3"><div class="ph"><span class="t"></span><span class="s"></span></div><canvas></canvas></div>
+        <div class="lp" id="lp4"><div class="ph"><span class="t"></span><span class="s"></span></div><canvas></canvas></div>
+      </div>
+      <div class="cap" id="hover" style="min-height:18px"></div>
+      <div class="lgd" id="legend"><canvas id="cbar"></canvas><span id="lgtxt"></span></div>
+      <div class="cap" id="capm"></div>
+      <div class="head" style="margin-top:20px" id="thead">Sharpness numbers</div>
+      <div class="card" style="margin:0"><div id="tbl"></div></div>
+      <div class="pgrid">
+        <div><div class="ph"><span>Training curves</span></div><canvas id="cl"></canvas><div class="cap" id="capl"></div></div>
+        <div><div class="ph"><select id="rsel" aria-label="Choose the chart"></select></div><canvas id="cr"></canvas><div class="cap" id="capr"></div></div>
+      </div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Scenario</div>
+        <div class="row2" style="margin-top:2px"><select id="scn" style="width:100%"></select></div>
+        <div class="hint" id="scnhint"></div>
+
+        <div class="sub">Data</div>
+        <div class="row2" style="margin:4px 0"><span class="hint">Dataset</span><select id="ds"></select><span style="flex:1"></span><span class="hint">Activation</span><select id="act"><option value="tanh">tanh</option><option value="relu">ReLU</option></select></div>
+        <div id="dctl"></div>
+        <div class="row2" style="margin-bottom:0"><button class="linkbtn" id="newd">New random data and initialisation</button></div>
+
+        <div class="sub">Training recipe (model A)</div>
+        <div class="row2" style="margin:4px 0"><span class="hint">Optimiser</span><select id="opt"><option value="adam">Adam</option><option value="sgd">SGD + momentum</option></select><span style="flex:1"></span><span class="hint">Batch</span><select id="bat"><option value="0">full</option><option value="32">32</option><option value="8">8</option></select></div>
+        <div id="rctl"></div>
+        <div class="row2" style="margin:8px 0 0"><span class="hint">Weight decay</span><select id="wd" style="min-width:80px"><option value="0">0</option><option value="0.0005">5e-4</option><option value="0.005">5e-3</option><option value="0.05">5e-2</option></select></div>
+
+        <div class="sub">Compare with a second model (B)</div>
+        <label class="chk" id="cmpl" title="Add a second model with its own width, depth and recipe"><input type="checkbox" id="cmp">Add model B</label>
+        <div class="hint" style="margin:0 0 4px">Model B uses the same data, activation and seed as model A; only its width, depth and recipe differ.</div>
+        <div id="bctl"></div>
+        <div class="row2" id="w_bpre" style="margin:6px 0 0"><span class="hint">Recipe of model B</span><select id="bpre"></select></div>
+
+        <div class="sub">Landscape</div>
+        <div class="row2" style="margin:4px 0"><span class="hint">Directions</span><select id="dirs"><option value="filter">filter-normalised</option><option value="raw">raw Gaussian</option></select><span style="flex:1"></span><span class="hint">Grid</span><select id="gn"><option value="21">21×21</option><option value="31">31×31</option><option value="41">41×41</option></select></div>
+        <div class="row2" style="margin:4px 0"><span class="hint">Loss colour scale</span><select id="scale"><option value="log">log</option><option value="lin">linear</option></select></div>
+        <div id="lctl"></div>
+        <div class="row2" style="margin:8px 0 0"><button class="linkbtn" id="newdir">Draw new random directions</button></div>
+      </div>
+      <div class="head" style="margin-top:22px">What you are looking at</div>
+      <div id="detail" class="card" style="margin:0"></div>
+      <div class="cap" id="tcap" style="margin-top:10px"></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+<h2>How it works</h2>
+
+<h3>What is plotted</h3>
+<p>A network with <i>n</i> weights is one point <span class="eq">θ</span> in an <i>n</i>-dimensional space, and its training loss is a function <span class="eq">L(θ)</span> of that point. You cannot look at <i>n</i> dimensions, so the page cuts a flat two-dimensional slice through the trained weights, spanned by two random directions, and evaluates the loss on a grid of that slice:</p>
+<div class="eqb">f(α, β) = L(θ + α·d₁ + β·d₂),   α, β ∈ [−R, R]</div>
+<p>The contour map and the 3-D surface are two views of the same grid (21×21 to 41×41 evaluations of the loss on the training set). The ring in the middle is the trained network itself. The epoch slider re-centres the slice on the weights saved at that epoch, so scrubbing it shows the basin being carved out while Adam or SGD runs. The loss drawn is the plain cross-entropy on the training points; a weight-decay term, if you switch it on, is not part of it.</p>
+
+<h3>The network and the training</h3>
+<p>A multilayer perceptron with 2 inputs, <i>depth</i> hidden layers of <i>width</i> units (tanh or ReLU), and one output logit with a sigmoid and cross-entropy loss, on a 2-D toy problem (two moons, circles, XOR blobs or a spiral; the training set has 20 to 150 points, the test set always 400). Initialisation is Glorot (tanh) or He (ReLU); training runs for 1000 epochs with Adam or SGD with momentum 0.9, full batch or mini-batches, optional weight decay, and optionally <b>sharpness-aware minimisation</b> (SAM): each step first moves the weights a distance ρ uphill along the gradient and then uses the gradient found there. Everything runs in your browser; the gradient was checked against finite differences and the loss, gradient and Hessian eigenvalue against an independent NumPy implementation (the eigenvalue agreed to about 1e-8 relative on the network I tried).</p>
+
+<h3>Why the directions are "filter-normalised"</h3>
+<p>If the two directions were plain Gaussian noise, a step of size 1 would mean very different things for a neuron with large weights and one with small weights, and two networks with differently scaled weights could not be compared at all. Li et al. therefore rescale each direction so that, for every neuron, the part that perturbs its incoming weights has the same norm as that neuron's own weight vector; biases are left alone. A coordinate of 1 then means "perturb every neuron by about its own size". The option <b>raw Gaussian</b> skips this (it only rescales the whole direction to the norm of θ) so you can see the difference.</p>
+
+<h3>The two numbers for "sharp"</h3>
+<ul>
+<li><b>λ_max</b>, the largest eigenvalue of the Hessian of the training loss: the curvature along the steepest direction. It is found by power iteration on Hessian-vector products (central differences of the analytic gradient). It is measured in the raw weight coordinates. The finite-difference step has to be tiny (1e-8): on ReLU networks a larger step crosses activation kinks, and with the step I first used (1e-4) the result was 10 to 30 times too large on the trained networks I checked. With the small step it matched the exact Gauss&ndash;Newton eigenvalue on the two ReLU networks I compared (for example 0.0114 against 0.0114, and 0.0024 against 0.0024); I did not test more networks than that.</li>
+<li><b>Mean loss increase at r = 0.25</b>: take 24 random filter-normalised directions, move the weights by 0.25 of their own size along each, and average how much the training loss goes up. This is the kind of quantity the flat-minimum literature uses (a neighbourhood in which the loss stays low). The chart "Loss vs perturbation size" shows the same thing for a range of <i>r</i>.</li>
+</ul>
+<p>The table also shows a Hutchinson estimate of the trace of the Hessian (the sum of all its eigenvalues, from 16 random ±1 probes). It is a noisy estimate, and it can come out negative if the weights are not at a minimum.</p>
+<p>A random direction is a poor probe of the sharpest direction: for an isotropic random direction the expected curvature is the trace of the Hessian divided by <i>n</i>, far smaller than λ_max when a few eigenvalues dominate. That is one reason a random-plane picture can look gentle while λ_max is large, and why the page reports both.</p>
+
+<h3>What I measured</h3>
+<p>All numbers below are medians over 24 runs (new data and new initialisation each time) on noisy two moons (noise 0.30, 60 training points, <b>1000 epochs</b>, Adam with learning rate 0.02 unless stated). I measured them in the same code the page runs; they describe this toy problem and these recipes, nothing more. The seed-to-seed spread is large, so a single run, or the single run each scenario shows, can differ from the median. After 1000 epochs most of these networks fit the training set almost perfectly (median training loss 1e-4 or below for Adam), which matters for how the numbers read; see "Training length" below.</p>
+
+<table class="mtab">
+<tr><th>Depth 2, Adam</th><th>λ_max</th><th>Loss increase</th><th>Test accuracy</th></tr>
+<tr><td>tanh, width 4</td><td>0.304</td><td>0.304</td><td>92.7 %</td></tr>
+<tr><td>tanh, width 16</td><td>0.070</td><td>0.198</td><td>92.9 %</td></tr>
+<tr><td>tanh, width 48</td><td>0.044</td><td>0.058</td><td>92.6 %</td></tr>
+<tr><td>ReLU, width 4</td><td>0.829</td><td>2.055</td><td>91.9 %</td></tr>
+<tr><td>ReLU, width 16</td><td>0.048</td><td>0.586</td><td>92.5 %</td></tr>
+<tr><td>ReLU, width 48</td><td>0.011</td><td>0.223</td><td>92.5 %</td></tr>
+</table>
+<p><b>Width.</b> Both numbers fall as the network gets wider, for tanh and for ReLU. Paired by seed, the width-48 network had the smaller loss increase than the width-4 network in 24 of 24 tanh runs and 22 of 24 ReLU runs, and the smaller λ_max in 21 and 23 of 24. The test accuracy did not follow: it moved by 0.6 points or less between widths, within the seed-to-seed spread.</p>
+<p><b>Depth.</b> Going from one hidden layer to four (width 16, tanh): the loss increase was higher for the deeper network in 21 of 24 paired runs (median ratio 2.1), but λ_max was lower in 13 of 24 (median ratio 0.78), so here the two numbers do not agree. The median test accuracy was 93.1&nbsp;% for one layer and 92.6&nbsp;% for four; the deeper network was more accurate in 9 of 24 runs.</p>
+
+<table class="mtab">
+<tr><th>tanh 16×2</th><th>Final train loss</th><th>λ_max</th><th>Loss increase</th><th>Test acc.</th></tr>
+<tr><td>Adam, full batch</td><td>0.0001</td><td>0.070</td><td>0.198</td><td>92.9 %</td></tr>
+<tr><td>SGD, full batch</td><td>0.0081</td><td>3.13</td><td>0.115</td><td>93.4 %</td></tr>
+<tr><td>SGD, batch 8</td><td>0.0015</td><td>0.641</td><td>0.166</td><td>93.2 %</td></tr>
+<tr><td>Adam + SAM (ρ 0.2)</td><td>0.0008</td><td>0.176</td><td>0.095</td><td>93.2 %</td></tr>
+<tr><td>Adam + weight decay 5e-3</td><td>0.0515</td><td>2.23</td><td>0.047</td><td>93.8 %</td></tr>
+</table>
+<p><b>Recipes.</b> The two sharpness numbers do not always agree. The paired counts below come from the scenario experiment (the same seeds the page's scenarios use) and can differ by one from the table, which is a separate 24-run set.</p>
+<ul>
+<li>SGD with batch 8 against SGD with full batch: λ_max was lower in all 24 paired runs (median ratio 0.18), which is the direction Keskar et al. report for small batches. The loss increase at r = 0.25 was <i>higher</i> in 18 of 24 runs (median ratio 1.37). The test accuracy was higher for batch 8 in only 5 of 24 runs. This is not a clean batch-size experiment: the two recipes also differ in learning rate (0.05 and 0.02) and in the number of steps (about 1,000 against about eight times as many).</li>
+<li>SAM against plain Adam: the loss increase was lower in 22 of 24 runs (median ratio 0.56), but λ_max was lower in only 6 of 24 (median ratio 2.1). Test accuracy was higher in 15 of 24 runs (median 93.2&nbsp;% against 92.9&nbsp;%); I did not test whether that is more than chance.</li>
+<li>Weight decay against plain Adam: the loss increase was lower in 22 of 24 runs (median ratio 0.34), while λ_max was lower in only 1 of 24 (median ratio 36). Test accuracy was higher in 18 of 24 (93.8&nbsp;% against 92.9&nbsp;%).</li>
+</ul>
+<p>Note that the recipes end at different training losses (table above). The weight-decay runs sit at a training loss of about 0.05 while plain Adam is near zero, so the comparison mixes sharpness with how far each fit got; I did not separate those two.</p>
+
+<h3>Training length</h3>
+<p>The same 24 tanh 16×2 Adam runs, measured on the weights saved at three epochs (medians):</p>
+<table class="mtab">
+<tr><th>Epoch</th><th>Train loss</th><th>λ_max</th><th>Loss increase</th><th>Test loss</th><th>Test acc.</th></tr>
+<tr><td>100</td><td>0.034</td><td>3.49</td><td>0.044</td><td>0.216</td><td>93.5 %</td></tr>
+<tr><td>300</td><td>0.0013</td><td>0.94</td><td>0.101</td><td>0.341</td><td>93.2 %</td></tr>
+<tr><td>1000</td><td>0.00007</td><td>0.070</td><td>0.181</td><td>0.481</td><td>92.9 %</td></tr>
+</table>
+<p>As the training loss goes to zero, λ_max keeps falling (the curvature of a cross-entropy loss shrinks as the predictions become confident), while the loss increase along random directions rises and the test loss rises with it; the test accuracy stays about the same. So the same network looks flatter or sharper depending on which number and which epoch you look at, and sharpness values are only comparable between networks trained to a similar loss. (This table used a different draw of the 24 random directions from the width table, hence 0.181 against 0.198.)</p>
+
+<p><b>Does sharpness predict generalisation here?</b> Over the 264 run entries of these experiments (24 of them are repeats, because the width-16 Adam runs appear in two tables), the rank correlation between test accuracy and λ_max was 0.02 and with the loss increase −0.14; against the test loss it was −0.23 for λ_max and 0.30 for the loss increase. All of these are weak. The loss increase has the sign a "flatter is better" story predicts for the test loss (a larger increase goes with a higher test loss), while λ_max has the opposite sign for it. Within the 24 width-16 tanh runs alone the correlations with test accuracy were −0.28 (λ_max) and 0.14 (loss increase). On this small problem I find no useful relationship; Li et al. report a correlation for filter-normalised sharpness on much larger networks, and I make no claim about those.</p>
+
+<div class="warn"><b>Rescaling a ReLU network changes its sharpness but not its function.</b> For a ReLU network, multiplying the first layer's weights and biases by <i>a</i> and dividing the next layer's weights by <i>a</i> leaves the output exactly the same, so the loss is the same too. The "ReLU rescaling" slider does this. Dinh et al. use this symmetry to argue that sharpness measured in raw weight coordinates cannot explain generalisation, because it can be made as large as you like without changing the function. On this page, for 8 trained 16×2 ReLU networks (median): a = 1, 2, 4, 8 give a raw λ_max of 0.041, 0.055, 0.142, 0.513, while the loss increase with filter-normalised directions stays at 0.3063 for every <i>a</i> (the landscape itself is identical to rounding error in my test). Across 12 runs (seeds 1 to 12), λ_max at a = 8 was larger than at a = 1 in all 12, by a median factor of about 12 (range 2 to 23). With raw Gaussian directions the landscape changes visibly as well; with filter-normalised ones it does not. Filter normalisation removes this particular symmetry, not every possible one.</div>
+
+<h3>Caveats</h3>
+<ul>
+<li>A 2-D slice with random directions shows the loss along two directions out of <i>n</i>. Another pair of directions would give another picture (use "Draw new random directions" to see how much it varies).</li>
+<li>The problem is tiny (2-D inputs, at most about 7,000 weights), the loss is cross-entropy, and the network is trained for a fixed 1000 epochs. Most Adam runs reach a training loss near zero, where sharpness numbers keep changing with training length (see above). Results here need not carry over to image or language models.</li>
+<li>The sweep charts train 8 runs per setting (new data each time) and show their median and range. λ_max has a heavy tail, so with so few runs the medians are noisy, and the 24-run medians above are the more reliable numbers; at some settings the two can visibly disagree. A sweep of 8 runs per setting at 1000 epochs also takes a while in the browser.</li>
+<li>λ_max and the trace use finite-difference Hessian-vector products with a step of 1e-8; at a ReLU network's kinks the Hessian is not defined, and the numbers are those of the function away from kinks. I verified the step against the exact eigenvalue on only a few ReLU networks.</li>
+</ul>
+
+<h3>References</h3>
+<ul>
+<li>H. Li, Z. Xu, G. Taylor, C. Studer, T. Goldstein. <i>Visualizing the Loss Landscape of Neural Nets.</i> NeurIPS 2018 (arXiv:1712.09913). Introduces filter normalisation.</li>
+<li>N. S. Keskar, D. Mudigere, J. Nocedal, M. Smelyanskiy, P. T. P. Tang. <i>On Large-Batch Training for Deep Learning: Generalization Gap and Sharp Minima.</i> ICLR 2017 (arXiv:1609.04836).</li>
+<li>L. Dinh, R. Pascanu, S. Bengio, Y. Bengio. <i>Sharp Minima Can Generalize For Deep Nets.</i> ICML 2017, PMLR 70:1019&ndash;1028.</li>
+<li>P. Foret, A. Kleiner, H. Mobahi, B. Neyshabur. <i>Sharpness-Aware Minimization for Efficiently Improving Generalization.</i> ICLR 2021 (arXiv:2010.01412).</li>
+<li>S. Hochreiter, J. Schmidhuber. <i>Flat Minima.</i> Neural Computation 9(1):1&ndash;42, 1997.</li>
+</ul>
+
+  </div>
+</div>
+<script>/* Loss Landscape Explorer: core (small MLP, trainers, curvature tools, landscape grid) */
+const LL = (function () {
+'use strict';
+
+/* ---------- random ---------- */
+function rng(seed) {
+  let a = seed >>> 0;
+  return function () {
+    a = (a + 0x6D2B79F5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+function gauss(r) {
+  let u = 0;
+  while (u === 0) u = r();
+  const v = r();
+  return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
+}
+
+/* ---------- data ---------- */
+function makeData(kind, n, noise, r) {
+  const X = new Float64Array(n * 2), y = new Float64Array(n);
+  for (let i = 0; i < n; i++) {
+    let x0, x1, c = i % 2;
+    if (kind === 'moons') {
+      const t = Math.PI * r();
+      if (c === 0) { x0 = Math.cos(t); x1 = Math.sin(t); }
+      else { x0 = 1 - Math.cos(t); x1 = 0.5 - Math.sin(t); }
+      x0 = (x0 - 0.5) * 1.4; x1 = (x1 - 0.25) * 1.4;
+    } else if (kind === 'circles') {
+      const t = 2 * Math.PI * r(), rad = c === 0 ? 1.25 : 0.55;
+      x0 = rad * Math.cos(t); x1 = rad * Math.sin(t);
+    } else if (kind === 'xor') {
+      const q = i % 4, sx = (q & 1) ? 1 : -1, sy = (q & 2) ? 1 : -1;
+      x0 = sx * 0.9; x1 = sy * 0.9;
+      c = (sx * sy > 0) ? 1 : 0;
+      x0 += 0.25 * gauss(r); x1 += 0.25 * gauss(r);
+    } else { // spiral
+      const t = Math.sqrt(r()), ang = t * 3 * Math.PI + c * Math.PI;
+      const rad = 0.15 + 1.35 * t;
+      x0 = rad * Math.cos(ang); x1 = rad * Math.sin(ang);
+    }
+    X[2 * i] = x0 + noise * gauss(r);
+    X[2 * i + 1] = x1 + noise * gauss(r);
+    y[i] = c;
+  }
+  return { X: X, y: y, n: n };
+}
+
+/* ---------- network ---------- */
+function makeNet(sizes, act) {
+  const L = sizes.length - 1, wOff = [], bOff = [];
+  let p = 0;
+  for (let l = 0; l < L; l++) {
+    wOff.push(p); p += sizes[l] * sizes[l + 1];
+    bOff.push(p); p += sizes[l + 1];
+  }
+  const A = [], Z = [], Dl = [];
+  for (let l = 0; l <= L; l++) A.push(new Float64Array(sizes[l]));
+  for (let l = 0; l < L; l++) { Z.push(new Float64Array(sizes[l + 1])); Dl.push(new Float64Array(sizes[l + 1])); }
+  const isW = new Uint8Array(p);
+  for (let l = 0; l < L; l++) for (let k = 0; k < sizes[l] * sizes[l + 1]; k++) isW[wOff[l] + k] = 1;
+  const net = { sizes: sizes.slice(), act: act, L: L, wOff: wOff, bOff: bOff, n: p, isW: isW, A: A, Z: Z, Dl: Dl };
+  net.tmp = [new Float64Array(p), new Float64Array(p), new Float64Array(p), new Float64Array(p)];
+  return net;
+}
+function initParams(net, seed) {
+  const r = rng(seed), th = new Float64Array(net.n);
+  for (let l = 0; l < net.L; l++) {
+    const fin = net.sizes[l], fout = net.sizes[l + 1];
+    const sd = net.act === 'relu' ? Math.sqrt(2 / fin) : Math.sqrt(2 / (fin + fout));
+    for (let k = 0; k < fin * fout; k++) th[net.wOff[l] + k] = sd * gauss(r);
+  }
+  return th;
+}
+
+function forwardOne(net, th, X, i) {
+  const A = net.A, Z = net.Z, L = net.L, S = net.sizes, relu = net.act === 'relu';
+  A[0][0] = X[2 * i]; A[0][1] = X[2 * i + 1];
+  for (let l = 0; l < L; l++) {
+    const fin = S[l], fout = S[l + 1], wo = net.wOff[l], bo = net.bOff[l];
+    const a = A[l], z = Z[l], o = A[l + 1], last = l === L - 1;
+    for (let j = 0; j < fout; j++) {
+      let s = th[bo + j];
+      const base = wo + j * fin;
+      for (let k = 0; k < fin; k++) s += th[base + k] * a[k];
+      z[j] = s;
+      o[j] = last ? s : (relu ? (s > 0 ? s : 0) : Math.tanh(s));
+    }
+  }
+  return Z[L - 1][0];
+}
+function bce(z, y) { return (z > 0 ? z : 0) - y * z + Math.log1p(Math.exp(-Math.abs(z))); }
+function sigm(z) { return z >= 0 ? 1 / (1 + Math.exp(-z)) : Math.exp(z) / (1 + Math.exp(z)); }
+
+/* mean BCE over idx (or all samples when idx is null) */
+function loss(net, th, D, idx) {
+  const m = idx ? idx.length : D.n;
+  let s = 0;
+  for (let q = 0; q < m; q++) {
+    const i = idx ? idx[q] : q;
+    s += bce(forwardOne(net, th, D.X, i), D.y[i]);
+  }
+  return s / m;
+}
+function accuracy(net, th, D) {
+  let c = 0;
+  for (let i = 0; i < D.n; i++) {
+    const z = forwardOne(net, th, D.X, i);
+    if ((z > 0 ? 1 : 0) === D.y[i]) c++;
+  }
+  return c / D.n;
+}
+/* mean BCE and gradient (written into g) */
+function lossGrad(net, th, D, idx, g) {
+  g.fill(0);
+  const m = idx ? idx.length : D.n, L = net.L, S = net.sizes, relu = net.act === 'relu';
+  const A = net.A, Z = net.Z, Dl = net.Dl;
+  let s = 0;
+  for (let q = 0; q < m; q++) {
+    const i = idx ? idx[q] : q;
+    const z = forwardOne(net, th, D.X, i);
+    s += bce(z, D.y[i]);
+    Dl[L - 1][0] = (sigm(z) - D.y[i]) / m;
+    for (let l = L - 1; l >= 0; l--) {
+      const fin = S[l], fout = S[l + 1], wo = net.wOff[l], bo = net.bOff[l];
+      const d = Dl[l], a = A[l];
+      for (let j = 0; j < fout; j++) {
+        const dj = d[j], base = wo + j * fin;
+        g[bo + j] += dj;
+        for (let k = 0; k < fin; k++) g[base + k] += dj * a[k];
+      }
+      if (l > 0) {
+        const dp = Dl[l - 1], zp = Z[l - 1], ap = A[l];
+        for (let k = 0; k < fin; k++) {
+          let t = 0;
+          for (let j = 0; j < fout; j++) t += th[wo + j * fin + k] * d[j];
+          dp[k] = t * (relu ? (zp[k] > 0 ? 1 : 0) : (1 - ap[k] * ap[k]));
+        }
+      }
+    }
+  }
+  return s / m;
+}
+
+/* ---------- training ---------- */
+/* opt: {seed, optim:'adam'|'sgd', lr, batch (0 = full), rho, wd, epochs, snapEvery, theta0} */
+function makeTrainer(net, D, T, opt) {
+  const th = opt.theta0 ? Float64Array.from(opt.theta0) : initParams(net, opt.seed);
+  const n = net.n, g = new Float64Array(n), g2 = new Float64Array(n), mo = new Float64Array(n), vv = new Float64Array(n), pt = new Float64Array(n);
+  const r = rng(opt.seed * 7919 + 13);
+  const perm = new Int32Array(D.n); for (let i = 0; i < D.n; i++) perm[i] = i;
+  const bs = (opt.batch > 0 && opt.batch < D.n) ? opt.batch : D.n;
+  const tr = {
+    net: net, th: th, ep: 0, step: 0,
+    trL: [], teL: [], trA: [], teA: [], snaps: [], opt: opt,
+    record: function () {
+      if (opt.light) return;
+      this.trL.push(loss(net, th, D, null)); this.teL.push(loss(net, th, T, null));
+      this.trA.push(accuracy(net, th, D)); this.teA.push(accuracy(net, th, T));
+      if (this.ep % (opt.snapEvery || 5) === 0) this.snaps.push({ ep: this.ep, theta: Float64Array.from(th) });
+    },
+    epoch: function () {
+      for (let i = D.n - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); const t = perm[i]; perm[i] = perm[j]; perm[j] = t; }
+      for (let s0 = 0; s0 < D.n; s0 += bs) {
+        const idx = bs === D.n ? null : perm.subarray(s0, Math.min(D.n, s0 + bs));
+        lossGrad(net, th, D, idx, g);
+        let gg = g;
+        if (opt.rho > 0) {
+          let nr = 0; for (let k = 0; k < n; k++) nr += g[k] * g[k];
+          nr = Math.sqrt(nr) + 1e-12;
+          for (let k = 0; k < n; k++) pt[k] = th[k] + opt.rho * g[k] / nr;
+          lossGrad(net, pt, D, idx, g2);
+          gg = g2;
+        }
+        this.step++;
+        if (opt.wd > 0) for (let k = 0; k < n; k++) if (net.isW[k]) gg[k] += opt.wd * th[k];
+        if (opt.optim === 'adam') {
+          const b1 = 0.9, b2 = 0.999, t = this.step, c1 = 1 - Math.pow(b1, t), c2 = 1 - Math.pow(b2, t);
+          for (let k = 0; k < n; k++) {
+            mo[k] = b1 * mo[k] + (1 - b1) * gg[k];
+            vv[k] = b2 * vv[k] + (1 - b2) * gg[k] * gg[k];
+            th[k] -= opt.lr * (mo[k] / c1) / (Math.sqrt(vv[k] / c2) + 1e-8);
+          }
+        } else {
+          for (let k = 0; k < n; k++) { mo[k] = 0.9 * mo[k] + gg[k]; th[k] -= opt.lr * mo[k]; }
+        }
+      }
+      this.ep++;
+      this.record();
+    }
+  };
+  tr.record();
+  return tr;
+}
+function trainAll(net, D, T, opt) {
+  const tr = makeTrainer(net, D, T, opt);
+  while (tr.ep < opt.epochs) tr.epoch();
+  if (tr.snaps[tr.snaps.length - 1].ep !== tr.ep) tr.snaps.push({ ep: tr.ep, theta: Float64Array.from(tr.th) });
+  return tr;
+}
+
+/* ---------- curvature ---------- */
+function norm(v) { let s = 0; for (let i = 0; i < v.length; i++) s += v[i] * v[i]; return Math.sqrt(s); }
+function dot(a, b) { let s = 0; for (let i = 0; i < a.length; i++) s += a[i] * b[i]; return s; }
+
+/* Hessian-vector product of the data loss by central differences of the analytic gradient */
+function hvp(net, th, D, v, out) {
+  const n = net.n, tp = net.tmp[0], gp = net.tmp[1], gm = net.tmp[2];
+  const h = (net.hFD || 1e-8) / Math.max(norm(v), 1e-12);
+  for (let k = 0; k < n; k++) tp[k] = th[k] + h * v[k];
+  lossGrad(net, tp, D, null, gp);
+  for (let k = 0; k < n; k++) tp[k] = th[k] - h * v[k];
+  lossGrad(net, tp, D, null, gm);
+  for (let k = 0; k < n; k++) out[k] = (gp[k] - gm[k]) / (2 * h);
+}
+function power(net, th, D, r, shift, iters, tol) {
+  const n = net.n, v = new Float64Array(n), w = new Float64Array(n);
+  for (let k = 0; k < n; k++) v[k] = gauss(r);
+  let nv = norm(v); for (let k = 0; k < n; k++) v[k] /= nv;
+  let lam = 0;
+  for (let it = 0; it < iters; it++) {
+    hvp(net, th, D, v, w);
+    for (let k = 0; k < n; k++) w[k] -= shift * v[k];
+    const nl = dot(v, w);
+    const nw = norm(w);
+    if (nw < 1e-14) return 0 + shift * 0;
+    for (let k = 0; k < n; k++) v[k] = w[k] / nw;
+    if (it > 19 && Math.abs(nl - lam) <= tol * Math.max(Math.abs(nl), 1e-12)) { lam = nl; break; }
+    lam = nl;
+  }
+  return lam;
+}
+/* largest eigenvalue (algebraic) of the Hessian of the training loss */
+function lambdaMax(net, th, D, r, iters, tol) {
+  iters = iters || 300; tol = tol || 1e-7;
+  const l1 = power(net, th, D, r, 0, iters, tol);
+  if (l1 >= 0) return l1;
+  return power(net, th, D, r, l1, iters, tol) + l1;
+}
+/* Hutchinson trace estimate with Rademacher probes */
+function traceH(net, th, D, r, m) {
+  const n = net.n, v = new Float64Array(n), w = new Float64Array(n);
+  let s = 0;
+  for (let q = 0; q < m; q++) {
+    for (let k = 0; k < n; k++) v[k] = r() < 0.5 ? -1 : 1;
+    hvp(net, th, D, v, w);
+    s += dot(v, w);
+  }
+  return s / m;
+}
+
+/* ---------- directions ---------- */
+/* filter-wise normalised random direction: each neuron's incoming weight row gets the norm of the
+   corresponding row of th; biases get zero. */
+function filterDir(net, th, r) {
+  const d = new Float64Array(net.n);
+  for (let l = 0; l < net.L; l++) {
+    const fin = net.sizes[l], fout = net.sizes[l + 1], wo = net.wOff[l];
+    for (let j = 0; j < fout; j++) {
+      let nd = 0, nt = 0;
+      for (let k = 0; k < fin; k++) { const x = gauss(r); d[wo + j * fin + k] = x; nd += x * x; nt += th[wo + j * fin + k] * th[wo + j * fin + k]; }
+      const sc = nd > 0 ? Math.sqrt(nt / nd) : 0;
+      for (let k = 0; k < fin; k++) d[wo + j * fin + k] *= sc;
+    }
+  }
+  return d;
+}
+/* raw Gaussian direction scaled to the global norm of th (biases included) */
+function rawDir(net, th, r) {
+  const d = new Float64Array(net.n);
+  for (let k = 0; k < net.n; k++) d[k] = gauss(r);
+  const sc = norm(th) / norm(d);
+  for (let k = 0; k < net.n; k++) d[k] *= sc;
+  return d;
+}
+
+/* ---------- landscape ---------- */
+/* rows i0..i1-1 of an N x N grid; value[i*N+j] = L(th + a_j d1 + b_i d2), a,b in [-R,R] */
+function gridRows(net, th, D, d1, d2, R, N, i0, i1, out) {
+  const tp = net.tmp[3], n = net.n;
+  for (let i = i0; i < i1; i++) {
+    const b = -R + 2 * R * i / (N - 1);
+    for (let j = 0; j < N; j++) {
+      const a = -R + 2 * R * j / (N - 1);
+      for (let k = 0; k < n; k++) tp[k] = th[k] + a * d1[k] + b * d2[k];
+      out[i * N + j] = loss(net, tp, D, null);
+    }
+  }
+}
+/* least-squares coordinates (alpha, beta) of (p - th) in span(d1, d2) */
+function project(th, p, d1, d2) {
+  const n = th.length;
+  let g11 = 0, g12 = 0, g22 = 0, c1 = 0, c2 = 0;
+  for (let k = 0; k < n; k++) {
+    const x = p[k] - th[k];
+    g11 += d1[k] * d1[k]; g12 += d1[k] * d2[k]; g22 += d2[k] * d2[k];
+    c1 += d1[k] * x; c2 += d2[k] * x;
+  }
+  const det = g11 * g22 - g12 * g12;
+  return [(c1 * g22 - c2 * g12) / det, (c2 * g11 - c1 * g12) / det];
+}
+/* mean loss increase at relative perturbation size r along K filter-normalised random directions */
+function meanIncrease(net, th, D, r, rad, K) {
+  const base = loss(net, th, D, null), tp = new Float64Array(net.n);
+  let s = 0;
+  for (let q = 0; q < K; q++) {
+    const d = filterDir(net, th, r);
+    for (let k = 0; k < net.n; k++) tp[k] = th[k] + rad * d[k];
+    s += loss(net, tp, D, null) - base;
+  }
+  return s / K;
+}
+
+/* ReLU rescaling: (W1,b1) *= a, W2 /= a; function unchanged. */
+function reparam(net, th, a) {
+  if (net.act !== 'relu') throw new Error('relu only');
+  const o = Float64Array.from(th);
+  for (let k = 0; k < net.sizes[0] * net.sizes[1]; k++) o[net.wOff[0] + k] *= a;
+  for (let k = 0; k < net.sizes[1]; k++) o[net.bOff[0] + k] *= a;
+  for (let k = 0; k < net.sizes[1] * net.sizes[2]; k++) o[net.wOff[1] + k] /= a;
+  return o;
+}
+
+return { rng, gauss, makeData, makeNet, initParams, forwardOne, loss, accuracy, lossGrad, makeTrainer, trainAll,
+  hvp, lambdaMax, traceH, filterDir, rawDir, gridRows, project, meanIncrease, reparam, norm, dot, sigm };
+})();
+
+</script>
+<script>
+(function () {
+"use strict";
+const $ = id => document.getElementById(id);
+const fm = (v, d) => { const s = (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d); return s.replace("-", "−"); };
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+const FONT = "11px Roboto,Arial,sans-serif";
+function frame(c, w, h, o) {
+  const pw = w - o.l - o.r, ph = h - o.t - o.b, lx = v => o.xlog ? Math.log(v) : v;
+  const X = v => o.l + (lx(v) - lx(o.x[0])) / (lx(o.x[1]) - lx(o.x[0])) * pw, Y = v => o.t + (1 - (v - o.y[0]) / (o.y[1] - o.y[0])) * ph;
+  const Y2 = o.y2 ? (v => o.t + (1 - (v - o.y2[0]) / (o.y2[1] - o.y2[0])) * ph) : null;
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (const t of o.xt) { c.beginPath(); c.moveTo(X(t), o.t); c.lineTo(X(t), o.t + ph); c.stroke(); c.fillText((o.fx || (v => fm(v, 1)))(t), X(t), o.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const t of o.yt) { c.beginPath(); c.moveTo(o.l, Y(t)); c.lineTo(o.l + pw, Y(t)); c.stroke(); c.fillText((o.fy || (v => fm(v, 1)))(t), o.l - 5, Y(t)); }
+  if (o.y2) { c.textAlign = "left"; c.fillStyle = o.c2 || "#777"; for (const t of o.yt2) c.fillText((o.fy2 || (v => fm(v, 2)))(t), o.l + pw + 5, Y2(t)); c.fillStyle = "#777"; }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(o.l, o.t, pw, ph);
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  if (o.xlab) c.fillText(o.xlab, o.l + pw / 2, o.t + ph + 30);
+  if (o.ylab) { c.save(); c.translate(12, o.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylab, 0, 0); c.restore(); }
+  return {X, Y, Y2, pw, ph};
+}
+function clipTo(c, o, w, h) { c.save(); c.beginPath(); c.rect(o.l, o.t, w - o.l - o.r, h - o.t - o.b); c.clip(); }
+
+function drawLines(cv, o) {
+  const {c, w, h} = prep(cv), r = o.r || 14;
+  const fr = frame(c, w, h, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38, x: o.x, y: o.y, y2: o.y2, c2: o.c2, xt: o.xt, yt: o.yt, yt2: o.yt2, xlog: o.xlog, fx: o.fx, fy: o.fy, fy2: o.fy2, xlab: o.xlab, ylab: o.ylab});
+  const {X, Y, Y2} = fr; clipTo(c, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38}, w, h);
+  for (const s of o.series) {
+    const YY = s.ax2 ? Y2 : Y, pts = s.x.map((x, i) => [x, s.y[i]]).filter(p => p[1] !== null && isFinite(p[1]));
+    if (s.band) { c.fillStyle = s.color; c.globalAlpha = 0.16; c.beginPath(); s.x.forEach((x, i) => i ? c.lineTo(X(x), YY(s.band[1][i])) : c.moveTo(X(x), YY(s.band[1][i]))); for (let i = s.x.length - 1; i >= 0; i--) c.lineTo(X(s.x[i]), YY(s.band[0][i])); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    c.strokeStyle = s.color; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []); c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), YY(p[1])) : c.moveTo(X(p[0]), YY(p[1]))); c.stroke(); c.setLineDash([]);
+    if (s.dots) { c.fillStyle = s.color; pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), YY(p[1]), 2.6, 0, 2 * Math.PI); c.fill(); }); }
+  }
+  for (const v of o.vlines || []) { c.strokeStyle = v.color || "#555"; c.setLineDash([4, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(v.x), 12); c.lineTo(X(v.x), h - 38); c.stroke(); c.setLineDash([]); }
+  for (const m of o.marks || []) { c.fillStyle = m.color; c.beginPath(); c.arc(X(m.x), Y(m.y), 4.5, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.3; c.stroke(); }
+  c.restore();
+  if (o.legend) { c.font = FONT; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.82)"; c.fillRect(w - (o.y2 ? 46 : r) - 156, 14, 150, o.legend.length * 14 + 4); let y = 22; for (const s of o.legend) { c.fillStyle = s.color; c.fillRect(w - (o.y2 ? 46 : r) - 150, y - 4, 14, 3); c.fillStyle = "#444"; c.textAlign = "left"; c.fillText(s.t, w - (o.y2 ? 46 : r) - 130, y - 2); y += 14; } }
+  if (o.ylab2) { c.save(); c.translate(w - 8, 12 + (h - 50) / 2); c.rotate(Math.PI / 2); c.fillStyle = o.c2 || "#555"; c.font = FONT; c.textAlign = "center"; c.fillText(o.ylab2, 0, 0); c.restore(); }
+  if (o.msg) { c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(48, h / 2 - 14, w - 62, 28); c.fillStyle = "#555"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.msg, 48 + (w - 62) / 2, h / 2); }
+}
+const E = 1000, SNAP = 10, NTEST = 400;
+const BLUE = "#0877bd", ORANGE = "#e8590c", NAVY = "#1b3b4f";
+
+/* ---------- state ---------- */
+const DSN = [["moons", "Two moons"], ["circles", "Circles"], ["xor", "XOR blobs"], ["spiral", "Spiral"]];
+const PRESETS = [["same", "Same recipe as A"], ["adam", "Adam, full batch"], ["sgdf", "SGD, full batch"], ["sgd8", "SGD, batch 8"], ["sam", "Adam + SAM (ρ = 0.2)"], ["wd", "Adam + weight decay 5e-3"]];
+const PRE = {
+  adam: { optim: "adam", lr: 0.02, batch: 0, rho: 0, wd: 0 },
+  sgdf: { optim: "sgd", lr: 0.05, batch: 0, rho: 0, wd: 0 },
+  sgd8: { optim: "sgd", lr: 0.02, batch: 8, rho: 0, wd: 0 },
+  sam: { optim: "adam", lr: 0.02, batch: 0, rho: 0.2, wd: 0 },
+  wd: { optim: "adam", lr: 0.02, batch: 0, rho: 0, wd: 0.005 }
+};
+const RA = o => Object.assign({ w: 16, d: 2, optim: "adam", lr: 0.02, batch: 0, rho: 0, wd: 0 }, o || {});
+function base() {
+  return { ds: "moons", noise: 0.3, ntr: 60, act: "tanh", seed: 22, dseed: 1, A: RA(), cmp: false, B: { w: 48, d: 2, preset: "same" },
+    epoch: E, playing: false, speed: 100, dirs: "filter", R: 1, N: 31, scale: "log", cap: 4, resc: 0, rsel: "prof", scn: "one", yaw: -0.75, pitch: 0.62, dragging: false };
+}
+const S = base();
+const SCEN = [
+  ["one", "A single network", "One tanh network (16 units per layer, 2 layers) trained with Adam on noisy moons. Scrub the epoch slider and watch the basin form.", {}],
+  ["wid", "Narrow vs wide", "A has 4 units per layer, B has 48; same data, same recipe, same random directions.", { seed: 24, cmp: true, A: RA({ w: 4 }), B: { w: 48, d: 2, preset: "same" } }],
+  ["dep", "Shallow vs deep", "A has one hidden layer, B has four; 16 units each.", { seed: 8, cmp: true, A: RA({ d: 1 }), B: { w: 16, d: 4, preset: "same" } }],
+  ["sam", "Adam vs SAM", "B uses sharpness-aware minimisation (ρ = 0.2) instead of plain Adam.", { seed: 8, cmp: true, B: { w: 16, d: 2, preset: "sam" } }],
+  ["bat", "SGD: full batch vs batch 8", "Both models use SGD with momentum; B draws a mini-batch of 8 at every step. Compare the two sharpness numbers.", { seed: 22, cmp: true, A: RA({ optim: "sgd", lr: 0.05 }), B: { w: 16, d: 2, preset: "sgd8" } }],
+  ["wdk", "Adam vs Adam + weight decay", "B adds weight decay 5e-3. Compare the two sharpness numbers.", { seed: 22, cmp: true, B: { w: 16, d: 2, preset: "wd" } }],
+  ["rs", "ReLU rescaling (same function)", "The ReLU network is rescaled (first layer ×8, second layer ÷8): the function is identical. Slide the rescaling a back to 1 and compare: with raw directions the landscape and λ_max change a lot; switch the directions to filter-normalised and they do not.", { seed: 12, act: "relu", dirs: "raw", resc: 3, R: 0.15 }]
+];
+
+/* ---------- models, data ---------- */
+const MOD = { A: {}, B: {} }, LAND = { A: null, B: null };
+let D = null, T = null, dsig = "", landTok = null, landBusy = false, pend = 0, pt = 0;
+const keys = () => S.cmp ? ["A", "B"] : ["A"];
+function recipe(key) { if (key === "A") return S.A; const p = S.B.preset; return p === "same" ? S.A : PRE[p]; }
+function specOf(key) { const r = recipe(key), m = key === "A" ? S.A : S.B; return { w: m.w, d: m.d, optim: r.optim, lr: r.lr, batch: r.batch, rho: r.rho, wd: r.wd }; }
+function specSig(key) { const s = specOf(key); return [S.act, S.seed, dsig, s.w, s.d, s.optim, s.lr, s.batch, s.rho, s.wd].join("|"); }
+const sizesOf = s => [2].concat(Array(s.d).fill(s.w), [1]);
+
+/* ---------- job runner (time-sliced generators) ---------- */
+function run(gen, tok, done) {
+  (function slice() {
+    if (tok.dead) return;
+    const t0 = performance.now(); let r;
+    do { r = gen.next(); } while (!r.done && performance.now() - t0 < 12 && !tok.dead);
+    if (tok.dead) return;
+    if (r.done) { if (done) done(); } else setTimeout(slice, 0);
+  })();
+}
+function* trainGen(key, M, Dd, Td) {
+  const s = specOf(key), net = LL.makeNet(sizesOf(s), S.act);
+  const tr = LL.makeTrainer(net, Dd, Td, { seed: S.seed, optim: s.optim, lr: s.lr, batch: s.batch, rho: s.rho, wd: s.wd, snapEvery: SNAP });
+  M.net = net; M.tr = tr; M.D = Dd; M.T = Td;
+  while (tr.ep < E) { tr.epoch(); M.prog = tr.ep / E; if (tr.ep % 5 === 0) yield; }
+  M.ready = true;
+}
+function startTrain() {
+  const ds = [S.ds, S.noise, S.ntr, S.seed].join();
+  if (ds !== dsig) { dsig = ds; D = LL.makeData(S.ds, S.ntr, S.noise, LL.rng(100 + S.seed)); T = LL.makeData(S.ds, NTEST, S.noise, LL.rng(1100 + S.seed)); }
+  if (landTok) landTok.dead = true; landBusy = false;
+  if (swTok) { swTok.dead = true; swSig = ""; }
+  let need = 0;
+  for (const key of keys()) {
+    const M = MOD[key], sig = specSig(key);
+    if (M.sig === sig && M.ready) continue;
+    if (M.tok) M.tok.dead = true;
+    M.sig = sig; M.ready = false; M.prog = 0; M.tok = { dead: false }; need++;
+    LAND[key] = null;
+    run(trainGen(key, M, D, T), M.tok, () => { afterTrain(); });
+  }
+  if (!need) startLand();
+  draw();
+}
+function afterTrain() { if (keys().every(k => MOD[k].ready)) startLand(); else draw(); }
+
+/* ---------- landscape + sharpness numbers ---------- */
+const effN = () => (S.playing || S.dragging) ? 17 : S.N;
+function viewTheta(key) {
+  const M = MOD[key], th = M.tr.snaps[Math.round(S.epoch / SNAP)].theta;
+  return (S.act === "relu" && S.resc !== 0) ? LL.reparam(M.net, th, Math.pow(2, S.resc)) : th;
+}
+function* landGen(key) {
+  const M = MOD[key], net = M.net, th = viewTheta(key), Dd = M.D;
+  const dr = LL.rng(1000 * S.dseed + (key === "A" ? 1 : 2)), mk = S.dirs === "filter" ? LL.filterDir : LL.rawDir;
+  const d1 = mk(net, th, dr), d2 = mk(net, th, dr), N = effN(), g = new Float64Array(N * N);
+  const out = { grid: g, N: N, R: S.R, epoch: S.epoch, met: null, dirs: S.dirs };
+  const lossC = LL.loss(net, th, Dd, null);
+  out.center = lossC;
+  for (let i = 0; i < N; i++) { LL.gridRows(net, th, Dd, d1, d2, S.R, N, i, i + 1, g); if (i % 2) yield; }
+  LAND[key] = out; draw();
+  yield;
+  if (S.playing || S.dragging) return;
+  const met = { n: net.n };
+  met.lmax = LL.lambdaMax(net, th, Dd, LL.rng(5), 300, 1e-7); yield;
+  met.trace = LL.traceH(net, th, Dd, LL.rng(6), 16); yield;
+  const K = 24, nr = 11, radii = []; for (let j = 0; j < nr; j++) radii.push(S.R * j / (nr - 1));
+  const mean = new Float64Array(nr), mn = new Float64Array(nr).fill(Infinity), mx = new Float64Array(nr).fill(-Infinity);
+  const rp = LL.rng(7), tp = new Float64Array(net.n); let inc = 0;
+  for (let k = 0; k < K; k++) {
+    const d = LL.filterDir(net, th, rp);
+    for (let j = 0; j < nr; j++) {
+      for (let q = 0; q < net.n; q++) tp[q] = th[q] + radii[j] * d[q];
+      const L = LL.loss(net, tp, Dd, null); mean[j] += L / K; if (L < mn[j]) mn[j] = L; if (L > mx[j]) mx[j] = L;
+    }
+    for (let q = 0; q < net.n; q++) tp[q] = th[q] + 0.25 * d[q];
+    inc += (LL.loss(net, tp, Dd, null) - lossC) / K;
+    yield;
+  }
+  met.inc = inc; met.radii = radii; met.pm = mean; met.pmin = mn; met.pmax = mx;
+  out.met = met; draw();
+}
+function* landAll() { for (const k of keys()) if (MOD[k].ready) yield* landGen(k); }
+function startLand() {
+  if (landTok) landTok.dead = true;
+  const tok = landTok = { dead: false }; landBusy = true;
+  run(landAll(), tok, () => { landBusy = false; draw(); if (S.wantPlay) { S.wantPlay = false; play(); } });
+}
+function refresh(level) {
+  pend = Math.max(pend, level);
+  clearTimeout(pt);
+  pt = setTimeout(() => { const l = pend; pend = 0; if (l >= 3) startTrain(); else if (l === 2) { if (keys().every(k => MOD[k].ready)) startLand(); } }, level >= 3 ? 150 : (S.dragging || S.playing) ? 0 : 50);
+  draw();
+}
+function custom() { S.scn = ""; }
+
+/* ---------- sweeps ---------- */
+const SW = {}; let swTok = null, swSig = "";
+function sweepSig(kind) {
+  const a = S.A;
+  return [kind, S.ds, S.noise, S.ntr, S.act, a.w, a.d, a.optim, a.lr, a.batch, a.rho, a.wd].join("|");
+}
+function* sweepGen(kind, sig) {
+  const xs = kind === "w" ? [2, 4, 8, 16, 32, 48] : [1, 2, 3, 4], seeds = [1, 2, 3, 4, 5, 6, 7, 8], out = { xs: xs, inc: [], lmax: [], done: 0, tot: xs.length * seeds.length };
+  SW[sig] = out;
+  const dsets = seeds.map(s => [LL.makeData(S.ds, S.ntr, S.noise, LL.rng(100 + s)), LL.makeData(S.ds, NTEST, S.noise, LL.rng(1100 + s))]);
+  for (const x of xs) {
+    const incs = [], lms = [];
+    for (const s of seeds) {
+      const Dd = dsets[s - 1][0], Td = dsets[s - 1][1];
+      const sp = Object.assign({}, specOf("A")); if (kind === "w") sp.w = x; else sp.d = x;
+      const net = LL.makeNet(sizesOf(sp), S.act);
+      const tr = LL.makeTrainer(net, Dd, Td, { seed: s, optim: sp.optim, lr: sp.lr, batch: sp.batch, rho: sp.rho, wd: sp.wd, snapEvery: 100000, light: true });
+      while (tr.ep < E) { tr.epoch(); if (tr.ep % 15 === 0) yield; }
+      incs.push(LL.meanIncrease(net, tr.th, Dd, LL.rng(7), 0.25, 24)); yield;
+      lms.push(LL.lambdaMax(net, tr.th, Dd, LL.rng(5), 300, 1e-7)); yield;
+      out.done++;
+    }
+    out.inc.push(incs); out.lmax.push(lms); draw();
+  }
+  out.fin = true;
+}
+function ensureSweep() {
+  if (S.rsel !== "swW" && S.rsel !== "swD") return;
+  if (!keys().every(k => MOD[k].ready) || !MOD.A.ready) return;
+  const kind = S.rsel === "swW" ? "w" : "d", sig = sweepSig(kind);
+  if ((SW[sig] && SW[sig].fin) || swSig === sig) return;
+  if (swTok) swTok.dead = true; swSig = sig; swTok = { dead: false };
+  run(sweepGen(kind, sig), swTok, () => { swSig = ""; draw(); });
+}
+
+/* ---------- colour ---------- */
+const STOPS = [[0, [238, 246, 251]], [0.35, [141, 193, 230]], [0.7, [8, 119, 189]], [1, [27, 59, 79]]], OVER = [232, 89, 12];
+function cmap(t) {
+  if (t > 1) return OVER; if (t < 0) t = 0;
+  for (let i = 1; i < STOPS.length; i++) if (t <= STOPS[i][0]) { const a = STOPS[i - 1], b = STOPS[i], u = (t - a[0]) / (b[0] - a[0]); return [0, 1, 2].map(k => a[1][k] + u * (b[1][k] - a[1][k])); }
+  return STOPS[STOPS.length - 1][1];
+}
+const LOGLO = -3;
+function tnorm(L) { if (S.scale === "log") return (Math.log10(Math.max(L, 1e-4)) - LOGLO) / (Math.log10(S.cap) - LOGLO); return L / S.cap; }
+const rgb = c => "rgb(" + Math.round(c[0]) + "," + Math.round(c[1]) + "," + Math.round(c[2]) + ")";
+function levels() {
+  if (S.scale === "log") return [0.003, 0.01, 0.03, 0.1, 0.3, 1, 3, 10].filter(v => v < S.cap);
+  const a = []; for (let k = 1; k < 8; k++) a.push(S.cap * k / 8); return a;
+}
+
+/* ---------- landscape drawing ---------- */
+function bilin(g, N, i, j) {
+  const i0 = Math.min(N - 2, Math.max(0, Math.floor(i))), j0 = Math.min(N - 2, Math.max(0, Math.floor(j))), fi = i - i0, fj = j - j0;
+  const a = g[i0 * N + j0], b = g[i0 * N + j0 + 1], c = g[(i0 + 1) * N + j0], d = g[(i0 + 1) * N + j0 + 1];
+  return (a * (1 - fj) + b * fj) * (1 - fi) + (c * (1 - fj) + d * fj) * fi;
+}
+const CASES = [[], [[3, 0]], [[0, 1]], [[3, 1]], [[1, 2]], [[3, 0], [1, 2]], [[0, 2]], [[3, 2]], [[2, 3]], [[0, 2]], [[0, 1], [2, 3]], [[1, 2]], [[1, 3]], [[0, 1]], [[3, 0]], []];
+function contourSegs(g, N, lev) {
+  const segs = [];
+  for (let i = 0; i < N - 1; i++) for (let j = 0; j < N - 1; j++) {
+    const a = g[i * N + j], b = g[i * N + j + 1], c = g[(i + 1) * N + j + 1], d = g[(i + 1) * N + j];
+    const idx = (a > lev ? 1 : 0) | (b > lev ? 2 : 0) | (c > lev ? 4 : 0) | (d > lev ? 8 : 0);
+    if (idx === 0 || idx === 15) continue;
+    const P = e => {
+      if (e === 0) return [j + (lev - a) / (b - a), i];
+      if (e === 1) return [j + 1, i + (lev - b) / (c - b)];
+      if (e === 2) return [j + (lev - d) / (c - d), i + 1];
+      return [j, i + (lev - a) / (d - a)];
+    };
+    for (const pr of CASES[idx]) segs.push([P(pr[0]), P(pr[1])]);
+  }
+  return segs;
+}
+const MG = { l: 40, r: 10, t: 10, b: 34 };
+function axesLabels(c, w, h, R, plane) {
+  c.font = FONT; c.fillStyle = "#777"; c.textBaseline = "top"; c.textAlign = "center";
+  const pw = w - MG.l - MG.r, ph = h - MG.t - MG.b;
+  for (const v of [-R, 0, R]) { const x = MG.l + (v + R) / (2 * R) * pw; c.fillText(fm(v, 2), x, MG.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const v of [-R, 0, R]) { const y = MG.t + (1 - (v + R) / (2 * R)) * ph; c.fillText(fm(v, 2), MG.l - 5, y); }
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  c.fillText("α (direction 1)", MG.l + pw / 2, h - 5);
+  c.save(); c.translate(11, MG.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText("β (direction 2)", 0, 0); c.restore();
+}
+function placeholder(c, w, h, txt) {
+  c.fillStyle = "#fafafa"; c.fillRect(0, 0, w, h); c.fillStyle = "#777"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(txt, w / 2, h / 2);
+}
+function statusText(key) { const M = MOD[key]; return M.ready ? "Computing the landscape…" : "Training… " + Math.round(100 * (M.prog || 0)) + " %"; }
+function drawContour(cv, key) {
+  const { c, w, h } = prep(cv), L = LAND[key];
+  cv._geo = null;
+  if (!L) { placeholder(c, w, h, statusText(key)); return; }
+  const pw = w - MG.l - MG.r, ph = h - MG.t - MG.b, N = L.N, g = L.grid, HR = 120;
+  const off = document.createElement("canvas"); off.width = off.height = HR;
+  const cx = off.getContext("2d"), im = cx.createImageData(HR, HR);
+  for (let y = 0; y < HR; y++) for (let x = 0; x < HR; x++) {
+    const col = cmap(tnorm(bilin(g, N, (HR - 1 - y) / (HR - 1) * (N - 1), x / (HR - 1) * (N - 1)))), o = 4 * (y * HR + x);
+    im.data[o] = col[0]; im.data[o + 1] = col[1]; im.data[o + 2] = col[2]; im.data[o + 3] = 255;
+  }
+  cx.putImageData(im, 0, 0);
+  c.imageSmoothingEnabled = true; c.drawImage(off, MG.l, MG.t, pw, ph);
+  const px = j => MG.l + j / (N - 1) * pw, py = i => MG.t + (1 - i / (N - 1)) * ph;
+  c.save(); c.beginPath(); c.rect(MG.l, MG.t, pw, ph); c.clip();
+  for (const lev of levels()) {
+    c.strokeStyle = "rgba(255,255,255,.75)"; c.lineWidth = 2.4; c.beginPath();
+    for (const s of contourSegs(g, N, lev)) { c.moveTo(px(s[0][0]), py(s[0][1])); c.lineTo(px(s[1][0]), py(s[1][1])); } c.stroke();
+    c.strokeStyle = "rgba(20,40,60,.55)"; c.lineWidth = 0.9; c.beginPath();
+    for (const s of contourSegs(g, N, lev)) { c.moveTo(px(s[0][0]), py(s[0][1])); c.lineTo(px(s[1][0]), py(s[1][1])); } c.stroke();
+  }
+  c.restore();
+  c.strokeStyle = "#c9cdd0"; c.lineWidth = 1; c.strokeRect(MG.l, MG.t, pw, ph);
+  const cxp = MG.l + pw / 2, cyp = MG.t + ph / 2;
+  c.fillStyle = "#fff"; c.strokeStyle = NAVY; c.lineWidth = 1.8; c.beginPath(); c.arc(cxp, cyp, 4.5, 0, 2 * Math.PI); c.fill(); c.stroke();
+  axesLabels(c, w, h, L.R);
+  cv._geo = { N: N, g: g, R: L.R, w: w, h: h };
+}
+function drawSurf(cv, key) {
+  const { c, w, h } = prep(cv), L = LAND[key];
+  if (!L) { placeholder(c, w, h, statusText(key)); return; }
+  const N = L.N, g = L.grid, cy = Math.cos(S.yaw), sy = Math.sin(S.yaw), ce = Math.cos(S.pitch), se = Math.sin(S.pitch);
+  const sc = Math.min(w, h * 1.2) * 0.3, ox = w / 2, oy = h * 0.6;
+  const pts = new Array(N * N);
+  for (let i = 0; i < N; i++) for (let j = 0; j < N; j++) {
+    const X = (j / (N - 1) - 0.5) * 2, Y = (i / (N - 1) - 0.5) * 2, t = tnorm(g[i * N + j]), Z = Math.max(0, Math.min(1.08, t)) * 1.0;
+    const x1 = X * cy - Y * sy, y1 = X * sy + Y * cy;
+    pts[i * N + j] = [ox + sc * x1, oy - sc * (Z * ce + y1 * se), y1 * ce - Z * se, t];
+  }
+  const P0 = (X, Y, Z) => { const x1 = X * cy - Y * sy, y1 = X * sy + Y * cy; return [ox + sc * x1, oy - sc * (Z * ce + y1 * se)]; };
+  c.strokeStyle = "#d5d9dc"; c.lineWidth = 1; c.beginPath();
+  const fl = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map(p => P0(p[0], p[1], 0)); c.moveTo(fl[0][0], fl[0][1]); for (let k = 1; k < 4; k++) c.lineTo(fl[k][0], fl[k][1]); c.closePath(); c.stroke();
+  const quads = [];
+  for (let i = 0; i < N - 1; i++) for (let j = 0; j < N - 1; j++) {
+    const a = pts[i * N + j], b = pts[i * N + j + 1], d = pts[(i + 1) * N + j + 1], e = pts[(i + 1) * N + j];
+    quads.push([(a[2] + b[2] + d[2] + e[2]) / 4, a, b, d, e, (a[3] + b[3] + d[3] + e[3]) / 4]);
+  }
+  quads.sort((p, q) => q[0] - p[0]);
+  c.lineJoin = "round"; c.lineWidth = 0.5;
+  for (const q of quads) {
+    const col = cmap(q[5]); c.fillStyle = rgb(col); c.strokeStyle = "rgba(255,255,255,.35)";
+    c.beginPath(); c.moveTo(q[1][0], q[1][1]); c.lineTo(q[2][0], q[2][1]); c.lineTo(q[3][0], q[3][1]); c.lineTo(q[4][0], q[4][1]); c.closePath(); c.fill(); c.stroke();
+  }
+  const zc = Math.max(0, Math.min(1.08, tnorm(L.center))), cp = P0(0, 0, zc);
+  c.fillStyle = "#fff"; c.strokeStyle = NAVY; c.lineWidth = 1.8; c.beginPath(); c.arc(cp[0], cp[1], 4.5, 0, 2 * Math.PI); c.fill(); c.stroke();
+  c.font = FONT; c.fillStyle = "#666"; c.textAlign = "center"; c.textBaseline = "middle";
+  const la = P0(1.12, 0, 0), lb = P0(0, 1.12, 0); c.fillText("α", la[0], la[1]); c.fillText("β", lb[0], lb[1]);
+
+}
+function drawColorbar() {
+  const { c, w, h } = prep($("cbar"));
+  const x0 = 16, x1 = w - 40, y0 = 4, bh = 10;
+  for (let x = x0; x <= x1; x++) { c.fillStyle = rgb(cmap((x - x0) / (x1 - x0))); c.fillRect(x, y0, 1.5, bh); }
+  c.fillStyle = rgb(OVER); c.fillRect(x1 + 6, y0, 18, bh);
+  c.strokeStyle = "#cfd3d6"; c.strokeRect(x0 - 0.5, y0 - 0.5, x1 - x0 + 1, bh + 1);
+  c.font = FONT; c.fillStyle = "#666"; c.textAlign = "center"; c.textBaseline = "top";
+  const ticks = S.scale === "log" ? [0.001, 0.01, 0.1, 1, 10].filter(v => v <= S.cap) : [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].filter(v => v <= S.cap && (S.cap <= 5 || v % 2 === 0));
+  for (const v of ticks) { const x = x0 + tnorm(v) * (x1 - x0); c.fillText(v >= 1 || v === 0 ? String(v) : String(v), x, y0 + bh + 3); }
+  c.fillText("> " + S.cap, x1 + 15, y0 + bh + 3);
+}
+
+/* ---------- other charts ---------- */
+function nt(max, n) { const raw = max / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p, s = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, t = []; for (let v = 0; ; v += s) { t.push(+v.toFixed(10)); if (v >= max - 1e-9) break; } return { t: t, top: t[t.length - 1] }; }
+const lg = v => Math.log10(Math.max(v, 1e-4));
+const lgf = v => v === 0 ? "1" : "1e" + String(v).replace("-", "−");
+function drawCurves() {
+  const cv = $("cl"), ser = [], leg = []; let mx = 0;
+  const ks = keys().filter(k => MOD[k].tr);
+  const x = Array.from({ length: E + 1 }, (_, i) => i);
+  for (const k of ks) {
+    const tr = MOD[k].tr, col = k === "A" ? BLUE : ORANGE, n = tr.trL.length;
+    if (n < 2) continue;
+    const xs = x.slice(0, n);
+    ser.push({ x: xs, y: tr.trL.map(lg), color: col, w: 2 }); ser.push({ x: xs, y: tr.teL.map(lg), color: col, w: 1.6, dash: [5, 3] });
+    mx = Math.max(mx, tr.trL[0], tr.teL[0]);
+    leg.push({ t: k + " train loss", color: col }); leg.push({ t: k + " test loss", color: col });
+  }
+  const top = Math.max(0, Math.ceil(lg(mx || 1)));
+  const yt = []; for (let v = -4; v <= top; v++) yt.push(v);
+  drawLines(cv, { x: [0, E], y: [-4, top], xt: [0, 250, 500, 750, 1000], yt: yt, fy: lgf, fx: v => String(v), xlab: "epoch", ylab: "loss (log scale)", series: ser, vlines: [{ x: S.epoch, color: "#555" }], legend: ks.length === 1 ? leg.slice(0, 2).map((s, i) => ({ t: i ? "test loss (dashed)" : "train loss", color: s.color })) : null, msg: ks.length ? null : "Training…" });
+  $("capl").innerHTML = ks.length > 1 ? "<b>Blue</b> = A, <b>orange</b> = B; solid = training loss, dashed = test loss (400 fresh points). The dark vertical line marks the epoch shown above." : "Solid: training loss. Dashed: test loss on 400 fresh points. The dark vertical line marks the epoch shown above.";
+}
+function drawProfile() {
+  const cv = $("cr"), ser = []; let hi = 0, any = false;
+  const ks = keys();
+  for (const k of ks) {
+    const L = LAND[k], m = L && L.met; if (!m) continue; any = true;
+    const col = k === "A" ? BLUE : ORANGE;
+    ser.push({ x: m.radii, y: Array.from(m.pm), color: col, w: 2, band: [Array.from(m.pmin), Array.from(m.pmax)], dash: k === "B" ? [6, 3] : null });
+    for (const v of m.pmax) hi = Math.max(hi, v);
+  }
+  const ymax = nt(Math.min(S.cap, Math.max(hi, 0.1)), 4);
+  const R = S.R;
+  drawLines(cv, { x: [0, R], y: [0, ymax.top], xt: [0, R / 2, R], yt: ymax.t, xlab: "relative size r of a random weight perturbation", ylab: "training loss", series: ser, vlines: R >= 0.25 ? [{ x: 0.25, color: "#999" }] : [], legend: ks.length > 1 ? [{ t: "A mean (band: min–max)", color: BLUE }, { t: "B mean (dashed)", color: ORANGE }] : null, fx: v => fm(v, 2), msg: any ? null : (S.playing || S.dragging ? "Computed when paused" : "Computing…") });
+  $("capr").innerHTML = "Training loss after perturbing every neuron's incoming weights by a random <b>filter-normalised</b> direction of relative size <i>r</i> (24 directions). The grey line marks <i>r</i> = 0.25, the size used for the table.";
+}
+function drawBoundary() {
+  const cv = $("cr"), { c, w, h } = prep(cv), ks = keys().filter(k => MOD[k].ready);
+  if (!ks.length) { placeholder(c, w, h, "Training…"); $("capr").innerHTML = ""; return; }
+  const n = ks.length, gap = 10, sz = Math.min((w - gap * (n - 1)) / n, h - 24), buf = new Float64Array(2), G = 56, Rg = 2.6;
+  ks.forEach((k, q) => {
+    const M = MOD[k], th = viewTheta(k), x0 = (w - (sz * n + gap * (n - 1))) / 2 + q * (sz + gap), y0 = 20;
+    const off = document.createElement("canvas"); off.width = off.height = G; const cx = off.getContext("2d"), im = cx.createImageData(G, G);
+    for (let yy = 0; yy < G; yy++) for (let xx = 0; xx < G; xx++) {
+      buf[0] = (xx / (G - 1) * 2 - 1) * Rg; buf[1] = (1 - yy / (G - 1) * 2) * Rg;
+      const p = LL.sigm(LL.forwardOne(M.net, th, buf, 0)), t = 0.55 * Math.abs(p - 0.5) * 2 + 0.08, col = p > 0.5 ? [232, 89, 12] : [8, 119, 189], o = 4 * (yy * G + xx);
+      const W0 = (window.SBT && SBT.dark) ? 14 : 255; im.data[o] = W0 * (1 - t) + col[0] * t; im.data[o + 1] = W0 * (1 - t) + col[1] * t; im.data[o + 2] = W0 * (1 - t) + col[2] * t; im.data[o + 3] = 255;
+    }
+    cx.putImageData(im, 0, 0); c.imageSmoothingEnabled = true; c.drawImage(off, x0, y0, sz, sz);
+    c.strokeStyle = "#c9cdd0"; c.strokeRect(x0, y0, sz, sz);
+    for (let i = 0; i < M.D.n; i++) {
+      const X = x0 + (M.D.X[2 * i] / Rg + 1) / 2 * sz, Y = y0 + (1 - (M.D.X[2 * i + 1] / Rg + 1) / 2) * sz;
+      c.fillStyle = M.D.y[i] ? ORANGE : BLUE; c.strokeStyle = "#fff"; c.lineWidth = 1; c.beginPath(); c.arc(X, Y, 3, 0, 2 * Math.PI); c.fill(); c.stroke();
+    }
+    c.font = FONT; c.fillStyle = "#555"; c.textAlign = "left"; c.textBaseline = "alphabetic"; c.fillText("Model " + k + " at epoch " + S.epoch, x0, 13);
+  });
+  $("capr").innerHTML = "Predicted class regions at the selected epoch (the weights are the ones the landscape is centred on); dots are the training points.";
+}
+function drawSweep() {
+  const cv = $("cr"), kind = S.rsel === "swW" ? "w" : "d", sig = sweepSig(kind), o = SW[sig];
+  const name = kind === "w" ? "hidden width" : "number of hidden layers";
+  if (!o || !o.inc.length) { drawLines(cv, { x: [0, 1], y: [0, 1], xt: [], yt: [], series: [], msg: MOD.A.ready ? "Sweeping… " + (o ? o.done : 0) + " / " + (o ? o.tot : 24) + " trainings" : "Training…" }); $("capr").innerHTML = ""; return; }
+  const med = a => { const b = a.slice().sort((x, y) => x - y), m = b.length >> 1; return b.length % 2 ? b[m] : (b[m - 1] + b[m]) / 2; };
+  const xs = o.xs.slice(0, o.inc.length), mi = o.inc.map(med), lo = o.inc.map(a => Math.min.apply(null, a)), hi = o.inc.map(a => Math.max.apply(null, a)), ml = o.lmax.map(med);
+  const y1 = nt(Math.max.apply(null, hi) * 1.05, 4), y2 = nt(Math.max.apply(null, ml) * 1.15, 4);
+  const xr = kind === "w" ? [1.6, 56] : [0.8, 4.2];
+  drawLines(cv, { x: xr, y: [0, y1.top], y2: [0, y2.top], c2: ORANGE, xlog: kind === "w", xt: xs, yt: y1.t, yt2: y2.t, fx: v => String(v), fy: v => fm(v, v < 0.1 ? 2 : 1), fy2: v => fm(v, v < 1 ? 2 : 1), xlab: name, ylab: "mean loss increase at r = 0.25", ylab2: "λ_max (orange)", r: 46,
+    series: [{ x: xs, y: mi, color: BLUE, w: 2, dots: true, band: [lo, hi] }, { x: xs, y: ml, color: ORANGE, w: 2, dots: true, ax2: true, dash: [5, 3] }], legend: [{ t: "loss increase (median, min–max)", color: BLUE }, { t: "λ_max (median)", color: ORANGE }], msg: o.fin ? null : "" });
+  $("capr").innerHTML = "Each point: 8 runs (new data and new initialisation each time) with model A's recipe (" + (kind === "w" ? "depth " + S.A.d : "width " + S.A.w) + "), measured at epoch " + E + ". " + (o.fin ? "" : "<b>Sweeping… " + o.done + " / " + o.tot + "</b>");
+}
+
+/* ---------- text ---------- */
+function curTrainStats(key) { const tr = MOD[key].tr, e = S.epoch; return { trL: tr.trL[e], teL: tr.teL[e], trA: tr.trA[e], teA: tr.teA[e] }; }
+function metOf(key) { const L = LAND[key]; return L && L.met && L.epoch === S.epoch ? L.met : null; }
+function drawTable() {
+  const ks = keys(), ready = ks.every(k => MOD[k].ready);
+  $("thead").textContent = "Sharpness numbers at epoch " + S.epoch;
+  if (!ready) { $("tbl").innerHTML = '<div class="hint">Training…</div>'; $("tcap").innerHTML = ""; return; }
+  const row = (lab, f, cls) => "<tr><td>" + lab + "</td>" + ks.map(k => "<td" + (cls ? ' class="' + cls + '"' : "") + ">" + f(k) + "</td>").join("") + "</tr>";
+  const mv = (f) => k => { const m = metOf(k); return m ? f(m) : "…"; };
+  let h = '<table class="mtab"><tr><th></th>' + ks.map(k => "<th>" + k + "</th>").join("") + "</tr>";
+  h += row("Parameters", k => MOD[k].net.n);
+  h += row("Train loss", k => fm(curTrainStats(k).trL, 4));
+  h += row("Train accuracy", k => fm(100 * curTrainStats(k).trA, 1) + " %");
+  h += row("Test loss", k => fm(curTrainStats(k).teL, 3));
+  h += row("Test accuracy", k => fm(100 * curTrainStats(k).teA, 1) + " %");
+  h += row("λ_max of the Hessian", mv(m => fm(m.lmax, 3)));
+  h += row("Trace of the Hessian (estimate)", mv(m => fm(m.trace, 2)));
+  h += row("Mean loss increase at r = 0.25", mv(m => fm(m.inc, 4)));
+  h += "</table>";
+  $("tbl").innerHTML = h;
+  $("tcap").innerHTML = "λ_max (power iteration on Hessian-vector products) and the trace (Hutchinson, 16 probes) are measured in the <b>raw</b> weight coordinates, so they change when the weights are rescaled. The loss increase uses <b>filter-normalised</b> directions (24 random ones), so it does not." + (S.playing ? " <b>Hessian numbers are computed when paused.</b>" : "");
+}
+function drawDetail() {
+  const ks = keys(), el = $("detail");
+  if (!ks.every(k => MOD[k].ready)) { el.innerHTML = "<p>Training…</p>"; return; }
+  const p = [];
+  for (const k of ks) {
+    const s = specOf(k), st = curTrainStats(k), m = metOf(k), r = recipe(k);
+    const rec = (r.optim === "adam" ? "Adam" : "SGD + momentum") + ", " + (r.batch ? "batch " + r.batch : "full batch") + ", lr " + r.lr + (r.rho ? ", SAM ρ " + r.rho : "") + (r.wd ? ", weight decay " + r.wd : "");
+    p.push("<p><b>Model " + k + "</b>: " + s.d + " hidden layer" + (s.d > 1 ? "s" : "") + " of " + s.w + " units, " + MOD[k].net.n + " parameters; " + rec + ". At epoch " + S.epoch + " the training loss is " + fm(st.trL, 4) + " and the test accuracy " + fm(100 * st.teA, 1) + " %." + (m ? " λ_max = " + fm(m.lmax, 3) + "; random perturbations of relative size 0.25 raise the loss by " + fm(m.inc, 4) + " on average." : "") + "</p>");
+  }
+  if (ks.length === 2) {
+    const a = metOf("A"), b = metOf("B");
+    if (a && b) {
+      const rl = b.lmax / a.lmax, ri = b.inc / a.inc;
+      let t = "B / A: λ_max ×" + fm(rl, 2) + ", loss increase at r = 0.25 ×" + fm(ri, 2) + ".";
+      if ((rl - 1) * (ri - 1) < 0 && Math.abs(Math.log(rl)) > 0.1 && Math.abs(Math.log(ri)) > 0.1) t += " <span class=\"bad\">The two sharpness measures point in opposite directions here.</span>";
+      p.push("<p>" + t + "</p>");
+    }
+  }
+  if (S.act === "relu" && S.resc !== 0) p.push("<p>The displayed weights are rescaled by a = " + fm(Math.pow(2, S.resc), 2) + " (first layer ×a, second layer ÷a). The network computes exactly the same function.</p>");
+  el.innerHTML = p.join("");
+}
+
+/* ---------- main draw ---------- */
+let rafD = 0;
+window.__sbRedraw = () => { draw(); };
+function draw() { if (rafD) return; rafD = requestAnimationFrame(() => { rafD = 0; drawNow(); }); }
+function drawNow() {
+  const ks = keys();
+  const anyTrain = ks.some(k => !MOD[k].ready);
+  if (!$("epnum")) {
+    $("status").innerHTML = 'Epoch <input class="num" id="epnum" type="text" inputmode="numeric" aria-label="Epoch" title="Type an epoch (0 to ' + E + ') and press Enter"> / ' + E + "<small></small>";
+    const en = $("epnum");
+    const commit = () => { let v = parseFloat(en.value.replace(",", ".")); if (isFinite(v)) { v = Math.max(0, Math.min(E, v)); TOP[0].set(v); } en.blur(); en.value = S.epoch; };
+    en.addEventListener("keydown", e => { if (e.key === "Enter") commit(); });
+    en.addEventListener("change", commit);
+    en.addEventListener("blur", () => { en.value = S.epoch; });
+  }
+  if (document.activeElement !== $("epnum")) $("epnum").value = S.epoch;
+  $("status").querySelector("small").textContent = anyTrain ? "training…" : "landscape of the weights at this epoch";
+  $("play").innerHTML = S.playing ? '<span id="pause">&#10073;&#10073;</span>' : "&#9654;";
+  $("chead").textContent = "Training loss on the plane θ + α·d₁ + β·d₂ through the weights at epoch " + S.epoch;
+  $("lgrid").classList.toggle("cmp", S.cmp);
+  const panels = S.cmp ? [["A", "c"], ["B", "c"], ["A", "s"], ["B", "s"]] : [["A", "c"], ["A", "s"]];
+  for (let i = 1; i <= 4; i++) {
+    const el = $("lp" + i), pn = panels[i - 1];
+    el.classList.toggle("hid", !pn); if (!pn) continue;
+    const cv = el.querySelector("canvas"), k = pn[0], M = MOD[k], s = specOf(k), L = LAND[k];
+    el.querySelector(".t").textContent = (S.cmp ? "Model " + k + " · " : "") + (pn[1] === "c" ? "contour map" : "3-D surface");
+    el.querySelector(".s").textContent = pn[1] === "s" ? "drag to rotate view" : s.d + " × " + s.w + (M.net ? ", " + M.net.n + " params" : "");
+    cv.className = pn[1] === "c" ? "ct" : "d3" + (cv.classList.contains("drag") ? " drag" : ""); cv._key = k; cv._view = pn[1];
+    if (pn[1] === "c") drawContour(cv, k); else drawSurf(cv, k);
+  }
+  drawColorbar();
+  const hasRaw = S.dirs === "raw";
+  $("lgtxt").innerHTML = '<span><span class="sw3"></span>loss above the cap</span>';
+  $("capm").innerHTML = "Same colour scale in every panel (" + (S.scale === "log" ? "logarithmic" : "linear") + ", cap " + S.cap + "). White-and-dark lines are contours at fixed loss values; the ring is the weight vector itself (α = β = 0). Axes are in units of the weight scale: <b>" + (hasRaw ? "raw Gaussian directions (no normalisation)" : "filter-normalised directions: each neuron's weight row is perturbed in proportion to its own norm") + "</b>.";
+  drawCurves();
+  if (S.rsel === "prof") drawProfile(); else if (S.rsel === "bound") drawBoundary(); else { ensureSweep(); drawSweep(); }
+  drawTable(); drawDetail();
+  syncSliders();
+}
+
+/* ---------- controls ---------- */
+const showV = (d, v) => d.fmt ? d.fmt(v) : String(v);
+function mkSliders(list, box, cls) {
+  box.innerHTML = "";
+  for (const d of list) {
+    const g = document.createElement("div"); g.className = cls; g.id = "w_" + d.k; g.title = d.tip || "";
+    g.innerHTML = '<div class="row"><span>' + d.lab + '</span><input class="num" type="text" inputmode="decimal" id="nb_' + d.k + '" aria-label="value"></div><input type="range" id="sl_' + d.k + '" min="' + d.lo + '" max="' + d.hi + '" step="' + (d.step || 1) + '">'; box.appendChild(g);
+    const rg = $("sl_" + d.k), nb = $("nb_" + d.k);
+    rg.addEventListener("input", () => { const v = +rg.value; nb.value = showV(d, v); d.set(v); });
+    const commit = () => { let v = parseFloat(nb.value.replace(",", ".").replace("−", "-")); if (!isFinite(v)) { nb.value = showV(d, d.get()); nb.blur(); return; } if (d.inv) v = d.inv(v); v = Math.max(d.lo, Math.min(d.hi, v)); if (d.int) v = Math.round(v); rg.value = v; nb.value = showV(d, v); nb.blur(); d.set(v); };
+    nb.addEventListener("change", commit); nb.addEventListener("keydown", e => { if (e.key === "Enter") commit(); }); nb.addEventListener("blur", () => { nb.value = showV(d, d.get()); });
+    nb.title = "Type a value between " + showV(d, d.lo) + " and " + showV(d, d.hi) + " and press Enter";
+  }
+}
+const TOP = [
+  { k: "epoch", lab: "Epoch", lo: 0, hi: E, step: SNAP, int: true, get: () => S.epoch, set: v => { S.epoch = Math.round(v / SNAP) * SNAP; refresh(2); } },
+  { k: "R", lab: "Plot range", lo: 0.1, hi: 2, step: 0.05, fmt: v => fm(v, 2), get: () => S.R, set: v => { S.R = v; custom(); refresh(2); } },
+  { k: "wA", lab: "Width of model A", lo: 2, hi: 48, int: true, get: () => S.A.w, set: v => { S.A.w = v; custom(); refresh(3); } },
+  { k: "dA", lab: "Depth of model A", lo: 1, hi: 4, int: true, get: () => S.A.d, set: v => { S.A.d = v; custom(); refresh(3); } }
+];
+const DATA = [
+  { k: "noise", lab: "Label/position noise", lo: 0, hi: 0.5, step: 0.05, fmt: v => fm(v, 2), get: () => S.noise, set: v => { S.noise = v; custom(); refresh(3); } },
+  { k: "ntr", lab: "Training points", lo: 20, hi: 150, step: 10, int: true, get: () => S.ntr, set: v => { S.ntr = v; custom(); refresh(3); } }
+];
+const REC = [
+  { k: "lr", lab: "Learning rate", lo: 0.002, hi: 0.1, step: 0.002, fmt: v => fm(v, 3), get: () => S.A.lr, set: v => { S.A.lr = v; custom(); refresh(3); } },
+  { k: "rho", lab: "SAM radius ρ (0 = off)", lo: 0, hi: 0.5, step: 0.05, fmt: v => fm(v, 2), get: () => S.A.rho, set: v => { S.A.rho = v; custom(); refresh(3); } }
+];
+const BCT = [
+  { k: "wB", lab: "Width of model B", lo: 2, hi: 48, int: true, get: () => S.B.w, set: v => { S.B.w = v; custom(); refresh(3); } },
+  { k: "dB", lab: "Depth of model B", lo: 1, hi: 4, int: true, get: () => S.B.d, set: v => { S.B.d = v; custom(); refresh(3); } }
+];
+const LCT = [
+  { k: "cap", lab: "Loss cap (colour scale)", lo: 1, hi: 10, step: 0.5, fmt: v => fm(v, 1), get: () => S.cap, set: v => { S.cap = v; custom(); draw(); } },
+  { k: "resc", lab: "ReLU rescaling a (function unchanged)", lo: -3, hi: 3, step: 0.5, fmt: v => fm(Math.pow(2, v), 2), inv: a => Math.log2(Math.max(a, 1e-3)), get: () => S.resc, set: v => { S.resc = v; custom(); refresh(2); }, off: () => S.act !== "relu" }
+];
+const ALLS = () => TOP.concat(DATA, REC, BCT, LCT);
+function syncSliders() {
+  for (const d of ALLS()) { const rg = $("sl_" + d.k), nb = $("nb_" + d.k), w = $("w_" + d.k); if (!rg) continue; rg.value = d.get(); if (document.activeElement !== nb) nb.value = showV(d, d.get()); if (d.off) w.classList.toggle("off", d.off()); }
+  $("w_bpre").classList.toggle("off", !S.cmp); $("w_wB").classList.toggle("off", !S.cmp); $("w_dB").classList.toggle("off", !S.cmp); $("bpre").disabled = !S.cmp;
+  $("w_rho").classList.toggle("off", false);
+}
+function syncUI() {
+  $("scn").value = S.scn; const sc = SCEN.find(x => x[0] === S.scn); $("scnhint").textContent = sc ? sc[2] : "Custom settings.";
+  $("ds").value = S.ds; $("act").value = S.act; $("opt").value = S.A.optim; $("bat").value = String(S.A.batch); $("wd").value = String(S.A.wd);
+  $("cmp").checked = S.cmp; $("bpre").value = S.B.preset; $("dirs").value = S.dirs; $("gn").value = String(S.N); $("scale").value = S.scale; $("rsel").value = S.rsel;
+}
+function applyScenario(id) {
+  const sc = SCEN.find(x => x[0] === id); S.playing = false;
+  const keep = S.rsel, b = base(); Object.assign(S, b, sc[3], { scn: id, rsel: keep }); if (sc[3].seed) S.seed = sc[3].seed;
+  syncUI(); refresh(3);
+}
+/* ---------- play ---------- */
+let last = 0, acc = 0;
+function tick(now) {
+  if (!S.playing) return;
+  acc += (now - last) / 1000 * S.speed; last = now;
+  if (!landBusy && acc >= SNAP) {
+    const k = Math.floor(acc / SNAP); acc -= k * SNAP;
+    S.epoch = Math.min(E, S.epoch + k * SNAP);
+    if (S.epoch >= E) S.playing = false;
+    refresh(2);
+  }
+  if (S.playing) requestAnimationFrame(tick); else { refresh(2); }
+  draw();
+}
+function play() {
+  if (!keys().every(k => MOD[k].ready)) { S.wantPlay = true; return; }
+  if (S.epoch >= E) S.epoch = 0;
+  S.playing = true; acc = 0; last = performance.now(); requestAnimationFrame(tick); refresh(2);
+}
+
+/* ---------- init ---------- */
+function init() {
+  $("scn").innerHTML = SCEN.map(s => '<option value="' + s[0] + '">' + s[1] + "</option>").join("") + '<option value="">Custom</option>';
+  $("ds").innerHTML = DSN.map(s => '<option value="' + s[0] + '">' + s[1] + "</option>").join("");
+  $("bpre").innerHTML = PRESETS.map(s => '<option value="' + s[0] + '">' + s[1] + "</option>").join("");
+  $("rsel").innerHTML = '<option value="prof">Loss vs perturbation size</option><option value="bound">Decision boundary</option><option value="swW">Sharpness vs width (sweep)</option><option value="swD">Sharpness vs depth (sweep)</option>';
+  mkSliders(TOP.slice(0, 1), $("cr0"), "grp sl"); mkSliders(TOP.slice(1), $("cr1"), "grp sl"); mkSliders(DATA, $("dctl"), "srow"); mkSliders(REC, $("rctl"), "srow");
+  mkSliders(BCT, $("bctl"), "srow"); mkSliders(LCT, $("lctl"), "srow");
+  syncUI();
+  $("scn").onchange = e => { if (e.target.value) applyScenario(e.target.value); else { S.scn = ""; syncUI(); } };
+  $("ds").onchange = e => { S.ds = e.target.value; custom(); syncUI(); refresh(3); };
+  $("act").onchange = e => { S.act = e.target.value; if (S.act !== "relu") S.resc = 0; custom(); syncUI(); refresh(3); };
+  $("opt").onchange = e => { S.A.optim = e.target.value; S.A.lr = S.A.optim === "adam" ? 0.02 : 0.05; custom(); syncUI(); refresh(3); };
+  $("bat").onchange = e => { S.A.batch = +e.target.value; custom(); syncUI(); refresh(3); };
+  $("wd").onchange = e => { S.A.wd = +e.target.value; custom(); syncUI(); refresh(3); };
+  $("cmp").onchange = e => { S.cmp = e.target.checked; custom(); syncUI(); refresh(3); };
+  $("bpre").onchange = e => { S.B.preset = e.target.value; custom(); refresh(3); };
+  $("dirs").onchange = e => { S.dirs = e.target.value; custom(); syncUI(); refresh(2); };
+  $("gn").onchange = e => { S.N = +e.target.value; custom(); refresh(2); };
+  $("scale").onchange = e => { S.scale = e.target.value; custom(); draw(); };
+  $("rsel").onchange = e => { S.rsel = e.target.value; draw(); };
+  $("newd").onclick = () => { S.seed++; custom(); syncUI(); refresh(3); };
+  $("newdir").onclick = () => { S.dseed++; refresh(2); };
+  $("play").onclick = () => { if (S.playing) { S.playing = false; refresh(2); } else if (S.wantPlay) S.wantPlay = false; else play(); };
+  $("step").onclick = () => { S.playing = false; S.epoch = Math.min(E, S.epoch + SNAP); refresh(2); };
+  $("reset").onclick = () => { S.playing = false; S.epoch = 0; refresh(2); };
+  $("endb").onclick = () => { S.playing = false; S.epoch = E; refresh(2); };
+  document.addEventListener("pointerdown", e => { if (e.target && e.target.type === "range") S.dragging = true; });
+  const up = () => { if (S.dragging) { S.dragging = false; refresh(2); } };
+  document.addEventListener("pointerup", up); document.addEventListener("pointercancel", up);
+  for (let i = 1; i <= 4; i++) {
+    const cv = $("lp" + i).querySelector("canvas"); let dr = null;
+    cv.addEventListener("pointerdown", e => { if (cv._view !== "s") return; dr = { x: e.clientX, y: e.clientY }; cv.setPointerCapture(e.pointerId); cv.classList.add("drag"); });
+    cv.addEventListener("pointermove", e => {
+      if (cv._view === "s" && dr) { S.yaw += (e.clientX - dr.x) * 0.012; S.pitch = Math.max(0.12, Math.min(1.45, S.pitch + (e.clientY - dr.y) * 0.008)); dr = { x: e.clientX, y: e.clientY }; draw(); return; }
+      if (cv._view === "c" && cv._geo) {
+        const r = cv.getBoundingClientRect(), G = cv._geo, x = (e.clientX - r.left) / r.width * G.w, y = (e.clientY - r.top) / r.height * G.h, pw = G.w - MG.l - MG.r, ph = G.h - MG.t - MG.b;
+        const u = (x - MG.l) / pw, v = 1 - (y - MG.t) / ph;
+        if (u >= 0 && u <= 1 && v >= 0 && v <= 1) $("hover").textContent = (S.cmp ? "Model " + cv._key + ": " : "") + "α = " + fm((2 * u - 1) * G.R, 2) + ", β = " + fm((2 * v - 1) * G.R, 2) + ", training loss ≈ " + fm(bilin(G.g, G.N, v * (G.N - 1), u * (G.N - 1)), 4);
+      }
+    });
+    const end = () => { dr = null; cv.classList.remove("drag"); };
+    cv.addEventListener("pointerup", end); cv.addEventListener("pointercancel", end); cv.addEventListener("pointerleave", () => { if (cv._view === "c") $("hover").textContent = ""; });
+  }
+  window.addEventListener("resize", () => draw());
+  window.__S = { dbg: () => ({ landBusy: landBusy, pend: pend }), S: S, MOD: MOD, LAND: LAND, SW: SW, LL: LL, applyScenario: applyScenario, specOf: specOf, ready: () => keys().every(k => MOD[k].ready) && !landBusy && !!LAND.A && !!LAND.A.met && (!S.cmp || (!!LAND.B && !!LAND.B.met)), draw: drawNow };
+  refresh(3);
+}
+init();
+})();
+</script>
+
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{window.__sbRedraw&&window.__sbRedraw();}catch(e){} });
+</script>
+</body>
+</html>

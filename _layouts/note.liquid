@@ -1,0 +1,20 @@
+---
+layout: default
+---
+{% assign paper = site.data.papers | where: 'id', page.paper | first %}
+{% assign cat = site.data.paper_categories | where: 'id', paper.category | first %}
+{% capture note_file %}notes/{{ paper.id }}-note.html{% endcapture %}
+<div class="post sb-note">
+  <a class="sb-pg-back" href="{{ '/notes/' | relative_url }}"><span aria-hidden="true">←</span> Back to research notes</a>
+  <header class="post-header">
+    <p class="sb-notes-eyebrow">{{ cat.title }} &middot; {{ paper.venue }}</p>
+    <h1 class="post-title">{{ paper.title }}</h1>
+    <p class="post-description">{{ paper.authors }}</p>
+    <p><a class="sb-sum-link" href="{{ paper.doi }}" target="_blank" rel="noopener">Read the paper &#8599;</a></p>
+  </header>
+  {% include disclaimer.liquid what="notes" %}
+  <article class="sb-note-body">
+    {% include {{ note_file }} %}
+  </article>
+  <p class="sb-note-back"><a href="{{ '/notes/' | relative_url }}">← Back to all papers</a></p>
+</div>

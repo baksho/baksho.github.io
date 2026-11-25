@@ -1,0 +1,23 @@
+# Infographics (shown on /infographics/), in display order. Files: assets/infographics/<slug>-1x.png, -2x.png, .pdf and thumbnail assets/img/infographics/<slug>.webp
+- slug: neural-networks
+  title: "Neural Networks"
+- slug: backpropagation
+  title: "Backpropagation"
+- slug: digit-recognition
+  title: "Digit Recognition"
+- slug: tumor-prediction
+  title: "Tumor Prediction"
+- slug: convolutional-neural-networks
+  title: "Convolutional Neural Networks"
+- slug: cnn-digit-recognition
+  title: "CNN Digit Recognition"
+- slug: cnn-fashion-recognition
+  title: "CNN Fashion Recognition"
+- slug: transformers-explained
+  title: "Transformers, Explained"
+- slug: calibration-explained
+  title: "Calibration, Explained"
+- slug: calibrating-confidence
+  title: "Calibrating Confidence"
+- slug: training-for-calibration
+  title: "Training for Calibration"

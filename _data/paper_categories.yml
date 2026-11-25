@@ -1,0 +1,7 @@
+# Sections of the research notes page, in display order.
+- id: trustworthy-ml
+  title: Trustworthy ML
+  description: Calibration, uncertainty quantification, robustness, and interpretability.
+- id: ai4s
+  title: AI for Science (AI4S)
+  description: Methods that help us discover, understand, and investigate the natural world.

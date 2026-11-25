@@ -1,0 +1,9 @@
+# Legal details used by the Impressum (/impressum/) and the privacy notice (/privacy/).
+# >>> Replace every [bracketed] placeholder below, then commit. Nothing else needs editing. <<<
+# § 5 DDG requires a postal address at which you can be served (no P.O. box). A phone number is optional if the
+# email address is the direct contact; delete the "phone" line to hide it from the Impressum.
+name: Suvinava Basak
+street: Güldenstr. 8A
+postcode_city: 38100 Braunschweig
+country: Germany
+email: suvinava.basak@outlook.com

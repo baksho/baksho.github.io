@@ -13,6 +13,7 @@ layout: default
     title="{{ pg.title | default: page.title }}"
     loading="lazy"
   ></iframe>
+  {% include disclaimer.liquid what="playgrounds" %}
 </div>
 <script>
   // the playground tells us how tall it is (assets/playgrounds/sb-theme.js), so the frame grows with it

@@ -2,12 +2,20 @@
 layout: page
 permalink: /playgrounds/
 title: playgrounds
-description: Interactive machine learning playgrounds that run in your browser.
+description: Interactive machine learning playgrounds that run in your browser, ordered from the foundations to more advanced topics.
 nav: false
 ---
 
-<div class="sb-cards sb-cards-pg">
+{% include disclaimer.liquid what="playgrounds" %}
+
+{% assign last_group = '' %}
 {% for pg in site.data.playgrounds %}
+{% if pg.group != last_group %}
+{% unless forloop.first %}</div>{% endunless %}
+<h2 class="sb-shelf-title">{{ pg.group }}</h2>
+<div class="sb-cards sb-cards-pg">
+{% assign last_group = pg.group %}
+{% endif %}
 {% assign pg_url = '/playgrounds/' | append: pg.slug | append: '/' | relative_url %}
 <article class="sb-card">
 <a class="sb-card-img" href="{{ pg_url }}" tabindex="-1" aria-hidden="true">

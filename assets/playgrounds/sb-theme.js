@@ -176,7 +176,16 @@
   function darkText(rule) {
     var st = rule.style,
       out = [],
+      vars = [],
       i;
+    // colours given through variables (var(--navy) ...) stay as they are, but are repeated in the dark copy so that
+    // they keep their place in the cascade against the mapped rules (otherwise a plain mapped rule can win).
+    // cssText is used because the style object lists such shorthands only as empty longhands.
+    var decl = st.cssText.split(";");
+    for (i = 0; i < decl.length; i++) {
+      var dm = decl[i].match(/^\s*((?:background|color|border)[a-z-]*)\s*:\s*(.*var\(.*)$/);
+      if (dm) vars.push(dm[1] + ":" + dm[2].trim());
+    }
     for (i = 0; i < st.length; i++) {
       var name = st[i],
         val = st.getPropertyValue(name);
@@ -190,6 +199,7 @@
       });
       if (mapped !== val) out.push(name + ":" + mapped + (st.getPropertyPriority(name) ? " !important" : ""));
     }
+    out = out.concat(vars); // after the mapped values, as in the original rule order
     return out.length ? out.join(";") : "";
   }
   function prefix(sel) {

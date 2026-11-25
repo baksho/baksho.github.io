@@ -1,17 +1,71 @@
-# Interactive playgrounds (shown on /playgrounds/). Each opens inside the site layout (_layouts/playground.liquid).
-# The app itself is assets/playgrounds/<slug>.html; thumbnails are assets/img/playgrounds/<slug>-light.webp and -dark.webp.
-- slug: optimizer-race
-  title: "Optimizer Race"
-  description: "Race gradient-descent optimizers across classic loss surfaces."
-- slug: nn-playground
-  title: "Neural Network Playground"
-  description: "Train a small neural network in the browser and watch its decision boundary evolve."
-- slug: lora-rank-explorer
-  title: "LoRA Rank Explorer"
-  description: "See how much of a weight update a low-rank LoRA adapter can capture."
+# Interactive playgrounds (shown on /playgrounds/), grouped and in reading order (fundamentals first).
+# Each opens inside the site layout (_layouts/playground.liquid); the app itself is assets/playgrounds/<slug>.html;
+# thumbnails are assets/img/playgrounds/<slug>-light.webp and -dark.webp. "group" starts a new heading on the page.
 - slug: bias-variance-playground
+  group: "Foundations"
   title: "Bias–Variance Playground"
   description: "Watch bias, variance and noise add up to the error of a fitted model."
+- slug: bayesian-updating-playground
+  group: "Foundations"
+  title: "Bayesian Updating Lab"
+  description: "Update a prior with data and watch the exact posterior for coins, Gaussians and regression."
+- slug: clustering-pca-playground
+  group: "Foundations"
+  title: "Clustering and PCA Playground"
+  description: "Step through k-means and Gaussian mixtures, and tilt a plane to compare with PCA."
+- slug: kernel-svm-gp-playground
+  group: "Foundations"
+  title: "Kernel, SVM and Gaussian-Process Playground"
+  description: "Add points and compare an SVM margin with a Gaussian-process fit under the same kernels."
+- slug: nn-playground
+  group: "Neural networks and training"
+  title: "Neural Network Playground"
+  description: "Train a small neural network in the browser and watch its decision boundary evolve."
+- slug: backprop-step-through
+  group: "Neural networks and training"
+  title: "Backprop Step-through"
+  description: "Walk forward and backward through a tiny computation graph and follow every gradient."
+- slug: optimizer-race
+  group: "Neural networks and training"
+  title: "Optimizer Race"
+  description: "Race gradient-descent optimizers across classic loss surfaces."
+- slug: loss-landscape-playground
+  group: "Neural networks and training"
+  title: "Loss Landscape Explorer"
+  description: "Slice a trained network’s loss in 2-D or 3-D and measure how sharp or flat the minimum is."
+- slug: double-descent
+  group: "Neural networks and training"
+  title: "Double Descent Playground"
+  description: "Grow a random-features model past the interpolation point and watch test error fall again."
+- slug: calibration-lab-playground
+  group: "Trustworthy ML"
+  title: "Calibration Lab"
+  description: "Diagnose overconfidence with reliability diagrams and fix it with three recalibration methods."
+- slug: message-passing-playground
+  group: "Graph neural networks"
+  title: "Message Passing Lab"
+  description: "Step through messages, aggregation and update in one graph-network layer, node by node."
+- slug: ssl-node-classification-playground
+  group: "Graph neural networks"
+  title: "Semi-supervised Node Classification Lab"
+  description: "Train a GCN on a handful of labels and compare it with an MLP and label propagation."
+- slug: bpe-tokenizer-playground
+  group: "Language models"
+  title: "Tokenizer Lab: Byte-Pair Encoding"
+  description: "Build a BPE vocabulary merge by merge on your own text and see how it tokenizes."
+- slug: attention-visualizer
+  group: "Language models"
+  title: "Attention Visualizer"
+  description: "Type a sentence and inspect the attention matrix of hand-set or trainable heads."
+- slug: lora-rank-explorer
+  group: "Language models"
+  title: "LoRA Rank Explorer"
+  description: "See how much of a weight update a low-rank LoRA adapter can capture."
+- slug: grid-world-playground
+  group: "Reinforcement learning"
+  title: "Grid World Playground"
+  description: "Watch value iteration and Q-learning fill in values and arrows on a grid you can repaint."
 - slug: learning-chess-by-self-play
+  group: "Reinforcement learning"
   title: "Learning Chess by Self-Play"
   description: "Watch an agent learn the value of each chess piece by playing itself."

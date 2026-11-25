@@ -1,0 +1,19 @@
+{%- comment -%}
+  Shared disclaimer. Usage: {% include disclaimer.liquid what="notes" %}   (what: notes | infographics | playgrounds)
+{%- endcomment -%}
+{%- assign dc_what = include.what | default: 'notes' -%}
+<aside class="sb-disclaimer" role="note">
+  <span class="sb-disclaimer-label">Please note</span>
+  <p>
+    {% if dc_what == 'infographics' -%}
+      These infographics
+    {%- elsif dc_what == 'playgrounds' -%}
+      These playgrounds
+    {%- else -%}
+      These notes and summaries
+    {%- endif %}
+    are based on my own understanding and learning process. They are meant as study aids, are not peer reviewed, and may contain mistakes or
+    simplifications. If you notice an error or a discrepancy, please <a href="mailto:{{ site.data.legal.email }}">contact me</a> and I will correct
+    it.
+  </p>
+</aside>

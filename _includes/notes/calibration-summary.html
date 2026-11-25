@@ -1,0 +1,34 @@
+<p class="sb-note-meta">
+  <strong>Authors</strong>: Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger.<br /><strong>Venue</strong>: Proceedings of the 34th
+  International Conference on Machine Learning (ICML), 2017, PMLR 70<br /><strong>DOI</strong>:
+  <a href="https://doi.org/10.5555/3305381.3305518" target="_blank" rel="noopener">10.5555/3305381.3305518</a><br /><strong>Paper type</strong>:
+  Empirical research paper with methodological analysis
+</p>
+<p>
+  <strong>Problem</strong>: Modern neural networks can achieve high classification accuracy while producing unreliable confidence estimates. A model
+  predicting 90% confidence should be correct approximately 90% of the time across predictions at that confidence level, but modern networks often
+  violate this expectation.
+</p>
+<p>
+  <strong>Core idea</strong>: The authors investigate the factors affecting neural-network calibration and compare several post-hoc calibration
+  methods. Their key contribution is demonstrating that temperature scaling, which divides a model's logits by a single learned scalar before applying
+  softmax, can substantially improve calibration with minimal computational overhead.
+</p>
+<p>
+  <strong>Main results</strong>: On CIFAR-100, ResNet-110's Expected Calibration Error (ECE) decreases from <strong>16.53% to 1.26%</strong> after
+  temperature scaling, using 15 confidence bins. On ImageNet with DenseNet-161, ECE falls from <strong>6.28% to 1.99%</strong>. Temperature scaling
+  performs competitively with more complex calibration methods across several evaluated datasets, although its effectiveness varies by dataset.
+</p>
+<p>
+  <strong>Key limitations</strong>: The experiments assume that training, validation, and test data come from the same distribution. Calibration
+  performance depends on the evaluation metric and dataset, and temperature scaling does not guarantee reliability under distribution shift or provide
+  a complete characterization of predictive uncertainty.
+</p>
+<p>
+  <strong>Takeaway</strong>: Calibration is distinct from classification accuracy. Temperature scaling offers a simple, effective way to improve the
+  reliability of predicted probabilities without changing the predicted class, but its success must be evaluated in the intended deployment setting.
+</p>
+<p>
+  <strong>One-line interpretation</strong>: A neural network can be accurate yet overconfident, and a simple one-parameter transformation can often
+  make its confidence estimates substantially more trustworthy.
+</p>

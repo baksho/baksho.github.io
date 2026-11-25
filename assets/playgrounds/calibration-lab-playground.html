@@ -1,0 +1,1125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Calibration Lab</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:700}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  #cv{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cv.grab{cursor:grab}#cv.drag{cursor:grabbing}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #aaa}
+  .rg{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid #222;vertical-align:-2px}.rg.th{border-width:3px}
+  .ln{display:inline-block;width:26px;height:0;border-top:2px solid #222;vertical-align:middle}.ln.da{border-top-style:dashed;border-top-width:1.5px}
+  .bd{display:inline-block;width:26px;height:10px;border-radius:2px}
+  #detail{min-height:70px}
+  #nums{grid-template-columns:1fr;gap:6px}
+  #nums .pr{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  #nums .pr b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  #nums .sec{grid-column:1/-1}
+  #bar{margin-bottom:0;align-items:flex-end}#cctl{align-items:flex-end}
+  #cctl{flex:1;gap:12px 20px}
+  #cctl .sl{flex:1 1 0;min-width:118px}
+  #cctl{flex-wrap:nowrap}
+  .kopts{display:flex;gap:16px;align-items:flex-start;min-height:34px}
+  .kopts label{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-weight:400;font-size:13px;margin:0;color:#222}
+  .kopts input{margin:3px 0 0}
+  .kopts small{display:block;color:#777;font-size:11.5px;line-height:1.25;margin-top:1px;max-width:112px}
+  input.num{width:52px;font-size:12.5px;padding:1px 5px;text-align:right;border:1px solid #ccc;border-radius:3px;background:#fff;color:#222;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  #hover{margin-top:6px;color:#555;min-height:20px;font-variant-numeric:tabular-nums}
+  .seg{display:flex;gap:6px;margin:8px 0 2px}.seg .tool{flex:1;text-align:center}
+  .tool.o.on{background:#e8590c;border-color:#e8590c}.tool.b.on{background:#0877bd;border-color:#0877bd}
+
+  #cv{aspect-ratio:16/10;cursor:default}
+  .pgrid{margin-top:20px}
+  .pgrid .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+  .pgrid .ph select{min-width:0;max-width:62%}
+  .pgrid canvas{aspect-ratio:1/1;cursor:default}
+  #cl2{aspect-ratio:1/1}
+  .fbtns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:12px 0 0}
+  .fbtns button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:9px 0;font-size:13px;cursor:pointer;color:#222;font-variant-numeric:tabular-nums}
+  .fbtns button:hover:not(:disabled){background:var(--navy);color:#fff;border-color:var(--navy)}
+  .fbtns button:disabled{opacity:.45;cursor:default}
+  table.tbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px}
+  table.tbl th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+  table.tbl td{text-align:right;padding:3px 8px 3px 0}
+  table.tbl tr.sel td{font-weight:700;color:#0b5f96}
+  table.tbl tr.ref td{color:#777;font-style:italic}
+  .cap{font-size:12px;color:#666;line-height:1.45;margin-top:8px}
+  .cap b{color:#333;font-weight:700}
+  #lam{margin-left:14px}
+  .msec{display:none}
+  .msec.on{display:block}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  #detail p{margin:0 0 6px}
+  #detail p:last-child{margin-bottom:0}
+  .bad{color:#b4430a}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Calibration Lab</h1>
+  <p class="blurb">When a classifier says &ldquo;80% sure&rdquo;, is it right about 80% of the time? That is <b>calibration</b>. A model can have high accuracy and still be badly calibrated, and a calibrated model can be a poor one. This page lets you <b>diagnose</b> calibration with a reliability diagram, <b>fix</b> it with three standard recalibration methods, see how it <b>breaks under distribution shift</b>, and play a <b>forecasting game</b> that shows why honest probabilities are the best policy. All data are synthetic, so the page knows the true probability of every point. Choose the mode at the top of the <b>Settings</b> panel on the right.</p>
+
+  <div id="bar"><div id="cctl"></div></div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="chead"></div>
+      <canvas id="cv"></canvas>
+      <div class="fbtns" id="fbtns" style="display:none"></div>
+      <div class="legend" id="legend" style="flex-direction:column;align-items:flex-start;gap:5px"></div>
+      <div id="hover">&nbsp;</div>
+      <div class="pgrid">
+        <div><div class="ph"><span id="lhead"></span></div><canvas id="cl"></canvas><div class="cap" id="capl"></div></div>
+        <div><div class="ph"><select id="rsel" aria-label="Choose the chart"></select></div><canvas id="cr"></canvas><div class="cap" id="capr"></div></div>
+      </div>
+      <div id="detail" class="card" style="margin:16px 0 0"></div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Mode</div>
+        <label class="radio"><input type="radio" name="mode" value="1" checked><span>1 &middot; Diagnose<small>read a reliability diagram and its numbers</small></span></label>
+        <label class="radio"><input type="radio" name="mode" value="2"><span>2 &middot; Fix<small>recalibrate with a separate calibration set</small></span></label>
+        <label class="radio"><input type="radio" name="mode" value="3"><span>3 &middot; Shift<small>what happens when the data change after training</small></span></label>
+        <label class="radio"><input type="radio" name="mode" value="4"><span>4 &middot; Forecaster game<small>give probabilities yourself and get scored</small></span></label>
+
+        <div class="sub">Data</div>
+        <div class="row2" style="margin-top:2px"><select id="ds" style="width:100%"></select></div>
+        <div class="row2 msec on" id="lamrow" data-m="123"><label for="lam" style="font-size:12.5px;color:#444">Ridge penalty &lambda;</label><select id="lam"><option value="0.0001">0.0001 (almost none)</option><option value="0.01">0.01</option><option value="1">1 (strong)</option></select></div>
+        <div class="row2"><button class="linkbtn" id="reseed">New random sample</button></div>
+        <div class="hint" id="datahint"></div>
+
+        <div class="msec" data-m="1"><div class="sub">Predictor</div>
+          <label class="radio"><input type="radio" name="pred" value="model" checked><span>Trained model<small>polynomial logistic regression, fitted on the training points</small></span></label>
+          <label class="radio"><input type="radio" name="pred" value="base"><span>Base rate only<small>always the same probability: the share of class 1 in the training points</small></span></label>
+          <label class="radio"><input type="radio" name="pred" value="bayes"><span>True probability<small>the exact answer the data were generated from</small></span></label></div>
+
+        <div class="msec" data-m="2"><div class="sub">Recalibration</div>
+          <div class="row2" style="margin-top:2px"><select id="rcm" style="width:100%"><option value="temp">Temperature scaling (1 parameter)</option><option value="platt">Platt scaling (2 parameters)</option><option value="iso">Isotonic regression (free-form)</option></select></div>
+          <label class="chk"><input type="checkbox" id="cheat">Cheat: fit it on the test points themselves</label>
+          <div class="hint">Shows why the calibration set must be separate from the test set.</div></div>
+
+        <div class="msec" data-m="3"><div class="sub">Shift</div>
+          <div class="row2" style="margin-top:2px"><select id="shk" style="width:100%"></select></div>
+          <div class="hint" id="shhint"></div>
+          <div class="row2" style="margin-top:8px"><label for="rcm3" style="font-size:12.5px;color:#444">Recalibration method</label><select id="rcm3"><option value="platt">Platt</option><option value="temp">Temperature</option><option value="iso">Isotonic</option></select></div>
+          <label class="chk"><input type="checkbox" id="tcal" checked>Also recalibrate on a few labelled target points</label></div>
+
+        <div class="msec" data-m="123"><div class="sub">Reliability diagram</div>
+          <label class="radio"><input type="radio" name="conv" value="top" checked><span>Top label<small>confidence = the larger of p and 1&minus;p; outcome = was the predicted class right</small></span></label>
+          <label class="radio"><input type="radio" name="conv" value="event"><span>P(class 1)<small>confidence = p; outcome = did class 1 occur</small></span></label>
+          <div class="row2" style="margin:8px 0 0"><label for="scheme" style="font-size:12.5px;color:#444">Bins</label><select id="scheme"><option value="width">equal width</option><option value="mass">equal count</option></select></div>
+          <label class="chk"><input type="checkbox" id="wil" checked>Show 95% intervals (Wilson)</label>
+          <label class="chk"><input type="checkbox" id="bref" checked>Show the true-probability reference</label></div>
+
+        <div class="msec" data-m="4"><div class="sub">Game</div>
+          <label class="chk"><input type="checkbox" id="reveal">Show me the true probability before I forecast</label>
+          <div class="row2"><button class="tool" id="next">Next point</button><button class="tool" id="simgo">Run simulated forecaster</button></div>
+          <div class="row2" style="margin-top:0"><button class="linkbtn" id="gres">Reset my rounds</button></div>
+          <label class="radio" style="margin-top:10px"><input type="radio" name="gview" value="me" checked><span>Show my rounds</span></label>
+          <label class="radio"><input type="radio" name="gview" value="sim"><span>Show the simulated forecaster</span></label></div>
+      </div>
+      <div class="head" style="margin-top:22px">Results</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+      <div class="card msec" data-m="4" style="font-size:12.5px;color:#555;line-height:1.5"><b style="color:#222">How you are scored.</b> Each round you announce a probability f for class 1 and the class y (1 or 0) is then drawn. The <b>Brier score</b> of the round is (f &minus; y)&sup2;; the <b>log loss</b> is &minus;log f if y = 1 and &minus;log(1 &minus; f) if y = 0. Lower is better for both. Both are <i>proper</i> scoring rules: your expected score is lowest when you announce the probability you really believe, so there is nothing to gain by exaggerating or hedging (see the &ldquo;Cost of misreporting&rdquo; chart). Press Enter for the next point.</div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <div class="warn"><b>What this page is, and is not.</b> Every data set is made up by the page: points in the plane drawn from known mixtures of Gaussian blobs, so the page knows the exact probability that each point is class 1. That is what lets it show a perfect reference, but it is a toy: real data have no known probabilities, more dimensions, and models far more complex than a polynomial logistic regression. I wrote the model, the metrics and the recalibrators myself and checked them against independent code (below). Every number quoted here comes from my own runs of this code on made-up data, averaged over random samples where a &plusmn; is given, and will differ a little from what you see for one sample.</div>
+
+    <h3>What calibration means</h3>
+    <p>A classifier that outputs probabilities is <b>calibrated</b> if, among the cases where it says 70%, about 70% turn out to be class 1. Guo et al. (2017) define it for the predicted class: the probability that the predicted class is right, given that the model announced confidence <i>p</i>, should equal <i>p</i>. Calibration is a different property from accuracy. A predictor that always says &ldquo;the share of class 1 in the training data&rdquo; is calibrated almost by construction and useless for telling cases apart: on the default data it has about chance-level accuracy (48% on the default sample; choose <b>Base rate only</b> in Mode 1). In the other direction, a model can be right 90% of the time and say 99% every time. What you want is a predictor that is both accurate and calibrated, and the squared-error (Brier) and log-likelihood scores reward both together.</p>
+    <p>The page offers two conventions for the reliability diagram. <b>Top label</b> uses, for every point, the confidence max(<i>p</i>, 1&minus;<i>p</i>) in the class the model predicts (class 1 if <i>p</i> &ge; 0.5) and records whether that prediction was right; the confidence therefore lives between 50% and 100%. <b>P(class 1)</b> uses <i>p</i> itself and records whether class 1 occurred. Both are evaluated by the same code: each test point becomes a pair (confidence, outcome), and the bins, ECE, MCE, recalibration and plots work on those pairs. The Brier score and the log-likelihood do not use the convention at all.</p>
+
+    <h3>The data and the model</h3>
+    <p>Each data set is a mixture of Gaussians: class 1 has probability &pi; and each class is a weighted sum of Gaussian blobs. Bayes&rsquo; rule then gives the true P(class 1 | <i>x</i>) exactly, computed in log space for stability. The four data sets are two overlapping blobs (equal covariance, so the true boundary is a straight line), the same with only 20% class 1, XOR (two blobs per class on the diagonals) and two moons (six blobs per class along an arc). I compared the page&rsquo;s probability with scipy&rsquo;s multivariate normal density on 40 points per data set: the largest difference was 8&times;10<sup>&minus;16</sup>.</p>
+    <p>The model is a <b>logistic regression on polynomial features</b> (every monomial of the two coordinates of total degree 1 to the chosen degree, each standardised using the training data). It minimises the average cross-entropy plus &lambda;/2 times the squared size of the weights (the intercept is not penalised), by Newton&rsquo;s method with a line search. The &ldquo;ridge penalty&rdquo; &lambda; in Settings is that &lambda;. Degree 1 is an ordinary logistic regression; degree 6 has 27 features and, with 100 training points, overfits. Against scikit-learn&rsquo;s LogisticRegression (with C = 1/(n&lambda;)) the logits agreed to 1.4&times;10<sup>&minus;8</sup> (degree 1, &lambda; = 10<sup>&minus;4</sup>), 2.5&times;10<sup>&minus;6</sup> (degree 3, &lambda; = 0.01) and 1.1&times;10<sup>&minus;7</sup> (degree 6, &lambda; = 1). For degree 5 with &lambda; = 10<sup>&minus;4</sup> they differed by 2&times;10<sup>&minus;4</sup>, but the objective values agreed to about 10<sup>&minus;13</sup>, so both had reached the same optimum and scikit-learn&rsquo;s solver had simply stopped a little early on that ill-conditioned problem.</p>
+    <p>Training, calibration and test points are drawn separately, from fixed streams of random numbers per sample, so moving a slider only adds or removes points and does not reshuffle the others. <b>New random sample</b> starts new streams.</p>
+
+    <h3>Mode 1: the reliability diagram and its numbers</h3>
+    <p>The test points are split into bins by confidence, either <b>equal width</b> or <b>equal count</b> (equal-count bins have sizes that differ by at most one point). For bin <i>b</i> with <i>n<sub>b</sub></i> of <i>n</i> points, let conf<sub><i>b</i></sub> be the mean confidence and acc<sub><i>b</i></sub> the mean outcome. Then</p>
+    <div class="eqb">ECE = &Sigma;<sub>b</sub> (n<sub>b</sub>/n) &middot; |acc<sub>b</sub> &minus; conf<sub>b</sub>|<br>MCE = max<sub>b</sub> |acc<sub>b</sub> &minus; conf<sub>b</sub>|<br>Brier = mean (p &minus; y)&sup2;&nbsp;&nbsp;&nbsp; NLL = mean [&minus;y log p &minus; (1&minus;y) log(1&minus;p)]</div>
+    <p>I call ECE and MCE the expected and maximum calibration error as popularised by Pakdaman Naeini, Cooper and Hauskrecht (2015) and Guo et al. (2017). Empty bins are dropped. NLL clips the probability to [10<sup>&minus;6</sup>, 1&minus;10<sup>&minus;6</sup>] so that a confident mistake costs about 13.8 rather than infinity. Each whisker is the 95% Wilson interval for the true rate in that bin (Wilson 1927); against statsmodels it agreed to within 10<sup>&minus;16</sup> in four test cases. I checked the metrics for both conventions and both binning schemes against an independent numpy implementation: the largest difference was 6&times;10<sup>&minus;16</sup>.</p>
+    <p><b>ECE is a diagnostic, not a loss, and it is a noisy one.</b> It depends on the number and placement of bins, and even a perfectly calibrated predictor has a positive measured ECE, because each bin&rsquo;s observed rate is a finite-sample average. Kumar, Liang and Ma (2019) discuss why such plug-in estimates are biased. The page shows this directly through the <b>true-probability reference</b>, which is calibrated by construction. With top-label ECE, 15 equal-width bins and 100 fresh test sets for each size, the true probability scored an ECE of 0.111 &plusmn; 0.021 at 100 test points, 0.060 &plusmn; 0.013 at 300, 0.033 &plusmn; 0.006 at 1000 and 0.015 &plusmn; 0.003 at 5000 (mean &plusmn; standard deviation). See the chart <i>ECE noise floor vs test size</i>. A measured ECE has to be compared with that floor, not with zero. Likewise, more bins raise the floor: for the true probability at 5000 points the ECE grew from 0.005 with 2 bins to 0.022 with 30. The overfitted degree-6, 100-point model of the first bullet below, by comparison, changed only from 0.069 to 0.076 over the same range, because its error is far larger than the noise.</p>
+
+    <h3>What to try in Mode 1</h3>
+    <ul>
+      <li><b>Flexible models on small samples are overconfident.</b> On the overlapping blobs (20 random training sets each, tested on 5000 fresh points, 15 bins, top-label, &lambda; = 10<sup>&minus;4</sup>): a degree-1 model on 100 points had ECE 0.032 &plusmn; 0.019 and mean confidence only 0.7 points above its accuracy; degree 3 on 100 points, 0.059 &plusmn; 0.025 (4.1 points overconfident); degree 6 on 100 points, 0.074 &plusmn; 0.023 (5.9 points); degree 6 on 50 points, 0.118 &plusmn; 0.038 (11.4 points) and a log-likelihood of 0.853 against 0.389 for the true probability. With 1000 training points, degree 6 was back to 0.023 &plusmn; 0.004 (0.5 points). More data, or a simpler model, cures it here.</li>
+      <li><b>Sharpening slider s.</b> It multiplies the logit, so <i>s</i> = 3 pushes every probability towards 0 or 1 while leaving every prediction unchanged. Apply it to the true-probability predictor to see a perfect predictor made overconfident without changing its accuracy at all; at <i>s</i> &lt; 1 it becomes underconfident.</li>
+      <li><b>Reading the diagram.</b> Equal-count bins put the same number of points in every dot, which keeps the whiskers comparable; equal-width bins show where the confidence actually lies but leave a few bins nearly empty. Hover over a dot to see its counts and its interval.</li>
+    </ul>
+
+    <h3>Mode 2: fixing calibration after training</h3>
+    <p>A <b>recalibrator</b> is a small function from the model&rsquo;s output to a new probability, fitted on a <b>separate calibration set</b> that was used neither for training nor for testing. Three are offered, all acting on the model&rsquo;s log-odds <i>z</i> = logit(<i>p</i>).</p>
+    <ul>
+      <li><b>Temperature scaling</b>: <i>p</i> = &sigma;(&beta;<i>z</i>) with one parameter &beta; = 1/T &gt; 0, chosen to minimise the log-likelihood on the calibration set. It is the one-parameter variant of Platt scaling described by Guo et al. (2017). The log-likelihood is convex in &beta;, so the page finds its minimum by bisection on the derivative. Because every logit is multiplied by the same positive number, no predicted class changes and accuracy is untouched.</li>
+      <li><b>Platt scaling</b>: <i>p</i> = &sigma;(<i>az</i> + <i>b</i>), two parameters fitted by maximum likelihood (Platt 1999). Platt also suggests slightly softened targets; this page does <i>not</i> do that and uses plain maximum likelihood. The shift <i>b</i> can change predictions for points near 50%.</li>
+      <li><b>Isotonic regression</b>: the best non-decreasing step function from <i>p</i> to the outcome in the squared-error sense, fitted by pool-adjacent-violators and linearly interpolated between the distinct values of <i>p</i> (constant outside them). It makes no assumption beyond monotonicity, but it needs more data. Niculescu-Mizil and Caruana (2005) compared Platt scaling and isotonic regression as ways to obtain good probabilities.</li>
+    </ul>
+    <p>Against scikit-learn on the same inputs: Platt&rsquo;s (<i>a</i>, <i>b</i>) matched LogisticRegression on the logit (a very large C) to 10<sup>&minus;8</sup>; the temperature matched a numerical minimiser of the log-likelihood to 2&times;10<sup>&minus;8</sup>; and isotonic regression matched IsotonicRegression (out_of_bounds = &ldquo;clip&rdquo;) with a largest difference of 0.</p>
+    <ul>
+      <li><b>When the problem really is a single scale, temperature scaling solves it.</b> Take a degree-1 model on 1000 points, which is nearly calibrated, and set the sharpening slider to <i>s</i> = 3 (20 random samples, 500 calibration points, 2000 test points, 10 bins). The raw ECE was 0.118; temperature scaling fitted <i>T</i> = 3.03 on average (it is undoing a factor of 3) and brought the ECE to 0.022, against 0.023 for the undistorted model. For <i>s</i> = 0.5 it found <i>T</i> = 0.51. Platt scaling gave the same result (0.023). Isotonic regression gave 0.032, and its log-likelihood stayed above the others (0.426 against 0.392) even when there was nothing to fix, presumably because a step function spends data on a distortion that a single number can describe.</li>
+      <li><b>When the problem is something else, it may not.</b> For the overfitted degree-6, 100-point model of Mode 1 (20 samples, 1000 calibration points, 5000 test points, 15 bins) the raw ECE of 0.074 became 0.115 after temperature scaling and 0.100 after Platt scaling, while isotonic regression reached 0.028. At the same time all three improved the log-likelihood (0.628 raw; 0.519, 0.517 and 0.467). A plausible reason, which I did not test separately, is that these methods are fitted to minimise the log-likelihood, which is dominated by a few confident mistakes, so the fitted scale compresses all probabilities and leaves the mid-range predictions too timid (the diagram shows underconfidence after temperature scaling). The Brier score also got worse for temperature and Platt (0.155 to 0.167 and 0.166) and better for isotonic regression (0.147). The temperature fitted varied enormously between samples (7.2 &plusmn; 7.8). On XOR data with the same model, the picture was the same (ECE 0.056 raw, 0.077, 0.071 and 0.022). Calibration error is not one number: ECE, the log-likelihood and the Brier score can disagree, so look at all three.</li>
+      <li><b>How much calibration data?</b> Use the chart <i>ECE vs calibration-set size</i>. For the same overfitted model (10 samples &times; 20 fresh calibration sets, 10 bins, 2000 test points) isotonic regression&rsquo;s ECE was 0.092 with 50 calibration points, 0.070 with 100, 0.052 with 200, 0.037 with 500 and 0.029 with 1000, against a raw 0.076, so it needed about 100 points to beat doing nothing on ECE. Its log-likelihood was worse than the raw 0.648 up to 100 points (0.868 and 0.680) and better from 200 (0.573). Platt and temperature scaling improved the log-likelihood only from 0.555 and 0.550 at 100 points to 0.537 and 0.538 at 1000, and their ECE did not improve with more data (0.079 to 0.091 and 0.102 to 0.117).</li>
+      <li><b>Never fit on the test set.</b> Tick the <i>Cheat</i> box. With 300 points used both to fit and to measure, isotonic regression reached an ECE of 0.000 &plusmn; 0.000 against 0.061 &plusmn; 0.013 when fitted on separate data; temperature scaling changed only from 0.128 &plusmn; 0.047 to 0.113 &plusmn; 0.046, because one number can adapt very little. The more flexible the recalibrator, the more it can memorise.</li>
+    </ul>
+
+    <h3>Mode 3: distribution shift</h3>
+    <p>The model and its recalibrator are trained on the source data and then evaluated on data that have changed. Four shifts are offered, each defined so that the page still knows the exact true probability of every shifted point (the true-probability reference below was calibrated to within sampling noise in each case on 200,000 points: its mean prediction was within 0.001 of the share of class 1 and its ECE was at most 0.003).</p>
+    <ul>
+      <li><b>Covariate shift</b>: the inputs move along <i>x</i>, but the labelling rule P(y | x) is exactly the source rule (Shimodaira 2000).</li>
+      <li><b>Label shift</b>: the share of class 1 becomes the chosen value while what each class looks like is unchanged. The true probability is the source odds multiplied by the ratio of new to old class odds (Saerens, Latinne and Decaestecker 2002); I checked this against the page&rsquo;s exact mixture calculation, with a largest difference of 3&times;10<sup>&minus;16</sup>.</li>
+      <li><b>Concept shift</b>: the whole class picture moves along <i>x</i>, so the labelling rule changes under the model.</li>
+      <li><b>Noise growth</b>: every class covariance is multiplied by 1 + the chosen value.</li>
+    </ul>
+    <p>Ovadia et al. (2019) report that post-hoc calibration can look good on data like the training data and still fail under even mild shift; this mode lets you see that on a small example. The numbers below are for the overlapping blobs with a degree-3 model on 300 points, Platt scaling fitted on 500 source points, 10 samples, 2000 target points, 15 bins, top-label unless stated, and (for &ldquo;target&rdquo;) 200 labelled target points.</p>
+    <ul>
+      <li><b>Concept shift hurts a lot and source recalibration cannot help.</b> At shifts of 0, 1, 2 and 3 the raw ECE was 0.033, 0.101, 0.283 and 0.407, and Platt scaling fitted on the source data gave 0.038, 0.095, 0.277 and 0.400. Accuracy fell from 81.6% to 74.5%, 60.8% and 53.5% while mean confidence <i>rose</i> from 82.3% to 84.0%, 89.0% and 94.1%. Recalibrating again on 200 labelled target points gave 0.045, 0.054, 0.057 and 0.057, a large improvement, though still above the 0.024 of the true probability.</li>
+      <li><b>Noise growth.</b> At growth 0, 0.5, 1 and 2 the ECE was 0.033, 0.075, 0.120 and 0.181 (source recalibration 0.038, 0.063, 0.104, 0.167; target recalibration 0.045, 0.055, 0.064, 0.067). Accuracy fell from 81.6% to 69.3% while confidence rose from 82.3% to 87.2%; even the true probability only reaches 70.2% accuracy at growth 2, so most of the fall in accuracy is unavoidable; what goes wrong is that the confidence rises instead of falling.</li>
+      <li><b>Label shift and the convention.</b> With 5% class 1 the model&rsquo;s accuracy did not move (symmetric classes), the top-label ECE was only 0.043 and the P(class 1) ECE was 0.225; at 95%, 0.052 against 0.228. The top-label ECE can hide this shift. I did not isolate why; a likely reason is that over- and under-confidence in the predictions of the two classes fall into the same bins and offset each other. On the imbalanced data (20% class 1) shifted to 50% and 80% the P(class 1) ECE went from 0.033 to 0.178 and 0.343, with accuracy falling from 87.2% to 74.5% and 62.2%; recalibrating on 200 target points gave 0.052 and 0.046.</li>
+      <li><b>Covariate shift was mild in my runs.</b> A degree-3 model on the overlapping blobs, whose true boundary is a line, stayed calibrated (ECE 0.034, 0.034, 0.035 and 0.029 at shifts 0 to 3, while accuracy rose from 81.9% to 93.5%). A degree-2 model on the moons was between 0.044 and 0.057 for shifts up to 3. A degree-3 model on XOR went from 0.028 to 0.037 and 0.058 at shifts 0, 1 and 2, with confidence 4.7 points above accuracy at 2. So covariate shift only breaks calibration when the model is wrong in the region the inputs move into; I did not find a case with dramatic damage.</li>
+    </ul>
+
+    <h3>Mode 4: the forecaster game</h3>
+    <p>You see 150 labelled points and one query point whose class is hidden. You announce a probability from a fixed list (5%, 10%, 20%, &hellip;, 90%, 95%); the class is then drawn at random from the exact true probability <i>q</i> of that point and revealed. After many rounds your reliability diagram shows whether your 70%s came true about 70% of the time. Because only 11 distinct forecast values are possible, the <b>Murphy (1973) decomposition</b> of the Brier score is exact:</p>
+    <div class="eqb">Brier = REL &minus; RES + UNC<br>REL = &Sigma;<sub>k</sub> (n<sub>k</sub>/n)(f<sub>k</sub> &minus; o<sub>k</sub>)&sup2;&nbsp;&nbsp; RES = &Sigma;<sub>k</sub> (n<sub>k</sub>/n)(o<sub>k</sub> &minus; o&#772;)&sup2;&nbsp;&nbsp; UNC = o&#772;(1 &minus; o&#772;)</div>
+    <p>where <i>f<sub>k</sub></i> is the <i>k</i>-th announced level, <i>n<sub>k</sub></i> the number of rounds at that level, <i>o<sub>k</sub></i> the observed share of class 1 at it and o&#772; the overall share. Reliability is the calibration error, resolution is how much your forecasts separate cases whose outcomes differ, and uncertainty depends only on the data. The Brier score itself goes back to Brier (1950). The page checks the identity on every update (it matched to 10<sup>&minus;15</sup> in a test of 5000 rounds), and I deliberately do <i>not</i> show this decomposition for the binned diagrams in Modes 1 to 3: with continuous probabilities, binning adds a within-bin term and the identity no longer holds exactly.</p>
+    <p><b>Why honesty is the best policy.</b> The Brier score and the log loss are <i>strictly proper</i> scoring rules (Gneiting and Raftery 2007): if the true probability is <i>q</i>, announcing <i>f</i> gives an expected Brier score (f &minus; q)&sup2; + q(1 &minus; q) and an expected log loss KL(q&#8214;f) + entropy(q), both smallest at <i>f</i> = <i>q</i>. The chart <i>Cost of misreporting</i> averages the extra part over 4000 query points of the overlapping blobs for a forecaster who knows <i>q</i> but announces &sigma;(<i>s</i> &middot; logit <i>q</i>): both curves are exactly zero at <i>s</i> = 1 and grow on either side. The extra Brier score was 0.047 at <i>s</i> = 0.25, 0.013 at 0.5, 0.009 at 2 and 0.024 at 4; the extra log loss was 0.139, 0.049, 0.079 and 0.378. The log loss punishes overconfidence much harder than the Brier score does.</p>
+    <p>The <b>simulated forecaster</b> plays this strategy for the chosen number of rounds, rounded to the nearest of the 11 levels. In 2000 rounds on the overlapping blobs (averaged over 10 runs) its average Brier score was 0.171, 0.138, 0.125, 0.133 and 0.145 for <i>s</i> = 0.25, 0.5, 1, 2 and 4, against 0.122 to 0.126 for the unrounded true probability, and its reliability term was 0.044, 0.012, 0.001, 0.007 and 0.012. Even at <i>s</i> = 1 the rounding leaves a small reliability term. A constant 50% forecast scored 0.25, and the uncertainty term of this data set is 0.250.</p>
+    <p><b>Scores are noisy.</b> A forecaster who always announced the true probability (rounded) had a Brier score of 0.124 &plusmn; 0.029 over 50 rounds (300 simulated games), so after a short game a good score does not prove skill, and a poor one does not prove its absence. The benchmark &ldquo;trained model&rdquo; is a degree-3 logistic regression with &lambda; = 0.01 on the 150 points you see; &ldquo;base rate&rdquo; announces their class-1 share.</p>
+
+    <h3>Limits</h3>
+    <ul>
+      <li>Everything is two-dimensional and synthetic; the true probability is known here and never in practice. Real calibration studies must estimate it from labelled data, with the noise shown in the noise-floor chart.</li>
+      <li>Reliability diagrams and ECE look at a model&rsquo;s predicted confidence only; they say nothing about whether it is accurate, fair for every subgroup, or calibrated for individual cases.</li>
+      <li>The page uses one temperature, two Platt parameters and a plain step function. Other recalibrators and other binning-free estimates exist; I did not implement them.</li>
+      <li>Random samples are small by design. Run <b>New random sample</b> a few times before believing a difference of a point or two.</li>
+      <li>NLL clips probabilities at 10<sup>&minus;6</sup>; isotonic regression can output exactly 0 or 1, so its log-likelihood depends on that choice.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>G. W. Brier, &ldquo;Verification of forecasts expressed in terms of probability&rdquo;, <i>Monthly Weather Review</i> 78 (1), 1&ndash;3, 1950.</li>
+      <li>T. Gneiting and A. E. Raftery, &ldquo;Strictly proper scoring rules, prediction, and estimation&rdquo;, <i>Journal of the American Statistical Association</i> 102 (477), 359&ndash;378, 2007.</li>
+      <li>C. Guo, G. Pleiss, Y. Sun and K. Q. Weinberger, &ldquo;On calibration of modern neural networks&rdquo;, <i>Proceedings of the 34th International Conference on Machine Learning</i>, PMLR 70, 1321&ndash;1330, 2017.</li>
+      <li>A. Kumar, P. Liang and T. Ma, &ldquo;Verified uncertainty calibration&rdquo;, <i>Advances in Neural Information Processing Systems</i> 32, 2019.</li>
+      <li>A. H. Murphy, &ldquo;A new vector partition of the probability score&rdquo;, <i>Journal of Applied Meteorology</i> 12 (4), 595&ndash;600, 1973.</li>
+      <li>A. Niculescu-Mizil and R. Caruana, &ldquo;Predicting good probabilities with supervised learning&rdquo;, <i>Proceedings of the 22nd International Conference on Machine Learning</i>, 2005.</li>
+      <li>Y. Ovadia et al., &ldquo;Can you trust your model&rsquo;s uncertainty? Evaluating predictive uncertainty under dataset shift&rdquo;, <i>Advances in Neural Information Processing Systems</i> 32, 2019.</li>
+      <li>M. P. Naeini, G. F. Cooper and M. Hauskrecht, &ldquo;Obtaining well calibrated probabilities using Bayesian binning&rdquo;, <i>Proceedings of the AAAI Conference on Artificial Intelligence</i> 29 (1), 2901&ndash;2907, 2015.</li>
+      <li>J. C. Platt, &ldquo;Probabilistic outputs for support vector machines and comparisons to regularized likelihood methods&rdquo;, in <i>Advances in Large Margin Classifiers</i>, MIT Press, 61&ndash;74, 1999 (published 2000).</li>
+      <li>M. Saerens, P. Latinne and C. Decaestecker, &ldquo;Adjusting the outputs of a classifier to new a priori probabilities: a simple procedure&rdquo;, <i>Neural Computation</i> 14 (1), 21&ndash;41, 2002.</li>
+      <li>H. Shimodaira, &ldquo;Improving predictive inference under covariate shift by weighting the log-likelihood function&rdquo;, <i>Journal of Statistical Planning and Inference</i> 90 (2), 227&ndash;244, 2000.</li>
+      <li>E. B. Wilson, &ldquo;Probable inference, the law of succession, and statistical inference&rdquo;, <i>Journal of the American Statistical Association</i> 22 (158), 209&ndash;212, 1927.</li>
+    </ul>
+
+  </div>
+</div>
+<script>const KC = (function () {
+  "use strict";
+  const PI = Math.PI, EPS_NLL = 1e-6;
+
+  /* ---------- random numbers ---------- */
+  function rng(seed) { let a = (seed >>> 0) || 1; return function () { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }; }
+  function gauss(r) { let u = 0; while (u === 0) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * PI * r()); }
+
+  /* ---------- numerics ---------- */
+  const sigmoid = z => z >= 0 ? 1 / (1 + Math.exp(-z)) : (e => e / (1 + e))(Math.exp(z));
+  const log1pexp = z => z > 0 ? z + Math.log1p(Math.exp(-z)) : Math.log1p(Math.exp(z));
+  const logit = p => Math.log(p / (1 - p));
+  function lse(a, b) { const m = Math.max(a, b); return m === -Infinity ? m : m + Math.log(Math.exp(a - m) + Math.exp(b - m)); }
+  /* Solve H x = g for symmetric positive definite H (m x m, row-major Float64Array) by Cholesky; adds jitter if needed. */
+  function cholSolve(H, g, m) {
+    let jit = 0;
+    for (let attempt = 0; attempt < 12; attempt++) {
+      const L = new Float64Array(m * m); let ok = true;
+      for (let i = 0; i < m && ok; i++) for (let j = 0; j <= i; j++) {
+        let s = H[i * m + j] + (i === j ? jit : 0);
+        for (let k = 0; k < j; k++) s -= L[i * m + k] * L[j * m + k];
+        if (i === j) { if (s <= 1e-300) { ok = false; break; } L[i * m + i] = Math.sqrt(s); } else L[i * m + j] = s / L[j * m + j];
+      }
+      if (ok) {
+        const y = new Float64Array(m), x = new Float64Array(m);
+        for (let i = 0; i < m; i++) { let s = g[i]; for (let k = 0; k < i; k++) s -= L[i * m + k] * y[k]; y[i] = s / L[i * m + i]; }
+        for (let i = m - 1; i >= 0; i--) { let s = y[i]; for (let k = i + 1; k < m; k++) s -= L[k * m + i] * x[k]; x[i] = s / L[i * m + i]; }
+        return x;
+      }
+      let tr = 0; for (let i = 0; i < m; i++) tr += H[i * m + i];
+      jit = jit === 0 ? 1e-10 * (tr / m + 1e-12) : jit * 100;
+    }
+    return null;
+  }
+
+  /* ---------- data: Gaussian-mixture class-conditionals with exact posteriors ---------- */
+  /* spec = { pi1, comps: [ class0 comps, class1 comps ] }, comp = {w, m:[x,y], S:[sxx,sxy,syy]} */
+  const arc = (cls, a, sig) => { const out = []; for (let k = 0; k < 6; k++) { const th = PI * k / 5, c = Math.cos(th), s = Math.sin(th); out.push(cls === 0 ? { w: 1 / 6, m: [a * c - a / 2, a * s - a / 4], S: [sig * sig, 0, sig * sig] } : { w: 1 / 6, m: [a * (1 - c) - a / 2, a * (0.5 - s) - a / 4], S: [sig * sig, 0, sig * sig] }); } return out; };
+  const blob = (x, y, sxx, sxy, syy, w = 1) => ({ w, m: [x, y], S: [sxx, sxy, syy] });
+  const SPECS = {
+    overlap: { pi1: 0.5, comps: [[blob(-0.9, -0.5, 1, 0.3, 1)], [blob(0.9, 0.5, 1, 0.3, 1)]] },
+    imbalanced: { pi1: 0.2, comps: [[blob(-0.9, -0.5, 1, 0.3, 1)], [blob(0.9, 0.5, 1, 0.3, 1)]] },
+    xor: { pi1: 0.5, comps: [[blob(-1.3, -1.3, 0.64, 0, 0.64, 0.5), blob(1.3, 1.3, 0.64, 0, 0.64, 0.5)], [blob(-1.3, 1.3, 0.64, 0, 0.64, 0.5), blob(1.3, -1.3, 0.64, 0, 0.64, 0.5)]] },
+    moons: { pi1: 0.5, comps: [arc(0, 1.6, 0.35), arc(1, 1.6, 0.35)] }
+  };
+  const SPEC_LABELS = { overlap: "Two overlapping blobs", imbalanced: "Overlapping blobs, rare class 1 (20%)", xor: "XOR (four blobs)", moons: "Two moons" };
+
+  function prepare(spec) {
+    const cls = spec.comps.map(cs => cs.map(c => {
+      const [a, b, d] = c.S, det = a * d - b * b;
+      if (!(det > 0)) throw new Error("covariance not positive definite");
+      const l11 = Math.sqrt(a), l21 = b / l11, l22 = Math.sqrt(d - l21 * l21);
+      return { lw: Math.log(c.w), w: c.w, mx: c.m[0], my: c.m[1], ia: d / det, ib: -b / det, id: a / det, lognorm: -Math.log(2 * PI) - 0.5 * Math.log(det), l11, l21, l22 };
+    }));
+    return { pi1: spec.pi1, cls };
+  }
+  function logDensity(P, k, x, y) {
+    let acc = -Infinity;
+    for (const c of P.cls[k]) { const dx = x - c.mx, dy = y - c.my; acc = lse(acc, c.lw + c.lognorm - 0.5 * (c.ia * dx * dx + 2 * c.ib * dx * dy + c.id * dy * dy)); }
+    return acc;
+  }
+  /* exact P(class 1 | x, y) under the mixture, computed in log space */
+  function trueP(P, x, y) { return sigmoid(Math.log(P.pi1) + logDensity(P, 1, x, y) - Math.log(1 - P.pi1) - logDensity(P, 0, x, y)); }
+  function xform(spec, o) {
+    return { pi1: o.pi1 === undefined ? spec.pi1 : o.pi1, comps: spec.comps.map(cs => cs.map(c => ({ w: c.w, m: [c.m[0] + (o.dx || 0), c.m[1] + (o.dy || 0)], S: c.S.map(v => v * (o.cov || 1)) }))) };
+  }
+  /* pre-drawn uniforms/normals so that different shifts use common random numbers */
+  function randoms(n, r) {
+    const R = { n, uy: new Float64Array(n), uc: new Float64Array(n), z1: new Float64Array(n), z2: new Float64Array(n), ub: new Float64Array(n) };
+    for (let i = 0; i < n; i++) { R.uy[i] = r(); R.uc[i] = r(); R.z1[i] = gauss(r); R.z2[i] = gauss(r); R.ub[i] = r(); }
+    return R;
+  }
+  function draw(P, R, i) { // x | class from spec P using randoms i
+    const y = R.uy[i] < P.pi1 ? 1 : 0; let u = R.uc[i], c = P.cls[y][P.cls[y].length - 1];
+    for (const cc of P.cls[y]) { if (u < cc.w) { c = cc; break; } u -= cc.w; }
+    return { y, x: c.mx + c.l11 * R.z1[i], yy: c.my + c.l21 * R.z1[i] + c.l22 * R.z2[i] };
+  }
+  /* Realise n points. kind: 'none' (source), 'cov' (inputs shift by s along x, labels from the SOURCE posterior),
+     'label' (class-1 share becomes s), 'concept' (whole picture translated by s along x), 'noise' (covariances multiplied by 1+s).
+     Returns {X (flat), y, p (true P(class 1|x) under the distribution that generated the point)}. */
+  function realise(spec, R, n, kind, s) {
+    n = Math.min(n, R.n); const X = new Float64Array(2 * n), y = new Uint8Array(n), p = new Float64Array(n);
+    const Ps = prepare(spec);
+    if (kind === "cov") {
+      for (let i = 0; i < n; i++) { const d = draw(Ps, R, i), x = d.x + s, yy = d.yy; X[2 * i] = x; X[2 * i + 1] = yy; p[i] = trueP(Ps, x, yy); y[i] = R.ub[i] < p[i] ? 1 : 0; }
+      return { X, y, p, n };
+    }
+    let spec2 = spec;
+    if (kind === "label") spec2 = xform(spec, { pi1: s }); else if (kind === "concept") spec2 = xform(spec, { dx: s }); else if (kind === "noise") spec2 = xform(spec, { cov: 1 + s });
+    const Pt = prepare(spec2);
+    for (let i = 0; i < n; i++) { const d = draw(Pt, R, i); X[2 * i] = d.x; X[2 * i + 1] = d.yy; y[i] = d.y; p[i] = trueP(Pt, d.x, d.yy); }
+    return { X, y, p, n };
+  }
+
+  /* ---------- polynomial logistic regression (Newton / IRLS with ridge on weights, unpenalised bias) ---------- */
+  function polyFeatures(X, n, deg) {
+    const pw = []; for (let t = 1; t <= deg; t++) for (let i = t; i >= 0; i--) pw.push([i, t - i]);
+    const F = pw.length, M = new Float64Array(n * F);
+    for (let r = 0; r < n; r++) for (let j = 0; j < F; j++) M[r * F + j] = Math.pow(X[2 * r], pw[j][0]) * Math.pow(X[2 * r + 1], pw[j][1]);
+    return { M, F };
+  }
+  function trainLR(X, y, n, deg, lam) {
+    const { M, F } = polyFeatures(X, n, deg), mu = new Float64Array(F), sd = new Float64Array(F);
+    for (let j = 0; j < F; j++) { let s = 0; for (let r = 0; r < n; r++) s += M[r * F + j]; mu[j] = s / n; let v = 0; for (let r = 0; r < n; r++) v += (M[r * F + j] - mu[j]) ** 2; sd[j] = Math.max(Math.sqrt(v / n), 1e-8); }
+    for (let r = 0; r < n; r++) for (let j = 0; j < F; j++) M[r * F + j] = (M[r * F + j] - mu[j]) / sd[j];
+    const m = F + 1, th = new Float64Array(m);
+    const obj = t => { let s = 0; for (let r = 0; r < n; r++) { let z = t[0]; for (let j = 0; j < F; j++) z += M[r * F + j] * t[j + 1]; s += log1pexp(z) - y[r] * z; } let rg = 0; for (let j = 1; j < m; j++) rg += t[j] * t[j]; return s / n + 0.5 * lam * rg; };
+    let f0 = obj(th), iters = 0;
+    for (; iters < 200; iters++) {
+      const g = new Float64Array(m), H = new Float64Array(m * m), Pz = new Float64Array(n);
+      for (let r = 0; r < n; r++) {
+        let z = th[0]; for (let j = 0; j < F; j++) z += M[r * F + j] * th[j + 1];
+        const p = sigmoid(z), w = Math.max(p * (1 - p), 1e-12), e = p - y[r]; Pz[r] = w;
+        g[0] += e; H[0] += w; for (let j = 0; j < F; j++) { const a = M[r * F + j]; g[j + 1] += e * a; H[j + 1] += w * a; H[(j + 1) * m] += w * a; for (let k = 0; k <= j; k++) H[(j + 1) * m + k + 1] += w * a * M[r * F + k]; }
+      }
+      for (let j = 0; j < m; j++) { g[j] /= n; for (let k = 0; k <= j; k++) { H[j * m + k] /= n; H[k * m + j] = H[j * m + k]; } }
+      for (let j = 1; j < m; j++) { g[j] += lam * th[j]; H[j * m + j] += lam; }
+      let gm = 0; for (let j = 0; j < m; j++) gm = Math.max(gm, Math.abs(g[j])); if (gm < 1e-10) break;
+      const d = cholSolve(H, g, m); if (!d) break;
+      let t = 1, ok = false, fn = f0;
+      for (let k = 0; k < 40; k++) { const tn = new Float64Array(m); for (let j = 0; j < m; j++) tn[j] = th[j] - t * d[j]; fn = obj(tn); if (fn <= f0 + 1e-15) { for (let j = 0; j < m; j++) th[j] = tn[j]; ok = true; break; } t /= 2; }
+      if (!ok) break; const dec = f0 - fn; f0 = fn; if (dec < 1e-15 && iters > 2) break;
+    }
+    return { deg, lam, F, mu, sd, b: th[0], w: th.slice(1), iters, loss: f0 };
+  }
+  function logitsLR(model, X, n) {
+    const { M, F } = polyFeatures(X, n, model.deg), z = new Float64Array(n);
+    for (let r = 0; r < n; r++) { let s = model.b; for (let j = 0; j < F; j++) s += (M[r * F + j] - model.mu[j]) / model.sd[j] * model.w[j]; z[r] = s; }
+    return z;
+  }
+
+  /* ---------- reliability pairs, binning, metrics ---------- */
+  /* mode 'event': confidence = P(class 1), outcome = 1[y=1].  mode 'top': confidence = max(p,1-p), outcome = 1[predicted class = y] (predicted class 1 iff p >= 0.5). */
+  function pairs(p, y, n, mode) {
+    const c = new Float64Array(n), o = new Float64Array(n);
+    for (let i = 0; i < n; i++) { if (mode === "top") { const yh = p[i] >= 0.5 ? 1 : 0; c[i] = Math.max(p[i], 1 - p[i]); o[i] = yh === y[i] ? 1 : 0; } else { c[i] = p[i]; o[i] = y[i]; } }
+    return { c, o, n };
+  }
+  /* scheme 'width': M equal-width bins on [lo,hi] (last bin closed). 'mass': M groups of (almost) equal size after sorting by confidence. Empty bins are dropped. */
+  function makeBins(pr, M, scheme, lo, hi) {
+    const n = pr.n, bins = []; if (!n) return bins;
+    if (scheme === "mass") {
+      const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => pr.c[a] - pr.c[b] || a - b);
+      for (let k = 0; k < M; k++) { const a = Math.floor(k * n / M), b = Math.floor((k + 1) * n / M); if (b <= a) continue; let sc = 0, so = 0, mn = Infinity, mx = -Infinity; for (let t = a; t < b; t++) { const i = idx[t]; sc += pr.c[i]; so += pr.o[i]; mn = Math.min(mn, pr.c[i]); mx = Math.max(mx, pr.c[i]); } bins.push({ n: b - a, conf: sc / (b - a), acc: so / (b - a), lo: mn, hi: mx, k: so }); }
+    } else {
+      const cnt = new Float64Array(M), sc = new Float64Array(M), so = new Float64Array(M);
+      for (let i = 0; i < n; i++) { let k = Math.floor((pr.c[i] - lo) / (hi - lo) * M); k = Math.max(0, Math.min(M - 1, k)); cnt[k]++; sc[k] += pr.c[i]; so[k] += pr.o[i]; }
+      for (let k = 0; k < M; k++) if (cnt[k] > 0) bins.push({ n: cnt[k], conf: sc[k] / cnt[k], acc: so[k] / cnt[k], lo: lo + (hi - lo) * k / M, hi: lo + (hi - lo) * (k + 1) / M, k: so[k] });
+    }
+    return bins;
+  }
+  const ece = (bins, n) => { let s = 0; for (const b of bins) s += b.n / n * Math.abs(b.acc - b.conf); return s; };
+  const mce = bins => { let s = 0; for (const b of bins) s = Math.max(s, Math.abs(b.acc - b.conf)); return s; };
+  function wilson(k, n, z = 1.959963984540054) {
+    if (!n) return [0, 1]; const ph = k / n, d = 1 + z * z / n, c = (ph + z * z / (2 * n)) / d, h = z * Math.sqrt(ph * (1 - ph) / n + z * z / (4 * n * n)) / d; return [Math.max(0, c - h), Math.min(1, c + h)];
+  }
+  const brier = (p, y, n) => { let s = 0; for (let i = 0; i < n; i++) s += (p[i] - y[i]) ** 2; return s / n; };
+  const nll = (p, y, n) => { let s = 0; for (let i = 0; i < n; i++) { const q = Math.min(1 - EPS_NLL, Math.max(EPS_NLL, p[i])); s -= y[i] ? Math.log(q) : Math.log(1 - q); } return s / n; };
+  function accuracy(p, y, n) { let s = 0; for (let i = 0; i < n; i++) s += ((p[i] >= 0.5 ? 1 : 0) === y[i]) ? 1 : 0; return s / n; }
+  const meanConf = (p, n) => { let s = 0; for (let i = 0; i < n; i++) s += Math.max(p[i], 1 - p[i]); return s / n; };
+  /* all metrics for probabilities p of class 1 */
+  function evaluate(p, y, n, o) {
+    const pr = pairs(p, y, n, o.mode), lo = o.mode === "top" ? 0.5 : 0, bins = makeBins(pr, o.M, o.scheme, lo, 1);
+    return { n, acc: accuracy(p, y, n), conf: meanConf(p, n), ece: ece(bins, n), mce: mce(bins), brier: brier(p, y, n), nll: nll(p, y, n), bins };
+  }
+  /* Murphy (1973): forecasts take K distinct values f_k; BS = REL - RES + UNC exactly. */
+  function murphy(f, o, n) {
+    const m = new Map(); let so = 0;
+    for (let i = 0; i < n; i++) { const key = Math.round(f[i] * 1e9); let g = m.get(key); if (!g) { g = { f: f[i], n: 0, k: 0 }; m.set(key, g); } g.n++; g.k += o[i]; so += o[i]; }
+    const ob = so / n; let rel = 0, res = 0, bs = 0; for (let i = 0; i < n; i++) bs += (f[i] - o[i]) ** 2; bs /= n;
+    for (const g of m.values()) { rel += g.n / n * (g.f - g.k / g.n) ** 2; res += g.n / n * (g.k / g.n - ob) ** 2; }
+    return { bs, rel, res, unc: ob * (1 - ob), ob, groups: Array.from(m.values()).sort((a, b) => a.f - b.f) };
+  }
+
+  /* ---------- recalibrators (fitted on a calibration set, applied to logits / probabilities) ---------- */
+  /* temperature scaling: p = sigmoid(beta z), beta = 1/T > 0 minimises mean NLL (convex in beta); root of derivative by bisection on log scale */
+  function fitTemperature(z, y, n) {
+    const g = b => { let s = 0; for (let i = 0; i < n; i++) s += (sigmoid(b * z[i]) - y[i]) * z[i]; return s; };
+    let lo = Math.log(1e-3), hi = Math.log(1e3);
+    if (g(Math.exp(lo)) >= 0) return { beta: 1e-3, T: 1e3, edge: "low" };
+    if (g(Math.exp(hi)) <= 0) return { beta: 1e3, T: 1e-3, edge: "high" };
+    for (let it = 0; it < 200; it++) { const mid = 0.5 * (lo + hi); if (g(Math.exp(mid)) > 0) hi = mid; else lo = mid; }
+    const beta = Math.exp(0.5 * (lo + hi)); return { beta, T: 1 / beta, edge: null };
+  }
+  /* Platt scaling: p = sigmoid(a z + b), plain maximum likelihood (no Platt target smoothing), Newton with tiny ridge for stability */
+  function fitPlatt(z, y, n) {
+    let a = 1, b = 0; const lam = 1e-8;
+    const obj = (a, b) => { let s = 0; for (let i = 0; i < n; i++) { const t = a * z[i] + b; s += log1pexp(t) - y[i] * t; } return s / n + 0.5 * lam * (a * a + b * b); };
+    let f0 = obj(a, b);
+    for (let it = 0; it < 200; it++) {
+      let ga = lam * a, gb = lam * b, haa = lam, hab = 0, hbb = lam;
+      for (let i = 0; i < n; i++) { const p = sigmoid(a * z[i] + b), w = Math.max(p * (1 - p), 1e-12), e = p - y[i]; ga += e * z[i] / n; gb += e / n; haa += w * z[i] * z[i] / n; hab += w * z[i] / n; hbb += w / n; }
+      if (Math.max(Math.abs(ga), Math.abs(gb)) < 1e-10) break;
+      const det = haa * hbb - hab * hab, da = (hbb * ga - hab * gb) / det, db = (haa * gb - hab * ga) / det;
+      let t = 1, ok = false; for (let k = 0; k < 40; k++) { const an = a - t * da, bn = b - t * db, fn = obj(an, bn); if (fn <= f0 + 1e-15) { const dec = f0 - fn; a = an; b = bn; f0 = fn; ok = true; if (dec < 1e-16) it = 1e9; break; } t /= 2; }
+      if (!ok) break;
+    }
+    return { a, b };
+  }
+  /* isotonic regression of y on p by pool-adjacent-violators (least squares, non-decreasing); ties in p are merged first.
+     Prediction: linear interpolation between the fitted values at the distinct p values, constant outside (clipped). */
+  function fitIsotonic(p, y, n) {
+    const idx = Array.from({ length: n }, (_, i) => i).sort((a, b) => p[a] - p[b] || a - b);
+    const xs = [], ws = [], ms = [];
+    for (const i of idx) { if (xs.length && p[i] === xs[xs.length - 1]) { const k = xs.length - 1; ms[k] = (ms[k] * ws[k] + y[i]) / (ws[k] + 1); ws[k]++; } else { xs.push(p[i]); ws.push(1); ms.push(y[i]); } }
+    const bv = [], bw = [], bc = []; // blocks: value, weight, count of points
+    for (let i = 0; i < xs.length; i++) { bv.push(ms[i]); bw.push(ws[i]); bc.push(1); while (bv.length > 1 && bv[bv.length - 2] > bv[bv.length - 1]) { const k = bv.length - 1, w = bw[k - 1] + bw[k]; bv[k - 1] = (bv[k - 1] * bw[k - 1] + bv[k] * bw[k]) / w; bw[k - 1] = w; bc[k - 1] += bc[k]; bv.pop(); bw.pop(); bc.pop(); } }
+    const fv = []; for (let b = 0; b < bv.length; b++) for (let t = 0; t < bc[b]; t++) fv.push(bv[b]);
+    return { xs, fv, predict(q) { const m = xs.length; if (!m) return 0.5; if (q <= xs[0]) return fv[0]; if (q >= xs[m - 1]) return fv[m - 1]; let lo = 0, hi = m - 1; while (hi - lo > 1) { const mid = (lo + hi) >> 1; if (xs[mid] <= q) lo = mid; else hi = mid; } return fv[lo] + (fv[hi] - fv[lo]) * (q - xs[lo]) / (xs[hi] - xs[lo]); } };
+  }
+  /* fit one recalibrator on (logits z, labels y); returns {apply(z)->p, info} */
+  function fitRecal(kind, z, y, n) {
+    if (kind === "temp") { const f = fitTemperature(z, y, n); return { apply: v => sigmoid(f.beta * v), info: f }; }
+    if (kind === "platt") { const f = fitPlatt(z, y, n); return { apply: v => sigmoid(f.a * v + f.b), info: f }; }
+    if (kind === "iso") { const p = new Float64Array(n); for (let i = 0; i < n; i++) p[i] = sigmoid(z[i]); const f = fitIsotonic(p, y, n); return { apply: v => f.predict(sigmoid(v)), info: f }; }
+    return { apply: v => sigmoid(v), info: {} };
+  }
+  const applyAll = (rc, z, n) => { const p = new Float64Array(n); for (let i = 0; i < n; i++) p[i] = rc.apply(z[i]); return p; };
+
+  /* sharpening: logits multiplied by s (s>1 makes a model overconfident, s<1 underconfident) */
+  const sharpen = (z, s, n) => { const o = new Float64Array(n); for (let i = 0; i < n; i++) o[i] = z[i] * s; return o; };
+  const probs = (z, n) => { const p = new Float64Array(n); for (let i = 0; i < n; i++) p[i] = sigmoid(z[i]); return p; };
+
+
+  /* ---------- experiment helpers shared by the page and the Node tests ---------- */
+  const LEVELS = [0.05, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95];
+  const pools = seed => ({ Rtr: randoms(1000, rng(seed * 7 + 1)), Rte: randoms(5000, rng(seed * 7 + 2)), Rcal: randoms(1000, rng(seed * 7 + 3)), Rtc: randoms(1000, rng(seed * 7 + 4)) });
+  const SHIFTS = {
+    cov: { lo: 0, hi: 3, step: 0.05, def: spec => 0, label: "Inputs moved by", unit: "along x" },
+    label: { lo: 0.05, hi: 0.95, step: 0.01, def: spec => spec.pi1, label: "New share of class 1", unit: "" },
+    concept: { lo: 0, hi: 3, step: 0.05, def: spec => 0, label: "Whole picture moved by", unit: "along x" },
+    noise: { lo: 0, hi: 2, step: 0.05, def: spec => 0, label: "Noise growth", unit: "(spread x (1+value))" }
+  };
+  const clampP = p => Math.min(1 - 1e-12, Math.max(1e-12, p));
+  /* Bayes-optimal ECE on n fresh points, averaged over reps (the part of any measured ECE that is pure sampling noise) */
+  function floorCurve(spec, ns, reps, o, seed) {
+    return ns.map(n => { const v = []; for (let r = 0; r < reps; r++) { const R = randoms(n, rng(seed * 1009 + r * 31 + n)), D = realise(spec, R, n, "none", 0); v.push(evaluate(D.p, D.y, n, o).ece); } const m = v.reduce((a, b) => a + b, 0) / reps; return { n, mean: m, sd: Math.sqrt(v.reduce((a, b) => a + (b - m) ** 2, 0) / reps) }; });
+  }
+  /* mean test metrics of each recalibrator as a function of calibration-set size; calibration sets are fresh each repetition and nested across sizes */
+  function calSweep(spec, model, te, zte, sizes, reps, o, seed, sharp) {
+    sharp = sharp || 1;
+    const nmax = Math.max(...sizes), kinds = ["raw", "temp", "platt", "iso"], out = {}; for (const k of kinds) out[k] = sizes.map(() => ({ ece: 0, nll: 0, brier: 0 }));
+    for (let r = 0; r < reps; r++) {
+      const R = randoms(nmax, rng(seed * 4001 + r * 17 + 5)), C = realise(spec, R, nmax, "none", 0), zc = sharpen(logitsLR(model, C.X, nmax), sharp, nmax);
+      sizes.forEach((n, si) => { const zs = zc.slice(0, n), ys = C.y.slice(0, n); for (const k of kinds) { const p = k === "raw" ? probs(zte, te.n) : applyAll(fitRecal(k, zs, ys, n), zte, te.n), e = evaluate(p, te.y, te.n, o); out[k][si].ece += e.ece / reps; out[k][si].nll += e.nll / reps; out[k][si].brier += e.brier / reps; } });
+    }
+    return out;
+  }
+  /* sweep of one shift kind: source model + source-fitted recalibrator (+ optional target recalibrator on ntc labelled target points) */
+  function shiftSweep(spec, model, rcS, P, kind, grid, nte, ntc, method, o) {
+    return grid.map(v => {
+      const T = realise(spec, P.Rte, nte, kind, v), z = logitsLR(model, T.X, nte), pr = probs(z, nte), r = {}; r.v = v;
+      const er = evaluate(pr, T.y, nte, o), es = evaluate(applyAll(rcS, z, nte), T.y, nte, o), eb = evaluate(T.p, T.y, nte, o);
+      let et = null; if (ntc >= 20) { const C = realise(spec, P.Rtc, ntc, kind, v), rcT = fitRecal(method, logitsLR(model, C.X, ntc), C.y, ntc); et = evaluate(applyAll(rcT, z, nte), T.y, nte, o); }
+      return { v, acc: er.acc, conf: er.conf, ece_raw: er.ece, ece_src: es.ece, ece_tgt: et ? et.ece : null, ece_bayes: eb.ece, acc_bayes: eb.acc, nll_raw: er.nll, nll_src: es.nll, nll_bayes: eb.nll };
+    });
+  }
+  /* analytic propriety curves: forecasts f = sigmoid(s logit q) for a perfect knower of q; expectations over y given q are exact:
+     E[Brier(f)] - E[Brier(q)] = (f-q)^2 ;  E[log loss(f)] - E[log loss(q)] = KL(q || f) */
+  function propriety(spec, svals, nq, seed) {
+    const Pm = prepare(spec), r = rng(seed * 77 + 3), qs = []; const R = randoms(nq, r); for (let i = 0; i < nq; i++) { const d = draw(Pm, R, i); qs.push(trueP(Pm, d.x, d.yy)); }
+    return svals.map(s => { let b = 0, l = 0; for (const q0 of qs) { const q = clampP(q0), f = clampP(sigmoid(s * logit(q))); b += (f - q) ** 2; l += q * Math.log(q / f) + (1 - q) * Math.log((1 - q) / (1 - f)); } return { s, brier: b / nq, kl: l / nq }; });
+  }
+  const nearestLevel = p => { let b = 0, bd = 9; LEVELS.forEach((l, i) => { const d = Math.abs(l - p); if (d < bd) { bd = d; b = i; } }); return b; };
+  /* draw one query for the forecaster game from the data distribution: returns {x,y,q} with q the exact P(class 1 | x) and an outcome drawn from it */
+  function gameQuery(spec, r) {
+    const Pm = prepare(spec), R = randoms(1, r), d = draw(Pm, R, 0), q = trueP(Pm, d.x, d.yy); return { x: d.x, y: d.yy, q, out: r() < q ? 1 : 0 };
+  }
+
+  return { LEVELS, pools, SHIFTS, clampP, floorCurve, calSweep, shiftSweep, propriety, nearestLevel, gameQuery, rng, gauss, sigmoid, logit, SPECS, SPEC_LABELS, prepare, logDensity, trueP, xform, randoms, draw, realise, polyFeatures, trainLR, logitsLR, pairs, makeBins, ece, mce, wilson, brier, nll, accuracy, meanConf, evaluate, murphy, fitTemperature, fitPlatt, fitIsotonic, fitRecal, applyAll, sharpen, probs, EPS_NLL };
+})();
+if (typeof module !== "undefined") module.exports = KC;
+</script>
+<script>
+const $ = id => document.getElementById(id);
+const BLUE = "#0877bd", ORG = "#e8590c", NAVY = "#1b3b4f", GREY = "#8a8f94", GREEN = "#2f9e44", PURP = "#7048e8";
+const DOM = 3.2, NG = 56;
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const pct = (v, d = 1) => (100 * v).toFixed(d) + "%";
+const sig = v => v >= 100 ? v.toFixed(0) : v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(3);
+const mean = a => a.length ? a.reduce((x, y) => x + y, 0) / a.length : 0;
+const M_NAMES = {temp: "Temperature scaling", platt: "Platt scaling", iso: "Isotonic regression"};
+
+/* ============================ state ============================ */
+const S = {mode: 1, ds: "overlap", seed: 1, lam: 1e-4, deg: 6, ntr: 100, sS: 1, M: 10, nte: 2000, ncal: 500, ntc: 200,
+  conv: "top", scheme: "width", wil: true, bref: true, pred: "model", rcm: "temp", cheat: false,
+  shk: "concept", shv: {cov: 1, label: 0.5, concept: 1, noise: 1}, rcm3: "platt", tcal: true,
+  rsel: {1: "hist", 2: "cal", 3: "acc", 4: "cum"}, hl: null, hits: [], R: null,
+  reveal: false, ssim: 1, nsim: 500, gview: "me"};
+const spec = () => KC.SPECS[S.ds];
+let PL = null; const pl = () => { if (!PL || PL.seed !== S.seed) PL = Object.assign({seed: S.seed}, KC.pools(S.seed)); return PL; };
+const mcache = {};
+function trainModel() {
+  const key = [S.ds, S.deg, S.ntr, S.lam, S.seed].join("|");
+  if (!mcache[key]) { const tr = KC.realise(spec(), pl().Rtr, S.ntr, "none", 0); mcache[key] = {tr, m: KC.trainLR(tr.X, tr.y, S.ntr, S.deg, S.lam)}; const ks = Object.keys(mcache); if (ks.length > 30) delete mcache[ks[0]]; }
+  return mcache[key];
+}
+const evo = () => ({mode: S.conv, scheme: S.scheme, M: S.M});
+const lo0 = () => S.conv === "top" ? 0.5 : 0;
+
+/* ============================ sliders ============================ */
+const SL = {
+  deg: {lab: "Model degree", lo: 1, hi: 6, int: 1, get: () => S.deg, set: v => S.deg = v, tip: "Degree of the polynomial features. Degree 1 is a plain logistic regression; degree 6 can bend a lot and overfits small training sets."},
+  ntr: {lab: "Training points", lo: 30, hi: 1000, log: 1, int: 1, get: () => S.ntr, set: v => S.ntr = v, tip: "How many labelled points the model is trained on."},
+  sS: {lab: "Sharpening s", lo: 0.25, hi: 4, log: 1, get: () => S.sS, set: v => S.sS = v, tip: "Multiplies the model's logit: p = sigmoid(s x logit). s above 1 makes any predictor more confident, below 1 less confident, s = 1 leaves it unchanged."},
+  M: {lab: "Bins", lo: 2, hi: 30, int: 1, get: () => S.M, set: v => S.M = v, tip: "Number of bins in the reliability diagram and in ECE / MCE."},
+  nte: {lab: "Test points", lo: 100, hi: 5000, log: 1, int: 1, get: () => S.nte, set: v => S.nte = v, tip: "How many fresh points the reliability diagram and metrics are measured on. More test points lower the noise in ECE: even a perfect predictor scores above zero, and less so with more points (see the chart ECE noise floor vs test size)."},
+  ncal: {lab: "Calibration points", lo: 50, hi: 1000, log: 1, int: 1, get: () => S.ncal, set: v => S.ncal = v, tip: "Labelled points, separate from the training and test points, used to fit the recalibrator."},
+  ntc: {lab: "Labelled target points", lo: 20, hi: 1000, log: 1, int: 1, get: () => S.ntc, set: v => S.ntc = v, tip: "How many labelled points from the shifted data are used to recalibrate again (only if the box in Settings is ticked)."},
+  ssim: {lab: "Simulated forecaster s", lo: 0.25, hi: 4, log: 1, get: () => S.ssim, set: v => S.ssim = v, tip: "The simulated forecaster knows the true probability q and announces sigmoid(s x logit q), rounded to the nearest allowed level. s = 1 is honest."},
+  nsim: {lab: "Simulated rounds", lo: 50, hi: 2000, log: 1, int: 1, get: () => S.nsim, set: v => S.nsim = v, tip: "How many rounds the simulated forecaster plays when you press the button."},
+  sh: {get: () => S.shv[S.shk], set: v => S.shv[S.shk] = v}
+};
+const SHLAB = {cov: "Inputs moved by", label: "New share of class 1", concept: "Whole picture moved by", noise: "Noise growth"};
+const slDef = k => { if (k !== "sh") return SL[k]; const r = KC.SHIFTS[S.shk]; return Object.assign({}, SL.sh, {lab: SHLAB[S.shk], lo: r.lo, hi: r.hi, step: r.step, tip: shiftInfo(S.shk).short}); };
+const BARS = {1: ["deg", "ntr", "sS", "M", "nte"], 2: ["deg", "ntr", "sS", "ncal", "M", "nte"], 3: ["deg", "ntr", "sh", "ntc", "M"], 4: ["ssim", "nsim"]};
+const toPos = (d, v) => d.log ? Math.log10(v) : v;
+const fromPos = (d, p) => { let v = d.log ? Math.pow(10, p) : p; if (d.int) v = Math.round(v); return v; };
+const showV = (d, v) => d.int ? String(v) : (v >= 10 ? v.toFixed(1) : v >= 1 ? v.toFixed(2) : v.toFixed(2));
+function renderBar() {
+  const box = $("cctl"); box.innerHTML = "";
+  for (const k of BARS[S.mode]) {
+    const d = slDef(k), g = document.createElement("div"); g.className = "grp sl"; g.id = "g_" + k; g.title = d.tip;
+    const step = d.log ? 0.01 : (d.int ? 1 : (d.step || 0.01));
+    g.innerHTML = `<div class="row"><span>${d.lab}</span><input class="num" type="text" inputmode="decimal" id="nb_${k}" aria-label="value"></div><input type="range" id="sl_${k}" min="${toPos(d, d.lo)}" max="${toPos(d, d.hi)}" step="${step}">`;
+    box.appendChild(g);
+    const rg = $("sl_" + k), nb = $("nb_" + k);
+    rg.value = toPos(d, d.get());
+    rg.addEventListener("input", () => { let v = fromPos(d, +rg.value); v = Math.max(d.lo, Math.min(d.hi, v)); d.set(v); nb.value = showV(d, v); schedule(); });
+    const commit = () => { let v = parseFloat(nb.value.replace(",", ".").replace("−", "-")); if (!isFinite(v)) { nb.blur(); nb.value = showV(d, d.get()); return; } v = Math.max(d.lo, Math.min(d.hi, v)); if (d.int) v = Math.round(v); d.set(v); rg.value = toPos(d, v); nb.value = showV(d, v); nb.blur(); schedule(); };
+    nb.addEventListener("change", commit); nb.addEventListener("keydown", e => { if (e.key === "Enter") commit(); }); nb.addEventListener("blur", () => { nb.value = showV(d, d.get()); });
+    nb.title = "Type a value between " + d.lo + " and " + d.hi + " and press Enter"; nb.value = showV(d, d.get());
+  }
+}
+
+/* ============================ shifts ============================ */
+function shiftInfo(k) {
+  return {
+    cov: {name: "Covariate shift", short: "The inputs move along x. The rule that gives the label from the input does not change.", long: "The inputs x move by the chosen amount along the x axis, but the labelling rule P(y | x) is exactly the one the model was trained on (Shimodaira 2000). A model that matches the rule stays calibrated; a model that only approximates it can lose calibration where the inputs now land."},
+    label: {name: "Label shift", short: "The share of class 1 changes; what each class looks like does not.", long: "The share of class 1 becomes the chosen value, while what each class looks like, P(x | y), stays the same. The true probability is then the old one re-weighted by the ratio of new to old class shares (Saerens, Latinne and Decaestecker 2002)."},
+    concept: {name: "Concept shift", short: "The whole picture, classes and labelling rule, moves along x.", long: "The labelling rule itself changes. Here the whole class picture is moved along x, so the same input now belongs to a different class than the model learned."},
+    noise: {name: "Noise growth", short: "Both classes spread out by the factor 1 + value.", long: "The covariance of every class is multiplied by 1 + the chosen value, so the classes overlap more and no predictor can be as sure as before."}
+  }[k];
+}
+function shiftDefault() { return KC.SHIFTS[S.shk].def(spec()); }
+
+/* ============================ computation ============================ */
+let rafId = 0; function schedule() { if (rafId) return; rafId = requestAnimationFrame(() => { rafId = 0; recompute(); draw(); }); }
+function logitsOf(m, X, n) { return KC.logitsLR(m, X, n); }
+function predictorLogits(te, n, tm) {
+  if (S.pred === "bayes") return Float64Array.from(te.p, v => KC.logit(KC.clampP(v)));
+  if (S.pred === "base") { let s = 0; for (let i = 0; i < tm.tr.n; i++) s += tm.tr.y[i]; const p = Math.min(0.999, Math.max(0.001, s / tm.tr.n)); return new Float64Array(n).fill(KC.logit(p)); }
+  return logitsOf(tm.m, te.X, n);
+}
+function recompute() {
+  S.hl = null; const R = {}; S.R = R;
+  if (S.mode === 1) {
+    const tm = trainModel(), n = S.nte, te = KC.realise(spec(), pl().Rte, n, "none", 0), z0 = predictorLogits(te, n, tm), z = KC.sharpen(z0, S.sS, n), p = KC.probs(z, n);
+    Object.assign(R, {tm, te, n, p, ev: KC.evaluate(p, te.y, n, evo()), evB: KC.evaluate(te.p, te.y, n, evo())});
+  } else if (S.mode === 2) {
+    const tm = trainModel(), n = S.nte, te = KC.realise(spec(), pl().Rte, n, "none", 0), zt = KC.sharpen(logitsOf(tm.m, te.X, n), S.sS, n), cal = KC.realise(spec(), pl().Rcal, S.ncal, "none", 0), zc = KC.sharpen(logitsOf(tm.m, cal.X, S.ncal), S.sS, S.ncal);
+    const rc = {}, pm = {raw: KC.probs(zt, n)}, ev = {raw: KC.evaluate(pm.raw, te.y, n, evo())};
+    for (const k of ["temp", "platt", "iso"]) { rc[k] = S.cheat ? KC.fitRecal(k, zt, te.y, n) : KC.fitRecal(k, zc, cal.y, S.ncal); pm[k] = KC.applyAll(rc[k], zt, n); ev[k] = KC.evaluate(pm[k], te.y, n, evo()); }
+    Object.assign(R, {tm, te, n, zt, cal, zc, rc, pm, ev, evB: KC.evaluate(te.p, te.y, n, evo())});
+  } else if (S.mode === 3) {
+    const tm = trainModel(), n = 3000, v = S.shv[S.shk], src = KC.realise(spec(), pl().Rte, n, "none", 0), tgt = KC.realise(spec(), pl().Rte, n, S.shk, v);
+    const cal = KC.realise(spec(), pl().Rcal, 500, "none", 0), rcS = KC.fitRecal(S.rcm3, logitsOf(tm.m, cal.X, 500), cal.y, 500), zs = logitsOf(tm.m, src.X, n), zt = logitsOf(tm.m, tgt.X, n);
+    let rcT = null, tc = null; if (S.tcal && S.ntc >= 20) { tc = KC.realise(spec(), pl().Rtc, S.ntc, S.shk, v); rcT = KC.fitRecal(S.rcm3, logitsOf(tm.m, tc.X, S.ntc), tc.y, S.ntc); }
+    const pr = KC.probs(zt, n), ps = KC.applyAll(rcS, zt, n), pt = rcT ? KC.applyAll(rcT, zt, n) : null, o = evo();
+    Object.assign(R, {tm, n, src, tgt, rcS, rcT, pr, ps, pt, evSrc: KC.evaluate(KC.probs(zs, n), src.y, n, o), evSrcRecal: KC.evaluate(KC.applyAll(rcS, zs, n), src.y, n, o),
+      ev: KC.evaluate(pr, tgt.y, n, o), evS: KC.evaluate(ps, tgt.y, n, o), evT: pt ? KC.evaluate(pt, tgt.y, n, o) : null, evB: KC.evaluate(tgt.p, tgt.y, n, o)});
+  } else gameCompute();
+}
+
+/* lazy, cached heavy charts (computed after a short pause so sliders stay responsive) */
+const lazyCache = {}; let lazyTimer = 0;
+function lazy(key, fn) {
+  if (lazyCache[key]) return lazyCache[key];
+  clearTimeout(lazyTimer); lazyTimer = setTimeout(() => { lazyCache[key] = fn(); const ks = Object.keys(lazyCache); if (ks.length > 40) delete lazyCache[ks[0]]; draw(); }, 140);
+  return null;
+}
+
+/* ============================ drawing helpers ============================ */
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+const FONT = "11px Roboto,Arial,sans-serif";
+function frame(c, w, h, o) {
+  const pw = w - o.l - o.r, ph = h - o.t - o.b, lx = v => o.xlog ? Math.log(v) : v;
+  const X = v => o.l + (lx(v) - lx(o.x[0])) / (lx(o.x[1]) - lx(o.x[0])) * pw, Y = v => o.t + (1 - (v - o.y[0]) / (o.y[1] - o.y[0])) * ph;
+  const Y2 = o.y2 ? (v => o.t + (1 - (v - o.y2[0]) / (o.y2[1] - o.y2[0])) * ph) : null;
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (const t of o.xt) { c.beginPath(); c.moveTo(X(t), o.t); c.lineTo(X(t), o.t + ph); c.stroke(); c.fillText((o.fx || (v => fm(v, 1)))(t), X(t), o.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const t of o.yt) { c.beginPath(); c.moveTo(o.l, Y(t)); c.lineTo(o.l + pw, Y(t)); c.stroke(); c.fillText((o.fy || (v => fm(v, 1)))(t), o.l - 5, Y(t)); }
+  if (o.y2) { c.textAlign = "left"; c.fillStyle = o.c2 || "#777"; for (const t of o.yt2) c.fillText((o.fy2 || (v => fm(v, 2)))(t), o.l + pw + 5, Y2(t)); c.fillStyle = "#777"; }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(o.l, o.t, pw, ph);
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  if (o.xlab) c.fillText(o.xlab, o.l + pw / 2, o.t + ph + 30);
+  if (o.ylab) { c.save(); c.translate(12, o.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylab, 0, 0); c.restore(); }
+  return {X, Y, Y2, pw, ph};
+}
+function clipTo(c, o, w, h) { c.save(); c.beginPath(); c.rect(o.l, o.t, w - o.l - o.r, h - o.t - o.b); c.clip(); }
+
+/* reliability diagram: one dot per bin at (mean confidence, observed frequency); orange segment = the gap that ECE adds up */
+function drawRel(cv, o) {
+  const {c, w, h} = prep(cv), strip = o.strip ? 82 : 0, lo = o.lo;
+  let mn = 1; for (const s of o.series) for (const b of s.bins) { mn = Math.min(mn, b.acc, b.conf, S.wil && s.ci ? KC.wilson(b.k, b.n)[0] : 1); }
+  const ylo = Math.min(lo, Math.floor(mn * 10) / 10), tk = (a, b) => { const t = []; for (let v = Math.ceil(a * 10 - 1e-9) / 10; v <= b + 1e-9; v += 0.1) t.push(Math.round(v * 10) / 10); return t.length > 6 ? t.filter((_, i) => i % 2 === 0 || t[i] === 1) : t; };
+  const fr = frame(c, w, h, {l: 48, r: 14, t: 12, b: 38 + strip, x: [lo, 1], y: [ylo, 1], xt: tk(lo, 1), yt: tk(ylo, 1), xlab: o.xlab, ylab: o.ylab});
+  const {X, Y} = fr; S.hits = [];
+  c.strokeStyle = "#555"; c.setLineDash([5, 4]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(lo), Y(lo)); c.lineTo(X(1), Y(1)); c.stroke(); c.setLineDash([]);
+  o.series.forEach((s, si) => {
+    const nmax = Math.max(1, ...o.series.filter(q => !q.ring).flatMap(q => q.bins.map(b => b.n)));
+    if (s.line && s.bins.length > 1) { c.strokeStyle = s.color; c.globalAlpha = 0.55; c.lineWidth = 1.3; c.beginPath(); s.bins.forEach((b, i) => i ? c.lineTo(X(b.conf), Y(b.acc)) : c.moveTo(X(b.conf), Y(b.acc))); c.stroke(); c.globalAlpha = 1; }
+    s.bins.forEach((b, bi) => {
+      if (s.gap) { c.strokeStyle = "rgba(232,89,12,.55)"; c.lineWidth = 4; c.beginPath(); c.moveTo(X(b.conf), Y(b.conf)); c.lineTo(X(b.conf), Y(b.acc)); c.stroke(); }
+      if (s.ci && S.wil) { const [a, z] = KC.wilson(b.k, b.n); c.strokeStyle = s.color; c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(b.conf), Y(a)); c.lineTo(X(b.conf), Y(z)); c.moveTo(X(b.conf) - 3, Y(a)); c.lineTo(X(b.conf) + 3, Y(a)); c.moveTo(X(b.conf) - 3, Y(z)); c.lineTo(X(b.conf) + 3, Y(z)); c.stroke(); }
+      const r = s.ring ? 3.4 : 3 + 4 * Math.sqrt(b.n / nmax); const hl = S.hl && S.hl.si === si && S.hl.bi === bi;
+      c.beginPath(); c.arc(X(b.conf), Y(b.acc), hl ? r + 2 : r, 0, 2 * Math.PI);
+      if (s.ring) { c.strokeStyle = s.color; c.lineWidth = 1.6; c.stroke(); } else { c.fillStyle = s.color; c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.2; c.stroke(); }
+      S.hits.push({x: X(b.conf), y: Y(b.acc), si, bi, b, s});
+    });
+  });
+  if (o.strip) { /* how many test points fall in each bin (first series) */
+    const s0 = o.series[0], top = h - 82 + 4, ph = 66, nmax = Math.max(1, ...s0.bins.map(b => b.n));
+    c.fillStyle = "#777"; c.font = FONT; c.textAlign = "left"; c.textBaseline = "top"; c.fillText("points per bin", 53, top + 3);
+    s0.bins.forEach(b => { const x0 = X(Math.max(lo, b.lo)), x1 = X(Math.min(1, b.hi)), bw = Math.max(3, x1 - x0 - 1), bh = Math.max(1, ph * b.n / nmax); c.fillStyle = "rgba(27,59,79,.55)"; c.fillRect(x0 + 0.5, top + ph - bh, bw, bh); });
+    c.strokeStyle = "#c9cdd0"; c.strokeRect(48, top, w - 62, ph);
+    c.fillStyle = "#555"; c.textAlign = "right"; c.textBaseline = "top"; c.fillText(String(nmax), w - 16, top + 1);
+  }
+}
+function drawLines(cv, o) {
+  const {c, w, h} = prep(cv), r = o.r || 14;
+  const fr = frame(c, w, h, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38, x: o.x, y: o.y, y2: o.y2, c2: o.c2, xt: o.xt, yt: o.yt, yt2: o.yt2, xlog: o.xlog, fx: o.fx, fy: o.fy, fy2: o.fy2, xlab: o.xlab, ylab: o.ylab});
+  const {X, Y, Y2} = fr; clipTo(c, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38}, w, h);
+  for (const s of o.series) {
+    const YY = s.ax2 ? Y2 : Y, pts = s.x.map((x, i) => [x, s.y[i]]).filter(p => p[1] !== null && isFinite(p[1]));
+    if (s.band) { c.fillStyle = s.color; c.globalAlpha = 0.16; c.beginPath(); s.x.forEach((x, i) => i ? c.lineTo(X(x), YY(s.band[1][i])) : c.moveTo(X(x), YY(s.band[1][i]))); for (let i = s.x.length - 1; i >= 0; i--) c.lineTo(X(s.x[i]), YY(s.band[0][i])); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    c.strokeStyle = s.color; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []); c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), YY(p[1])) : c.moveTo(X(p[0]), YY(p[1]))); c.stroke(); c.setLineDash([]);
+    if (s.dots) { c.fillStyle = s.color; pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), YY(p[1]), 2.6, 0, 2 * Math.PI); c.fill(); }); }
+  }
+  for (const v of o.vlines || []) { c.strokeStyle = v.color || "#555"; c.setLineDash([4, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(v.x), 12); c.lineTo(X(v.x), h - 38); c.stroke(); c.setLineDash([]); }
+  for (const m of o.marks || []) { c.fillStyle = m.color; c.beginPath(); c.arc(X(m.x), Y(m.y), 4.5, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.3; c.stroke(); }
+  c.restore();
+  if (o.legend) { c.font = FONT; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.82)"; c.fillRect(w - (o.y2 ? 46 : r) - 156, 14, 150, o.legend.length * 14 + 4); let y = 22; for (const s of o.legend) { c.fillStyle = s.color; c.fillRect(w - (o.y2 ? 46 : r) - 150, y - 4, 14, 3); c.fillStyle = "#444"; c.textAlign = "left"; c.fillText(s.t, w - (o.y2 ? 46 : r) - 130, y - 2); y += 14; } }
+  if (o.ylab2) { c.save(); c.translate(w - 8, 12 + (h - 50) / 2); c.rotate(Math.PI / 2); c.fillStyle = o.c2 || "#555"; c.font = FONT; c.textAlign = "center"; c.fillText(o.ylab2, 0, 0); c.restore(); }
+  if (o.msg) { c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(48, h / 2 - 14, w - 62, 28); c.fillStyle = "#555"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.msg, 48 + (w - 62) / 2, h / 2); }
+}
+function drawHist(cv, o) { /* o.vals, o.lo, o.hi, o.nb, optional o.sets [{cnt(),color,alpha}], o.marks [{x,color,t}] */
+  const {c, w, h} = prep(cv), n = o.vals.length, cnt = new Float64Array(o.nb); for (const v of o.vals) cnt[Math.max(0, Math.min(o.nb - 1, Math.floor((v - o.lo) / (o.hi - o.lo) * o.nb)))]++;
+  const sets = o.sets ? o.sets.map(s => ({v: s.cnt(), color: s.color, alpha: s.alpha})) : [{v: Array.from(cnt, q => q / n), color: NAVY, alpha: 0.55}];
+  const mx = Math.max(0.01, ...sets.flatMap(s => s.v)), ticks = []; for (let v = Math.ceil(o.lo * 10) / 10; v <= o.hi + 1e-9; v += 0.1) ticks.push(Math.round(v * 10) / 10);
+  const top = Math.ceil(mx * 20) / 20, fr = frame(c, w, h, {l: 48, r: 14, t: 12, b: 38, x: [o.lo, o.hi], y: [0, top], xt: ticks.length > 6 ? ticks.filter((_, i) => i % 2 === 0) : ticks, yt: [0, top / 2, top], fy: v => pct(v, 0), xlab: o.xlab, ylab: "share of points"});
+  sets.forEach(s => drawBars(c, fr, o, s.v, s.color, s.alpha));
+  for (const m of o.marks || []) { c.strokeStyle = m.color; c.setLineDash([5, 3]); c.lineWidth = 1.6; c.beginPath(); c.moveTo(fr.X(m.x), 12); c.lineTo(fr.X(m.x), h - 38); c.stroke(); c.setLineDash([]); }
+  if (o.marks) { c.font = FONT; c.textBaseline = "top"; let y = 18; for (const m of o.marks) { c.fillStyle = m.color; c.textAlign = "left"; c.fillText(m.t, 54, y); y += 13; } }
+}
+function drawBars(c, fr, o, vals, col, a) { c.fillStyle = col; c.globalAlpha = a; vals.forEach((v, i) => { const x0 = fr.X(o.lo + (o.hi - o.lo) * i / o.nb), x1 = fr.X(o.lo + (o.hi - o.lo) * (i + 1) / o.nb); c.fillRect(x0 + 1, fr.Y(v), Math.max(1, x1 - x0 - 2), fr.Y(0) - fr.Y(v)); }); c.globalAlpha = 1; }
+
+/* map of predicted probability (colour) over the plane, with points */
+function drawMap(cv, o) { /* o.grid (NG x NG probabilities) or none, o.pts [{x,y,c,a,r}], o.xr, o.yr, o.extra[fn(c,PX,PY)] */
+  const {c, w, h} = prep(cv), xr = o.xr || [-DOM, DOM], yr = o.yr || [-DOM, DOM], L = 40, R = 12, T = 10, B = 36, pw = w - L - R, ph = h - T - B;
+  const PX = x => L + (x - xr[0]) / (xr[1] - xr[0]) * pw, PY = y => T + (1 - (y - yr[0]) / (yr[1] - yr[0])) * ph;
+  c.save(); c.beginPath(); c.rect(L, T, pw, ph); c.clip();
+  if (o.grid) { const off = document.createElement("canvas"); off.width = NG; off.height = NG; const g = off.getContext("2d"), im = g.createImageData(NG, NG);
+    for (let j = 0; j < NG; j++) for (let i = 0; i < NG; i++) { const p = o.grid[j * NG + i], col = p > 0.5 ? [8, 119, 189] : [232, 89, 12], a = Math.abs(p - 0.5) * 2 * 0.55, k = 4 * (j * NG + i); im.data[k] = col[0]; im.data[k + 1] = col[1]; im.data[k + 2] = col[2]; im.data[k + 3] = Math.round(255 * a); }
+    g.putImageData(im, 0, 0); c.imageSmoothingEnabled = true; const dx = pw / (2 * (NG - 1)), dy = ph / (2 * (NG - 1)); c.drawImage(off, L - dx, T - dy, pw + 2 * dx, ph + 2 * dy); }
+  c.strokeStyle = "#e0e0e0"; c.lineWidth = 1; c.beginPath(); c.moveTo(PX(0), T); c.lineTo(PX(0), T + ph); c.moveTo(L, PY(0)); c.lineTo(L + pw, PY(0)); c.stroke();
+  for (const p of o.pts) { c.globalAlpha = p.a === undefined ? 1 : p.a; c.fillStyle = p.c ? BLUE : ORG; c.beginPath(); c.arc(PX(p.x), PY(p.y), p.r || 3.2, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1; c.stroke(); }
+  c.globalAlpha = 1;
+  for (const m of o.extra || []) m(c, PX, PY, w, h);
+  c.restore();
+  /* axes: ticks at whole numbers (every 2 if the range is wide) and labels */
+  const st = (xr[1] - xr[0]) > 9 ? 2 : 1; c.font = FONT; c.fillStyle = "#777"; c.strokeStyle = "#c9cdd0"; c.lineWidth = 1; c.strokeRect(L, T, pw, ph);
+  c.textAlign = "center"; c.textBaseline = "top"; for (let v = Math.ceil(xr[0] / st) * st; v <= xr[1] + 1e-9; v += st) { c.beginPath(); c.moveTo(PX(v), T + ph); c.lineTo(PX(v), T + ph + 4); c.stroke(); c.fillText(String(v).replace("-", "−"), PX(v), T + ph + 6); }
+  c.textAlign = "right"; c.textBaseline = "middle"; for (let v = Math.ceil(yr[0]); v <= yr[1] + 1e-9; v += 1) { c.beginPath(); c.moveTo(L - 4, PY(v)); c.lineTo(L, PY(v)); c.stroke(); c.fillText(String(v).replace("-", "−"), L - 7, PY(v)); }
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic"; c.fillText("first input x₁", L + pw / 2, h - 5); c.save(); c.translate(11, T + ph / 2); c.rotate(-Math.PI / 2); c.fillText("second input x₂", 0, 0); c.restore();
+}
+function gridOf(f, xr, yr) { const g = new Float64Array(NG * NG); for (let j = 0; j < NG; j++) for (let i = 0; i < NG; i++) g[j * NG + i] = f(xr[0] + (xr[1] - xr[0]) * i / (NG - 1), yr[1] - (yr[1] - yr[0]) * j / (NG - 1)); return g; }
+function ptsOf(D, n, k, a) { const out = [], step = Math.max(1, Math.floor(D.n / n)); for (let i = 0; i < D.n && out.length < n; i += step) out.push({x: D.X[2 * i], y: D.X[2 * i + 1], c: D.y[i], a}); return out; }
+function modelGrid(tm, sharp) { const X = new Float64Array(2 * NG * NG); for (let j = 0; j < NG; j++) for (let i = 0; i < NG; i++) { X[2 * (j * NG + i)] = -DOM + 2 * DOM * i / (NG - 1); X[2 * (j * NG + i) + 1] = DOM - 2 * DOM * j / (NG - 1); } const z = logitsOf(tm.m, X, NG * NG); return Float64Array.from(z, v => KC.sigmoid(sharp * v)); }
+
+/* ============================ rendering per mode ============================ */
+const tr = (cells, cls = "") => `<tr class="${cls}">${cells.map(v => `<td>${v}</td>`).join("")}</tr>`;
+const hdr = cols => `<tr>${cols.map(v => `<th>${v}</th>`).join("")}</tr>`;
+const row = (a, b) => `<div class="pr"><span>${a}</span><b>${b}</b></div>`, sec = t => `<div class="sec">${t}</div>`;
+const convName = () => S.conv === "top" ? "top-label" : "P(class 1)";
+const relLabels = () => S.conv === "top" ? {xlab: "confidence in the predicted class (mean in bin)", ylab: "how often the predicted class was right"} : {xlab: "predicted P(class 1) (mean in bin)", ylab: "how often class 1 occurred"};
+function setRsel(opts) { const sel = $("rsel"), key = JSON.stringify(opts); if (sel.dataset.k !== key) { sel.innerHTML = opts.map(o => `<option value="${o[0]}">${o[1]}</option>`).join(""); sel.dataset.k = key; } if (!opts.some(o => o[0] === S.rsel[S.mode])) S.rsel[S.mode] = opts[0][0]; sel.value = S.rsel[S.mode]; }
+const spreadNote = (n) => n < 1000 ? ` With only ${n} points, expect noise of this size even for a perfect predictor (see the noise-floor chart).` : "";
+const smallBins = bins => bins.filter(b => b.n < 10).length;
+
+function draw() {
+  const R = S.R; if (!R) return;
+  if (S.mode === 1) draw1(R); else if (S.mode === 2) draw2(R); else if (S.mode === 3) draw3(R); else draw4();
+  captions();
+}
+const CAPS = {
+  1: {l: "<b>Map of the predictor.</b> Axes: the two input coordinates. Colour is what the predictor says at each place (blue: class 1 likely, orange: class 0 likely, white: about 50%); dots are the training points. It shows where the model is confident and how it bends, not whether it is calibrated.",
+    hist: "<b>Confidence histogram.</b> x: the confidence of each test prediction; y: the share of test points in each of 20 equal-width slices. It shows where the predictions pile up, which is what gives each bin its weight in ECE. Dashed lines: mean confidence and accuracy (top label), or mean prediction and share of class 1 (P(class 1)); mean confidence to the right of accuracy means overconfident on average. This is not the strip under the main diagram, which counts the points in the diagram's own bins.",
+    bins: "<b>ECE against the number of bins.</b> x: number of bins; y: ECE. ECE depends on the binning you choose, and this shows how much. The grey dashed line is the true probability, which is calibrated, so whatever it shows is noise from using more, smaller bins. A gap that stays between the navy and grey lines is real miscalibration. Orange vertical line: your current number of bins.",
+    floor: "<b>ECE noise floor.</b> x: number of test points (log scale); y: ECE of the true probability on fresh test sets of that size (mean and one standard deviation over 40 sets). Even a perfect predictor has an ECE above zero, and this shows how much for each test-set size. Navy dot: your predictor; if it lies close to the band, its distance from perfect may be noise."},
+  2: {l: "<b>Recalibration map.</b> x: probability from the raw model; y: probability after each method. The diagonal means no change; a curve below it lowers that probability, above it raises it. Temperature scaling is a smooth S-curve, Platt scaling an S-curve that can also shift, isotonic regression a staircase fitted to the calibration points.",
+    cal: "<b>Metric against calibration-set size.</b> x: number of calibration points (log scale); y: the test metric named on the axis, averaged over 20 fresh calibration sets per size. It shows how much labelled calibration data each method needs. Dashed orange: no recalibration; grey vertical line: your current size. Lower is better.",
+    hist: "<b>Confidence histograms.</b> x: confidence; y: share of test points. Orange: before recalibration; navy: after. It shows how recalibration moves the predictions; for example, temperature scaling with T above 1 pulls them towards 50%. Dashed lines: the two mean confidences."},
+  3: {l: "<b>Source and shifted data.</b> Axes: the two input coordinates. Faint dots: source test points. Bold dots: the shifted points the model is now evaluated on (colour = class). It shows what the shift did to the data.",
+    acc: "<b>Accuracy and confidence against the shift.</b> x: size of the shift; y: accuracy of the source model (blue), its mean confidence (orange) and the best accuracy any predictor could reach (grey dashed). Orange above blue means overconfident. Orange vertical line: your current shift.",
+    ece: "<b>ECE against the shift.</b> x: size of the shift; y: ECE on 2000 target points for the source model, for recalibration fitted on source data and, if ticked, for recalibration on labelled target points. Grey dashed: the noise level of the true probability. Lower is better; orange vertical line: your current shift."},
+  4: {l: "<b>Reliability of the forecaster.</b> x: the probability announced; y: how often class 1 occurred in the rounds where it was announced; whiskers: 95% interval; dot size grows with the number of rounds at that level. A calibrated forecaster's dots lie on the diagonal. With few rounds the whiskers are wide.",
+    cum: "<b>Average Brier score by round.</b> x: rounds played; y: running average of (forecast &minus; outcome)&sup2;, lower is better. It compares you with the true probability, the trained model and the base rate on the same rounds, and shows how noisy the first rounds are.",
+    prop: "<b>Cost of misreporting.</b> x: sharpening s of a forecaster who knows the true probability q and announces &sigma;(s &middot; logit q) (log scale; s = 1 is honest). Left axis: extra expected Brier score; right axis: extra expected log loss, both compared with announcing q. Both are zero only at s = 1, so honesty is optimal. Purple line: the simulated forecaster's s."}
+};
+function captions() {
+  const m = S.mode, sel = S.rsel[m], C = CAPS[m];
+  $("capl").innerHTML = C.l; $("capr").innerHTML = C[sel] || C[sel === "nll" || sel === "bri" ? "cal" : sel] || "";
+}
+
+/* ---------- Mode 1 ---------- */
+function draw1(R) {
+  $("chead").textContent = "Reliability diagram (" + convName() + ")"; $("lhead").textContent = "What the predictor says over the plane"; setRsel([["hist", "Confidence histogram"], ["bins", "ECE vs number of bins"], ["floor", "ECE noise floor vs test size"]]);
+  const series = []; if (S.bref) series.push({bins: R.evB.bins, color: GREY, ring: true, name: "true probability"});
+  series.unshift({bins: R.ev.bins, color: NAVY, gap: true, ci: true, line: true, name: "predictor"});
+  drawRel($("cv"), Object.assign({lo: lo0(), series, strip: true}, relLabels()));
+  $("legend").innerHTML = legRel(true);
+  const sharp = S.sS, tm = R.tm;
+  const pf = S.pred === "bayes" ? (() => { const P = KC.prepare(spec()); return (x, y) => KC.sigmoid(sharp * KC.logit(KC.clampP(KC.trueP(P, x, y)))); })() : null;
+  let grid; if (S.pred === "model") grid = modelGrid(tm, sharp); else if (S.pred === "bayes") grid = gridOf(pf, [-DOM, DOM], [-DOM, DOM]); else { const p = R.p[0]; grid = new Float64Array(NG * NG).fill(p); }
+  drawMap($("cl"), {grid, pts: ptsOf(tm.tr, 400, 1, 0.95).concat([])});
+  const sel = S.rsel[1], cr = $("cr");
+  if (sel === "hist") {
+    const conf = Array.from(R.p, v => S.conv === "top" ? Math.max(v, 1 - v) : v); const lo = lo0();
+    drawHist(cr, {vals: conf, lo, hi: 1, nb: 20, xlab: S.conv === "top" ? "confidence in the predicted class" : "predicted P(class 1)", marks: S.conv === "top" ? [{x: R.ev.conf, color: ORG, t: "mean confidence " + pct(R.ev.conf)}, {x: R.ev.acc, color: BLUE, t: "accuracy " + pct(R.ev.acc)}] : [{x: mean(Array.from(R.p)), color: ORG, t: "mean prediction " + pct(mean(Array.from(R.p)))}, {x: mean(Array.from(R.te.y)), color: BLUE, t: "share of class 1 " + pct(mean(Array.from(R.te.y)))}]});
+  } else if (sel === "bins") {
+    const Ms = []; for (let m = 2; m <= 30; m++) Ms.push(m); const a = [], b = [];
+    for (const m of Ms) { const o = {mode: S.conv, scheme: S.scheme, M: m}; a.push(KC.evaluate(R.p, R.te.y, R.n, o).ece); b.push(KC.evaluate(R.te.p, R.te.y, R.n, o).ece); }
+    const top = Math.max(0.02, ...a, ...b) * 1.15;
+    drawLines(cr, {x: [2, 30], y: [0, top], xt: [2, 5, 10, 15, 20, 25, 30], yt: [0, top / 2, top], fy: v => fm(v, 3), xlab: "number of bins", ylab: "ECE", fx: v => String(v), series: [{x: Ms, y: b, color: GREY, w: 2, dash: [5, 3]}, {x: Ms, y: a, color: NAVY, w: 2.4}], vlines: [{x: S.M, color: ORG}], legend: [{color: NAVY, t: "predictor"}, {color: GREY, t: "true probability (noise only)"}]});
+  } else {
+    const ns = [50, 100, 200, 500, 1000, 2000, 5000], key = ["floor", S.ds, S.conv, S.scheme, S.M, S.seed].join("|"), res = lazy(key, () => KC.floorCurve(spec(), ns, 40, evo(), S.seed));
+    if (!res) drawLines(cr, {x: [50, 5000], y: [0, 0.1], xt: ns, yt: [0, 0.05, 0.1], xlog: 1, xlab: "test points", ylab: "ECE", series: [], msg: "computing 40 fresh test sets per size…"});
+    else { const top = Math.max(...res.map(r => r.mean + r.sd), R.ev.ece) * 1.15; drawLines(cr, {x: [50, 5000], y: [0, top], xt: ns, yt: [0, top / 2, top], fy: v => fm(v, 3), xlog: 1, xlab: "test points (log scale)", ylab: "ECE of the true probability", fx: v => v >= 1000 ? v / 1000 + "k" : String(v),
+      series: [{x: ns, y: res.map(r => r.mean), band: [res.map(r => Math.max(0, r.mean - r.sd)), res.map(r => r.mean + r.sd)], color: GREY, w: 2.4}], marks: [{x: R.n, y: R.ev.ece, color: NAVY}], legend: [{color: GREY, t: "true probability: mean ± 1 sd"}, {color: NAVY, t: "your predictor (dot)"}]}); }
+  }
+  info1(R);
+}
+const legRel = (m) => `<span><span class="lg" style="background:#1b3b4f"></span>dot = one bin (size grows with the number of points); whiskers = 95% Wilson interval</span><span><span class="lg" style="background:rgba(232,89,12,.6)"></span>orange segment = gap between confidence and observed frequency (ECE is the size-weighted average of these gaps)</span><span><span class="ln da"></span>&nbsp;perfect calibration &nbsp; <span class="rg" style="border-color:#8a8f94"></span> ring = true-probability reference on the same points</span>`;
+function info1(R) {
+  const e = R.ev, b = R.evB, over = e.conf - e.acc, sb = smallBins(e.bins);
+  let t = "";
+  t += `<p><b>How to read it.</b> The test points are sorted into ${S.M} bins by the confidence the predictor gave them. Each dot sits at the bin's average confidence (horizontal) and at how often it was actually right (vertical, ${S.conv === "top" ? "top-label convention" : "here: how often class 1 occurred"}). On the dashed diagonal the predictor does what it says. Below it the predictor claims more than it delivers (overconfident), above it less (underconfident).</p>`;
+  if (S.pred === "base") t += `<p>This predictor says the same thing for every point, so there is one bin. It is calibrated by construction (up to the difference between the training and test share of class 1) and says nothing useful about individual points: calibration alone does not make a predictor good. Its accuracy is ${pct(e.acc)}.</p>`;
+  else if (S.pred === "bayes" && S.sS === 1) t += `<p>This is the exact probability the data were generated from, so it is calibrated by construction. The ECE of ${fm(e.ece, 3)} you see is pure sampling noise: it is what a perfect predictor scores at ${R.n} test points with ${S.M} bins.</p>`;
+  else t += `<p>Mean confidence is ${pct(e.conf)} against an accuracy of ${pct(e.acc)}: ${Math.abs(over) < 0.01 ? "about equal" : over > 0 ? "overconfident by " + fm(100 * over, 1) + " points" : "underconfident by " + fm(-100 * over, 1) + " points"} (top-label view). The true-probability reference has ECE ${fm(b.ece, 3)} on exactly these points; that part of your ECE of ${fm(e.ece, 3)} is noise, not miscalibration.${spreadNote(R.n)}</p>`;
+  t += `<p class="hint" style="font-size:12.5px;color:#666"><b>The numbers.</b> ECE is the size-weighted average gap over the bins; MCE is the largest single gap (a bin with few points can make it large by chance). Brier score is the mean of (p &minus; y)&sup2; and the negative log-likelihood is the mean of &minus;log of the probability given to what actually happened (probabilities are clipped to [10<sup>&minus;6</sup>, 1 &minus; 10<sup>&minus;6</sup>]). Brier and NLL do not depend on the binning; ECE and MCE do.</p>`;
+  if (sb) t += `<p class="bad">${sb} of ${e.bins.length} bins hold fewer than 10 points. Their dots are very uncertain (see the whiskers); try fewer bins, equal-count bins, or more test points.</p>`;
+  $("detail").innerHTML = t;
+  let n = sec("Predictor on " + R.n + " test points");
+  n += row("ECE (" + S.M + " bins, " + convName() + ")", fm(e.ece, 4)) + row("MCE (largest gap)", fm(e.mce, 3)) + row("Brier score", fm(e.brier, 4)) + row("Negative log-likelihood", fm(e.nll, 4)) + row("Accuracy", pct(e.acc)) + row("Mean confidence (top label)", pct(e.conf));
+  n += sec("True probability, same points") + row("ECE (noise only)", fm(b.ece, 4)) + row("MCE", fm(b.mce, 3)) + row("Brier score", fm(b.brier, 4)) + row("Negative log-likelihood", fm(b.nll, 4)) + row("Accuracy", pct(b.acc));
+  const sz = e.bins.map(q => q.n), my = mean(Array.from(R.te.y)), mp = mean(Array.from(R.p));
+  n += sec("Test set and bins") + row("Share of class 1 in the test set", pct(my)) + row("Mean predicted P(class 1)", pct(mp)) + row("Bins with points / requested", e.bins.length + " / " + S.M) + row("Smallest / largest bin (points)", Math.min(...sz) + " / " + Math.max(...sz));
+  n += sec("Model") + row("Features / iterations", S.pred === "model" ? `${R.tm.m.F} / ${R.tm.m.iters}` : "—") + row("Training points", S.pred === "model" ? S.ntr : "—");
+  $("nums").innerHTML = n; $("hover").innerHTML = hoverText();
+}
+function hoverText() {
+  if (!S.hl) return "&nbsp;";
+  const h = S.hits.find(q => q.si === S.hl.si && q.bi === S.hl.bi); if (!h) return "&nbsp;";
+  const b = h.b, [a, z] = KC.wilson(b.k, b.n);
+  return `<b>${h.s.name}</b> · bin with ${b.n} points: mean confidence ${pct(b.conf)}, observed ${pct(b.acc)}, gap ${fm(100 * (b.acc - b.conf), 1)} points · 95% interval for the observed rate ${pct(a)} to ${pct(z)}`;
+}
+
+/* ---------- Mode 2 ---------- */
+function draw2(R) {
+  $("chead").textContent = "Reliability diagram: before and after recalibration (" + convName() + ")"; $("lhead").textContent = "How each method changes the probability"; setRsel([["cal", "ECE vs calibration-set size"], ["nll", "NLL vs calibration-set size"], ["bri", "Brier vs calibration-set size"], ["hist", "Confidence histograms"]]);
+  const k = S.rcm, series = [];
+  if (S.bref) series.push({bins: R.evB.bins, color: GREY, ring: true, name: "true probability"});
+  series.unshift({bins: R.ev[k].bins, color: NAVY, gap: true, ci: true, line: true, name: M_NAMES[k] + " (after)"}); series.splice(1, 0, {bins: R.ev.raw.bins, color: ORG, line: true, name: "raw model (before)"});
+  drawRel($("cv"), Object.assign({lo: lo0(), series, strip: true}, relLabels()));
+  $("legend").innerHTML = `<span><span class="lg" style="background:#1b3b4f"></span>after ${M_NAMES[k].toLowerCase()} (with gaps and 95% intervals) &nbsp; <span class="lg" style="background:#e8590c"></span>raw model before recalibration</span><span><span class="ln da"></span>&nbsp;perfect calibration &nbsp; <span class="rg" style="border-color:#8a8f94"></span> ring = true-probability reference &nbsp; bars below: points per bin (after recalibration)</span>`;
+  /* map */
+  const xs = [], f = {}; for (let i = 0; i <= 200; i++) xs.push(i / 200); for (const q of ["temp", "platt", "iso"]) f[q] = xs.map(p => R.rc[q].apply(KC.logit(KC.clampP(p))));
+  const cl = $("cl"), {c, w, h} = prep(cl), fr = frame(c, w, h, {l: 40, r: 12, t: 12, b: 36, x: [0, 1], y: [0, 1], xt: [0, .2, .4, .6, .8, 1], yt: [0, .2, .4, .6, .8, 1], xlab: "raw model probability", ylab: "recalibrated probability"});
+  c.strokeStyle = "#555"; c.setLineDash([5, 4]); c.beginPath(); c.moveTo(fr.X(0), fr.Y(0)); c.lineTo(fr.X(1), fr.Y(1)); c.stroke(); c.setLineDash([]);
+  const cols = {temp: BLUE, platt: GREEN, iso: PURP};
+  for (const q of ["temp", "platt", "iso"]) { c.strokeStyle = cols[q]; c.lineWidth = q === k ? 3 : 1.4; c.globalAlpha = q === k ? 1 : 0.55; c.beginPath(); xs.forEach((p, i) => i ? c.lineTo(fr.X(p), fr.Y(f[q][i])) : c.moveTo(fr.X(p), fr.Y(f[q][i]))); c.stroke(); }
+  c.globalAlpha = 1; c.font = FONT; c.textAlign = "left"; c.textBaseline = "middle"; [["temp", "temperature"], ["platt", "Platt"], ["iso", "isotonic"]].forEach(([q, t], i) => { c.fillStyle = cols[q]; c.fillRect(w - 112, 24 + i * 14, 14, 3); c.fillStyle = "#444"; c.fillText(t, w - 92, 26 + i * 14); });
+  /* right chart */
+  const sel = S.rsel[2], cr = $("cr");
+  if (sel === "hist") {
+    const conf = a => Array.from(a, v => S.conv === "top" ? Math.max(v, 1 - v) : v), lo = lo0(), nb = 20, cnt = a => () => { const z = new Float64Array(nb); for (const v of conf(a)) z[Math.max(0, Math.min(nb - 1, Math.floor((v - lo) / (1 - lo) * nb)))]++; return Array.from(z, q => q / R.n); };
+    drawHist(cr, {vals: conf(R.pm.raw), lo, hi: 1, nb, xlab: S.conv === "top" ? "confidence in the predicted class" : "predicted P(class 1)", sets: [{cnt: cnt(R.pm.raw), color: ORG, alpha: 0.5}, {cnt: cnt(R.pm[k]), color: NAVY, alpha: 0.5}], marks: [{x: R.ev.raw.conf, color: ORG, t: "raw: mean confidence " + pct(R.ev.raw.conf)}, {x: R.ev[k].conf, color: NAVY, t: "after: mean confidence " + pct(R.ev[k].conf)}]});
+  } else {
+    const sizes = [50, 100, 200, 500, 1000], key = ["cal", S.ds, S.deg, S.ntr, S.lam, S.sS, S.conv, S.scheme, S.M, S.nte, S.seed].join("|"), m = sel === "ece" || sel === "cal" ? "ece" : sel === "nll" ? "nll" : "brier";
+    const te = R.te, res = lazy(key, () => KC.calSweep(spec(), R.tm.m, te, R.zt, sizes, 20, evo(), S.seed, S.sS));
+    const nm = {ece: "ECE", nll: "negative log-likelihood", brier: "Brier score"}[m];
+    if (!res) drawLines(cr, {x: [50, 1000], y: [0, 1], xt: sizes, yt: [0, 1], xlog: 1, series: [], msg: "computing 20 fresh calibration sets per size…"});
+    else { const vals = ["raw", "temp", "platt", "iso"].map(q => res[q].map(r => r[m])), all = vals.flat(), lo = Math.min(...all), hi = Math.max(...all), top = hi + (hi - lo) * 0.12 + 1e-9, bot = Math.max(0, lo - (hi - lo) * 0.12);
+      drawLines(cr, {x: [50, 1000], y: [bot, top], xt: sizes, yt: [bot, (bot + top) / 2, top], fy: v => fm(v, m === "ece" ? 3 : 3), xlog: 1, xlab: "calibration points (log scale; mean of 20 fresh sets)", ylab: nm, fx: v => String(v),
+        series: [{x: sizes, y: vals[0], color: ORG, w: 2, dash: [5, 3]}, {x: sizes, y: vals[1], color: BLUE, dots: 1}, {x: sizes, y: vals[2], color: GREEN, dots: 1}, {x: sizes, y: vals[3], color: PURP, dots: 1}], vlines: [{x: S.ncal, color: "#888"}],
+        legend: [{color: ORG, t: "raw (no recalibration)"}, {color: BLUE, t: "temperature"}, {color: GREEN, t: "Platt"}, {color: PURP, t: "isotonic"}]}); }
+  }
+  info2(R);
+}
+function info2(R) {
+  const k = S.rcm, ev = R.ev, rows = [["raw", "Raw"], ["temp", "Temperature"], ["platt", "Platt"], ["iso", "Isotonic"]];
+  let tb = `<table class="tbl" style="grid-column:1/-1;margin:0">${hdr(["Method", "ECE", "MCE", "Brier", "NLL", "Acc."])}`;
+  for (const [q, nm] of rows) tb += tr([nm, fm(ev[q].ece, 3), fm(ev[q].mce, 3), fm(ev[q].brier, 3), fm(ev[q].nll, 3), pct(ev[q].acc, 1)], q === k ? "sel" : "");
+  tb += tr(["True prob.", fm(R.evB.ece, 3), fm(R.evB.mce, 3), fm(R.evB.brier, 3), fm(R.evB.nll, 3), pct(R.evB.acc, 1)], "ref") + "</table>";
+  const a = ev.raw, b = ev[k];
+  let t = `<p><b>Main diagram.</b> Built as in Mode 1 (x: mean confidence in a bin; y: how often the prediction was right), now for the raw model (orange) and the recalibrated one (navy, with gaps and intervals). Recalibration has worked when the navy dots move onto the dashed diagonal.</p><p><b>What happened.</b> ${M_NAMES[k]} changed ECE from ${fm(a.ece, 4)} to ${fm(b.ece, 4)}, the Brier score from ${fm(a.brier, 4)} to ${fm(b.brier, 4)} and the negative log-likelihood from ${fm(a.nll, 4)} to ${fm(b.nll, 4)}, measured on ${R.n} test points. ` + (k === "temp" ? "Temperature scaling divides every logit by the same T, so it never changes which class is predicted and accuracy stays exactly " + pct(a.acc) + ". It minimises the log-likelihood on the calibration set, not ECE, so ECE can go up even when the log-likelihood improves." : k === "platt" ? "Platt scaling adds a shift as well as a scale, so the predicted class can change for points near 50%: accuracy moved from " + pct(a.acc) + " to " + pct(b.acc) + "." : "Isotonic regression fits a free-form non-decreasing step function. It can fix any monotone distortion but needs more calibration points, and it maps many different raw values to the same probability: accuracy moved from " + pct(a.acc) + " to " + pct(b.acc) + ".") + `</p>`;
+  t += `<p>The raw model${S.sS !== 1 ? " (with its logits multiplied by s = " + fm(S.sS, 2) + ")" : ""} has accuracy ${pct(a.acc)} and mean confidence ${pct(a.conf)}. The recalibrators were ${S.cheat ? "fitted on the test points themselves" : "fitted on " + S.ncal + " separate calibration points"}.</p>`;
+  if (S.cheat) t += `<p class="bad">Cheating: the recalibrators have seen the test labels, so the table is optimistic, most of all for isotonic regression, which can adapt to every single point. Untick the box for an honest estimate.</p>`;
+  $("detail").innerHTML = t;
+  const rc = R.rc; let n = sec("Test metrics (" + R.n + " points)") + tb;
+  const tt = rc.temp.info; n += sec("Fitted on " + (S.cheat ? R.n + " test points (cheating)" : S.ncal + " calibration points")) + row("Temperature T = 1/β", fm(tt.T, 3) + (tt.edge ? " (limit)" : "")) + row("Platt a, b (p = σ(a·z + b))", `${fm(rc.platt.info.a, 3)}, ${fm(rc.platt.info.b, 3)}`) + row("Isotonic: distinct output levels", new Set(rc.iso.info.fv.map(v => v.toFixed(12))).size);
+  n += sec("Data") + row("Test points", R.n) + row("Calibration points", S.cheat ? "none (test points)" : S.ncal) + row("Share of class 1 in the test set", pct(mean(Array.from(R.te.y))));
+  n += sec("Model") + row("Training points", S.ntr) + row("Sharpening s", fm(S.sS, 2)) + row("Reliability bins", S.M);
+  $("nums").innerHTML = n; $("hover").innerHTML = hoverText();
+}
+
+/* ---------- Mode 3 ---------- */
+function draw3(R) {
+  const si = shiftInfo(S.shk), v = S.shv[S.shk];
+  $("chead").textContent = "Reliability diagram on the shifted data (" + convName() + ")"; $("lhead").textContent = "Source data (faint) and shifted data"; setRsel([["acc", "Accuracy and confidence vs shift"], ["ece", "ECE vs shift"]]);
+  const series = []; if (S.bref) series.push({bins: R.evB.bins, color: GREY, ring: true, name: "true probability"});
+  series.unshift({bins: R.ev.bins, color: NAVY, gap: true, ci: true, line: true, name: "source model, no recalibration"});
+  series.splice(1, 0, {bins: R.evS.bins, color: GREEN, line: true, name: "after source recalibration"}); if (R.evT) series.splice(2, 0, {bins: R.evT.bins, color: PURP, line: true, name: "after recalibration on target points"});
+  drawRel($("cv"), Object.assign({lo: lo0(), series, strip: true}, relLabels()));
+  $("legend").innerHTML = `<span><span class="lg" style="background:#1b3b4f"></span>source model as trained &nbsp; <span class="lg" style="background:#2f9e44"></span>after ${M_NAMES[S.rcm3].toLowerCase()} fitted on source data` + (R.evT ? ` &nbsp; <span class="lg" style="background:#7048e8"></span>after the same method fitted on ${S.ntc} labelled target points` : "") + `</span><span><span class="ln da"></span>&nbsp;perfect calibration &nbsp; <span class="rg" style="border-color:#8a8f94"></span> ring = true target probability &nbsp; orange segments and whiskers belong to the unrecalibrated model</span>`;
+  const xr = [-DOM, DOM + (S.shk === "cov" || S.shk === "concept" ? v : 0)], pts = ptsOf(R.src, 250, 0, 0.22).map(p => Object.assign(p, {r: 2.6})).concat(ptsOf(R.tgt, 350, 0, 0.95));
+  drawMap($("cl"), {pts, xr, yr: [-DOM, DOM]});
+  const sel = S.rsel[3], cr = $("cr");
+  const grid = []; const r = KC.SHIFTS[S.shk]; for (let i = 0; i <= 12; i++) grid.push(r.lo + (r.hi - r.lo) * i / 12);
+  const key = ["shift", S.ds, S.shk, S.deg, S.ntr, S.lam, S.conv, S.scheme, S.M, S.rcm3, S.tcal ? S.ntc : 0, S.seed].join("|");
+  const res = lazy(key, () => { const tm = trainModel(), cal = KC.realise(spec(), pl().Rcal, 500, "none", 0), rcS = KC.fitRecal(S.rcm3, KC.logitsLR(tm.m, cal.X, 500), cal.y, 500); return KC.shiftSweep(spec(), tm.m, rcS, pl(), S.shk, grid, 2000, S.tcal ? S.ntc : 0, S.rcm3, evo()); });
+  const vl = [{x: v, color: ORG}];
+  if (!res) drawLines(cr, {x: [r.lo, r.hi], y: [0, 1], xt: [r.lo, r.hi], yt: [0, 1], series: [], msg: "sweeping 13 shift values on 2000 points each…"});
+  else if (sel === "acc") drawLines(cr, {x: [r.lo, r.hi], y: [0.4, 1], xt: tk(r.lo, r.hi), yt: [0.4, 0.6, 0.8, 1], fy: v => pct(v, 0), fx: v => fm(v, r.hi <= 1 ? 1 : 1), xlab: SHLAB[S.shk] + (r.unit ? " " + r.unit : ""), ylab: "accuracy / mean confidence", series: [{x: grid, y: res.map(q => q.acc_bayes), color: GREY, w: 1.6, dash: [5, 3]}, {x: grid, y: res.map(q => q.conf), color: ORG, w: 2.2}, {x: grid, y: res.map(q => q.acc), color: BLUE, w: 2.6}], vlines: vl, legend: [{color: BLUE, t: "accuracy of the source model"}, {color: ORG, t: "its mean confidence"}, {color: GREY, t: "best possible accuracy"}]});
+  else { const all = res.flatMap(q => [q.ece_raw, q.ece_src, q.ece_tgt === null ? 0 : q.ece_tgt, q.ece_bayes]), top = Math.max(0.05, ...all) * 1.12;
+    drawLines(cr, {x: [r.lo, r.hi], y: [0, top], xt: tk(r.lo, r.hi), yt: [0, top / 2, top], fy: v => fm(v, 3), fx: v => fm(v, 1), xlab: SHLAB[S.shk] + (r.unit ? " " + r.unit : ""), ylab: "ECE (2000 target points)", series: [{x: grid, y: res.map(q => q.ece_bayes), color: GREY, w: 1.6, dash: [5, 3]}, {x: grid, y: res.map(q => q.ece_raw), color: NAVY, w: 2.4}, {x: grid, y: res.map(q => q.ece_src), color: GREEN, w: 2}].concat(S.tcal ? [{x: grid, y: res.map(q => q.ece_tgt), color: PURP, w: 2}] : []), vlines: vl, legend: [{color: NAVY, t: "source model"}, {color: GREEN, t: "source recalibration"}].concat(S.tcal ? [{color: PURP, t: "target recalibration"}] : []).concat([{color: GREY, t: "true probability (noise)"}])}); }
+  info3(R, si, v);
+}
+function tk(a, b) { const n = 4, t = []; for (let i = 0; i <= n; i++) t.push(a + (b - a) * i / n); return t; }
+function info3(R, si, v) {
+  const e = R.ev, s0 = R.evSrc;
+  let t = `<p><b>Main diagram.</b> Built as in Mode 1 but measured on the shifted points: navy for the source model as trained, green after recalibration fitted on source data, purple after recalibration on labelled target points. Dots on the dashed diagonal mean calibrated on the new data.</p><p><b>${si.name}.</b> ${si.long}</p>`;
+  t += `<p>The model was trained on source data and has not seen the shifted data. On the source test points it has accuracy ${pct(s0.acc)}, mean confidence ${pct(s0.conf)} and ECE ${fm(s0.ece, 4)}. On the shifted points: accuracy ${pct(e.acc)}, mean confidence ${pct(e.conf)}, ECE ${fm(e.ece, 4)}. The best any predictor could do on the shifted points is ${pct(R.evB.acc)} accuracy.</p>`;
+  t += `<p>Recalibration fitted on source data gives ECE ${fm(e.ece, 4)} &rarr; ${fm(R.evS.ece, 4)}` + (R.evT ? `; refitted on ${S.ntc} labelled target points it gives ${fm(R.evT.ece, 4)}` : "") + `. The true probability has ${fm(R.evB.ece, 4)} on the same points (noise only).</p>`;
+  const gap = e.conf - e.acc;
+  if (v === shiftDefault()) t += `<p class="hint">The shift is at its starting value, so this is the unshifted case. Move the shift slider.</p>`;
+  else if (S.shk === "cov") t += `<p>Under covariate shift the labelling rule is unchanged, so a model that approximates it well stays calibrated even though its inputs moved; what can break is a model that is wrong in the region the inputs have moved into. Try the two moons or XOR data with a low degree.</p>`;
+  else if (S.shk === "label" && S.conv === "top") t += `<p>The top-label ECE can look small under label shift even when the P(class 1) ECE is large (in my runs it did). Switch to the P(class 1) convention to compare.</p>`;
+  else if (gap > 0.03) t += `<p class="bad">The model is now overconfident by ${fm(100 * gap, 1)} points (confidence minus accuracy), and recalibration fitted on the old data cannot know that.</p>`;
+  $("detail").innerHTML = t;
+  let n = sec("Source test set") + row("Accuracy", pct(s0.acc)) + row("Mean confidence (top label)", pct(s0.conf)) + row("ECE", fm(s0.ece, 4));
+  n += sec("Shifted test set (" + R.n + " points)") + row("Accuracy", pct(e.acc)) + row("Mean confidence (top label)", pct(e.conf)) + row("ECE, source model", fm(e.ece, 4)) + row("ECE, source recalibration", fm(R.evS.ece, 4)) + row("ECE, target recalibration", R.evT ? fm(R.evT.ece, 4) : "off") + row("ECE, true probability", fm(R.evB.ece, 4));
+  n += sec("Data") + row("Class-1 share, source / shifted", pct(mean(Array.from(R.src.y))) + " / " + pct(mean(Array.from(R.tgt.y)))) + row("Test points per set", R.n) + row("Recalibration points, source / target", "500 / " + (R.evT ? S.ntc : "off"));
+  n += sec("Negative log-likelihood") + row("Source model", fm(e.nll, 4)) + row("Source recalibration", fm(R.evS.nll, 4)) + row("Target recalibration", R.evT ? fm(R.evT.nll, 4) : "off") + row("True probability", fm(R.evB.nll, 4));
+  $("nums").innerHTML = n; $("hover").innerHTML = hoverText();
+}
+
+/* ============================ Mode 4: forecaster game ============================ */
+const G = {key: "", tr: null, model: null, rng: null, cur: null, rounds: [], sim: null, last: null};
+function gameInit() {
+  const key = S.ds + "|" + S.seed; if (G.key === key && G.tr) return; G.key = key;
+  const R = KC.randoms(150, KC.rng(S.seed * 31 + 7)); G.tr = KC.realise(spec(), R, 150, "none", 0); G.model = KC.trainLR(G.tr.X, G.tr.y, 150, 3, 0.01);
+  G.rng = KC.rng(S.seed * 131 + 11); G.rounds = []; G.sim = null; G.last = null; G.cur = KC.gameQuery(spec(), G.rng); G.cur.done = false;
+}
+function benchP(g) { /* benchmark probabilities for a query: true, trained model, base rate */
+  const z = KC.logitsLR(G.model, Float64Array.of(g.x, g.y), 1)[0]; let s = 0; for (let i = 0; i < G.tr.n; i++) s += G.tr.y[i];
+  return {q: g.q, m: KC.sigmoid(z), b: s / G.tr.n};
+}
+function gameCompute() { gameInit(); }
+const LV = KC.LEVELS;
+function gstats(rs) {
+  const n = rs.length; if (!n) return null;
+  const f = Float64Array.from(rs, r => r.f), o = Float64Array.from(rs, r => r.out), q = Float64Array.from(rs, r => r.q), m = Float64Array.from(rs, r => r.pm), bb = Float64Array.from(rs, r => r.pb);
+  const mu = KC.murphy(f, o, n);
+  return {n, you: {bs: KC.brier(f, o, n), nll: KC.nll(f, o, n)}, bay: {bs: KC.brier(q, o, n), nll: KC.nll(q, o, n)}, mod: {bs: KC.brier(m, o, n), nll: KC.nll(m, o, n)}, base: {bs: KC.brier(bb, o, n), nll: KC.nll(bb, o, n)}, mu};
+}
+function forecast(i) {
+  if (!G.cur || G.cur.done) return;
+  const g = G.cur, b = benchP(g), f = LV[i]; g.done = true;
+  const r = {x: g.x, y: g.y, q: g.q, out: g.out, f, pm: b.m, pb: b.b}; G.rounds.push(r); G.last = r; S.gview = "me"; document.querySelector("input[name=gview][value=me]").checked = true; draw();
+}
+function nextQuery() { gameInit(); if (G.cur && !G.cur.done) return; G.cur = KC.gameQuery(spec(), G.rng); G.cur.done = false; G.last = null; draw(); }
+function runSim() {
+  gameInit(); const r = KC.rng(S.seed * 977 + Math.round(S.ssim * 100)), rs = [];
+  for (let i = 0; i < S.nsim; i++) { const g = KC.gameQuery(spec(), r), b = benchP(g), f = LV[KC.nearestLevel(KC.sigmoid(S.ssim * KC.logit(KC.clampP(g.q))))]; rs.push({x: g.x, y: g.y, q: g.q, out: g.out, f, pm: b.m, pb: b.b}); }
+  G.sim = {rs, s: S.ssim}; S.gview = "sim"; document.querySelector("input[name=gview][value=sim]").checked = true; draw();
+}
+function levelBins(rs) { /* group by announced level; each level is one bin with exact counts */
+  const bins = []; for (const l of LV) { const g = rs.filter(r => r.f === l), k = g.reduce((a, r) => a + r.out, 0); if (g.length) bins.push({n: g.length, conf: l, acc: k / g.length, k, lo: l - 0.025, hi: l + 0.025}); } return bins;
+}
+function draw4() {
+  gameInit(); const view = S.gview === "sim" && G.sim ? "sim" : "me", rs = view === "sim" ? G.sim.rs : G.rounds, st = gstats(rs);
+  $("chead").textContent = "The query: what is the probability that this point is class 1 (blue)?"; $("lhead").textContent = "Reliability of " + (view === "sim" ? "the simulated forecaster" : "your forecasts");
+  setRsel([["cum", "Average Brier score by round"], ["prop", "Cost of misreporting"]]);
+  /* main canvas */
+  const g = G.cur, cur = g;
+  drawMap($("cv"), {xr: [-DOM * 1.6, DOM * 1.6], pts: ptsOf(G.tr, 150, 1, 0.9).map(p => Object.assign(p, {r: 4.2})), extra: [(c, PX, PY) => {
+    if (!cur) return; const x = PX(cur.x), y = PY(cur.y); c.lineWidth = 3; c.strokeStyle = "#111"; c.beginPath(); c.arc(x, y, 12, 0, 2 * Math.PI); c.stroke();
+    if (cur.done) { c.fillStyle = cur.out ? BLUE : ORG; c.beginPath(); c.arc(x, y, 8, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.5; c.stroke(); } else { c.fillStyle = "#fff"; c.beginPath(); c.arc(x, y, 8, 0, 2 * Math.PI); c.fill(); c.fillStyle = "#111"; c.font = "bold 12px Roboto,Arial"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText("?", x, y + 0.5); }
+  }]});
+  const fb = $("fbtns"); fb.style.display = ""; if (!fb.children.length) LV.forEach((l, i) => { const b = document.createElement("button"); b.textContent = Math.round(100 * l) + "%"; b.onclick = () => forecast(i); fb.appendChild(b); });
+  [...fb.children].forEach(b => b.disabled = !cur || cur.done);
+  $("legend").innerHTML = `<span><span class="lg" style="background:#0877bd;border-radius:50%"></span>class 1 (blue) &nbsp; <span class="lg" style="background:#e8590c;border-radius:50%"></span>class 0 (orange): the ${G.tr.n} labelled points you can learn from</span><span>Black ring: the query point. Pick your forecast of P(class 1) with the buttons; the true class is then drawn at random from the exact probability and shown inside the ring.</span>`;
+  /* left: reliability of the forecaster */
+  const bins = st ? levelBins(rs) : [];
+  if (!bins.length) { const {c, w, h} = prep($("cl")); c.fillStyle = "#777"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.fillText(view === "sim" ? "Run the simulated forecaster first." : "Make a forecast to start the reliability diagram.", w / 2, h / 2); }
+  else drawRel($("cl"), {lo: 0, series: [{bins, color: NAVY, gap: true, ci: true, line: true, name: "forecast level"}], strip: false, xlab: "announced probability", ylab: "how often class 1 occurred"});
+  /* right */
+  const sel = S.rsel[4], cr = $("cr");
+  if (sel === "prop") {
+    const sv = []; for (let i = 0; i <= 24; i++) sv.push(0.25 * Math.pow(16, i / 24)); const key = ["prop", S.ds, S.seed].join("|");
+    const res = lazy(key, () => KC.propriety(spec(), sv, 4000, S.seed)); const cur_s = view === "sim" ? G.sim.s : S.ssim;
+    if (!res) drawLines(cr, {x: [0.25, 4], y: [0, 1], xt: [0.25, 0.5, 1, 2, 4], yt: [0, 1], xlog: 1, series: [], msg: "computing…"});
+    else { const bt = Math.max(...res.map(r => r.brier)) * 1.1, kt = Math.max(...res.map(r => r.kl)) * 1.1; drawLines(cr, {x: [0.25, 4], y: [0, bt], y2: [0, kt], c2: ORG, xt: [0.25, 0.5, 1, 2, 4], yt: [0, bt / 2, bt], yt2: [0, kt / 2, kt], fy: v => fm(v, 3), fy2: v => fm(v, 2), fx: v => String(v), xlog: 1, xlab: "sharpening s of an honest-knowing forecaster (s = 1 is honest)", ylab: "extra Brier score (blue)", ylab2: "extra log loss (orange)", series: [{x: sv, y: res.map(r => r.brier), color: BLUE, w: 2.4}, {x: sv, y: res.map(r => r.kl), color: ORG, w: 2.4, ax2: 1}], vlines: [{x: 1, color: "#555"}, {x: cur_s, color: PURP}], legend: [{color: BLUE, t: "extra Brier score (left)"}, {color: ORG, t: "extra log loss (right)"}]}); }
+  } else {
+    if (!st) drawLines(cr, {x: [1, 10], y: [0, 0.3], xt: [1, 5, 10], yt: [0, 0.15, 0.3], series: [], msg: "Play some rounds to see this."});
+    else { const cum = fn => { let s = 0; return rs.map((r, i) => (s += fn(r), s / (i + 1))); }, xsr = rs.map((_, i) => i + 1), you = cum(r => (r.f - r.out) ** 2), bay = cum(r => (r.q - r.out) ** 2), mod = cum(r => (r.pm - r.out) ** 2), bas = cum(r => (r.pb - r.out) ** 2), n = rs.length, top = Math.max(0.3, ...you.slice(Math.min(5, n - 1)), ...bay.slice(Math.min(5, n - 1))) * 1.05;
+      drawLines(cr, {x: [1, Math.max(2, n)], y: [0, top], xt: tk(1, Math.max(2, n)).map(v => Math.round(v)), yt: [0, top / 2, top], fy: v => fm(v, 2), fx: v => String(Math.round(v)), xlab: "rounds played", ylab: "average Brier score (lower is better)", series: [{x: xsr, y: bas, color: GREY, w: 1.6, dash: [5, 3]}, {x: xsr, y: mod, color: GREEN, w: 1.8}, {x: xsr, y: bay, color: ORG, w: 1.8}, {x: xsr, y: you, color: NAVY, w: 2.6}], legend: [{color: NAVY, t: view === "sim" ? "simulated forecaster" : "you"}, {color: ORG, t: "true probability"}, {color: GREEN, t: "trained model"}, {color: GREY, t: "base rate"}]}); }
+  }
+  info4(st, view);
+}
+function info4(st, view) {
+  const rs = view === "sim" && G.sim ? G.sim.rs : G.rounds;
+  const g = G.cur, who = view === "sim" ? "simulated forecaster (s = " + fm(G.sim.s, 2) + ")" : "you"; let t = "";
+  if (view === "me") {
+    if (g && !g.done) t += `<p><b>Your turn.</b> Look at the labelled points around the black ring and choose how likely it is that the point is blue (class 1). Pick a probability, not a class: if you think it is blue 70 times out of 100 in situations like this, say 70%.` + (S.reveal ? ` <b>The true probability here is ${pct(g.q, 1)}.</b>` : "") + `</p>`;
+    else if (G.last) { const r = G.last; t += `<p><b>You said ${Math.round(100 * r.f)}%. The point turned out to be ${r.out ? "<span style='color:#0877bd'>class 1 (blue)</span>" : "<span style='color:#e8590c'>class 0 (orange)</span>"}.</b> The true probability was ${pct(r.q, 1)}. Your squared error against the outcome was ${fm((r.f - r.out) ** 2, 3)}; announcing the true probability would have scored ${fm((r.q - r.out) ** 2, 3)}. One round says almost nothing: even a perfect forecaster is often "wrong" about a single outcome. Press <b>Next point</b>.</p>`; }
+  } else if (G.sim) t += `<p><b>Simulated forecaster.</b> It knows the true probability q of every query and announces sigmoid(s &middot; logit q), rounded to the nearest of the 11 allowed levels, with s = ${fm(G.sim.s, 2)} (${G.sim.s > 1 ? "overconfident" : G.sim.s < 1 ? "underconfident" : "honest"}). ${G.sim.rs.length} rounds.</p>`;
+  if (st) {
+    const m = st.mu, ok = Math.abs(m.bs - (m.rel - m.res + m.unc)) < 1e-9;
+    t += `<p><b>Brier decomposition of the ${who}</b> over ${st.n} rounds (Murphy 1973): Brier ${fm(m.bs, 4)} = reliability ${fm(m.rel, 4)} &minus; resolution ${fm(m.res, 4)} + uncertainty ${fm(m.unc, 4)} ${ok ? "(identity checked)" : ""}. Reliability is the calibration part (smaller is better), resolution is how well the forecasts separate cases that differ (larger is better), uncertainty only depends on how often class 1 occurs.` + (st.n < 50 ? ` With ${st.n} rounds these numbers are dominated by chance; play on or run the simulation.` : "") + `</p>`;
+    t += `<p>Scores are noisy even for a perfect forecaster.` + (S.ds === "overlap" ? ` On the overlapping blobs, one who announces the true probability rounded to the nearest level scored a Brier score of 0.124 &plusmn; 0.029 (mean &plusmn; standard deviation over 300 simulated 50-round games).` : ``) + `</p>`;
+  } else if (view === "me") t += `<p class="hint">Nothing scored yet.</p>`;
+  $("detail").innerHTML = t;
+  let n = sec((view === "sim" ? "Simulated forecaster, " : "Your forecasts, ") + (st ? st.n : 0) + " rounds");
+  if (st) {
+    n += `<table class="tbl" style="grid-column:1/-1;margin:0">${hdr(["Forecaster", "Brier", "Log loss"])}` + tr([view === "sim" ? "Simulated" : "You", fm(st.you.bs, 4), fm(st.you.nll, 4)], "sel") + tr(["True probability", fm(st.bay.bs, 4), fm(st.bay.nll, 4)]) + tr(["Trained model (deg. 3)", fm(st.mod.bs, 4), fm(st.mod.nll, 4)]) + tr(["Base rate (" + G.tr.n + " points)", fm(st.base.bs, 4), fm(st.base.nll, 4)]) + `</table>`;
+    n += row("Mean announced probability", pct(mean(rs.map(r => r.f)))) + row("Share of class 1 so far", pct(mean(rs.map(r => r.out))));
+    n += sec("Decomposition (exact for these 11 levels)") + row("Reliability (REL)", fm(st.mu.rel, 4)) + row("Resolution (RES)", fm(st.mu.res, 4)) + row("Uncertainty (UNC)", fm(st.mu.unc, 4)) + row("REL − RES + UNC", fm(st.mu.rel - st.mu.res + st.mu.unc, 4)) + row("Brier score", fm(st.mu.bs, 4));
+  } else n += row("Rounds", 0) + sec("Benchmarks (scored on the same rounds)") + row("True probability", "the exact q of each query") + row("Trained model", "degree 3, λ = 0.01") + row("Base rate", "class-1 share of the " + G.tr.n + " points") + sec("Allowed forecasts") + row("Levels", "5, 10, 20, … 90, 95%");
+  $("nums").innerHTML = n; $("hover").innerHTML = "&nbsp;";
+}
+
+/* ============================ controls ============================ */
+function syncUI() {
+  document.querySelectorAll(".msec").forEach(e => { const m = e.dataset.m; e.classList.toggle("on", !m || m.includes(String(S.mode))); });
+  $("fbtns").style.display = S.mode === 4 ? "" : "none";
+  $("datahint").textContent = S.mode === 4 ? "The labelled points you learn from are redrawn from this data set." : "";
+  $("shhint").textContent = shiftInfo(S.shk).short;
+  $("ds").innerHTML = Object.keys(KC.SPEC_LABELS).map(k => `<option value="${k}">${KC.SPEC_LABELS[k]}</option>`).join(""); $("ds").value = S.ds;
+  $("shk").innerHTML = ["cov", "label", "concept", "noise"].map(k => `<option value="${k}">${shiftInfo(k).name}</option>`).join(""); $("shk").value = S.shk;
+  $("lam").value = String(S.lam); $("rcm").value = S.rcm; $("rcm3").value = S.rcm3; $("scheme").value = S.scheme;
+  $("cv").style.aspectRatio = S.mode === 4 ? "16/10" : "16/11"; $("cl").style.aspectRatio = $("cr").style.aspectRatio = S.mode === 4 ? "16/10" : "4/3";
+  renderBar();
+}
+function bind() {
+  document.querySelectorAll("input[name=mode]").forEach(e => e.addEventListener("change", () => { if (!e.checked) return; S.mode = +e.value; syncUI(); recompute(); draw(); }));
+  $("ds").onchange = e => { S.ds = e.target.value; S.shv.label = spec().pi1; for (const k in mcache) delete mcache[k]; syncUI(); recompute(); draw(); };
+  $("lam").onchange = e => { S.lam = +e.target.value; recompute(); draw(); };
+  $("reseed").onclick = () => { S.seed++; recompute(); draw(); };
+  document.querySelectorAll("input[name=pred]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.pred = e.value; recompute(); draw(); } }));
+  document.querySelectorAll("input[name=conv]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.conv = e.value; recompute(); draw(); } }));
+  $("scheme").onchange = e => { S.scheme = e.target.value; recompute(); draw(); };
+  $("wil").onchange = e => { S.wil = e.target.checked; draw(); }; $("bref").onchange = e => { S.bref = e.target.checked; draw(); };
+  $("rcm").onchange = e => { S.rcm = e.target.value; recompute(); draw(); };
+  $("cheat").onchange = e => { S.cheat = e.target.checked; recompute(); draw(); };
+  $("shk").onchange = e => { S.shk = e.target.value; syncUI(); recompute(); draw(); };
+  $("rcm3").onchange = e => { S.rcm3 = e.target.value; recompute(); draw(); };
+  $("tcal").onchange = e => { S.tcal = e.target.checked; recompute(); draw(); };
+  $("rsel").onchange = e => { S.rsel[S.mode] = e.target.value; draw(); };
+  $("reveal").onchange = e => { S.reveal = e.target.checked; draw(); };
+  $("next").onclick = nextQuery; $("simgo").onclick = runSim;
+  $("gres").onclick = () => { G.rounds = []; G.last = null; G.cur = KC.gameQuery(spec(), G.rng); G.cur.done = false; S.gview = "me"; document.querySelector("input[name=gview][value=me]").checked = true; draw(); };
+  document.querySelectorAll("input[name=gview]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.gview = e.value; draw(); } }));
+  document.addEventListener("keydown", e => { if (S.mode === 4 && e.key === "Enter" && !/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) nextQuery(); });
+  const cv = $("cv");
+  cv.addEventListener("pointermove", e => { if (S.mode === 4) return; const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let b = null, bd = 18 * 18; for (const h of S.hits) { const d = (h.x - x) ** 2 + (h.y - y) ** 2; if (d < bd) { bd = d; b = h; } } const hl = b ? {si: b.si, bi: b.bi} : null; if (JSON.stringify(hl) !== JSON.stringify(S.hl)) { S.hl = hl; draw(); } });
+  cv.addEventListener("pointerleave", () => { if (S.hl) { S.hl = null; draw(); } });
+  window.addEventListener("resize", draw);
+}
+bind(); syncUI(); recompute(); draw();
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>

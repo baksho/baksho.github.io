@@ -1,0 +1,212 @@
+<p class="sb-note-meta"><strong>Authors</strong>: Chuan Guo, Geoff Pleiss, Yu Sun, and Kilian Q. Weinberger.</p>
+<p class="sb-note-meta"><strong>Venue</strong>: Proceedings of the 34th International Conference on Machine Learning (ICML), 2017, PMLR 70</p>
+<p class="sb-note-meta">
+  <strong>DOI</strong>: <a href="https://doi.org/10.5555/3305381.3305518" target="_blank" rel="noopener">10.5555/3305381.3305518</a>
+</p>
+<p class="sb-note-meta"><strong>Paper type</strong>: Empirical research paper with methodological analysis.</p>
+<h2>Problem and Motivation</h2>
+<p>
+  Modern neural networks achieve high classification accuracy, but their predicted probabilities do not necessarily reflect how often their
+  predictions are correct. This problem is known as <strong>confidence miscalibration</strong>.
+</p>
+<p>
+  For example, among predictions made with 90% confidence, a well-calibrated model should be correct approximately 90% of the time. An overconfident
+  model may assign 90% confidence to predictions that are correct substantially less often.
+</p>
+<p>
+  The authors argue that accurate confidence estimates matter when model predictions inform consequential decisions, such as medical diagnosis or
+  autonomous driving. A system needs to know not only what it predicts, but also how much confidence to place in that prediction.
+</p>
+<p>The central research questions are:</p>
+<ul>
+  <li>Why are modern neural networks frequently miscalibrated?</li>
+  <li>How do architectural choices and training procedures affect calibration?</li>
+  <li>Which post-processing methods can improve calibration without unnecessarily sacrificing predictive accuracy?</li>
+</ul>
+<h2>Core contributions</h2>
+<p>The paper makes four principal contributions.</p>
+<ol>
+  <li>
+    <strong>Identifies miscalibration in modern neural networks</strong>. The authors show that high classification accuracy does not guarantee
+    well-calibrated probabilities.
+  </li>
+  <li>
+    <strong>Studies factors affecting calibration</strong>. They investigate the effects of network depth, width, weight decay, and Batch
+    Normalization.
+  </li>
+  <li>
+    <strong>Evaluates multiple calibration methods</strong>. The study compares histogram binning, isotonic regression, Bayesian Binning into
+    Quantiles (BBQ), Platt scaling variants, and temperature scaling.
+  </li>
+  <li>
+    <strong>Demonstrates the effectiveness of temperature scaling</strong>. The authors find that a simple, single-parameter transformation often
+    calibrates predictions as well as or better than more complex alternatives.
+  </li>
+</ol>
+<h2>Methodology</h2>
+<p>The paper combines controlled analyses of neural-network training with experiments on image and document classification.</p>
+<h3>Measuring calibration</h3>
+<p>
+  The authors primarily evaluate calibration using Expected Calibration Error (ECE). Predictions are grouped into confidence bins, and the difference
+  between average confidence and observed accuracy is calculated for each bin. ECE aggregates these differences, weighted by the proportion of samples
+  in each bin.
+</p>
+<p>Their main results table uses 15 bins. ECE is reported as a percentage, with lower values indicating better calibration.</p>
+<h3>Calibration methods</h3>
+<p>The authors evaluate several post-processing approaches using a held-out validation set.</p>
+<ul>
+  <li><strong>Histogram binning</strong>: Divides predictions into bins and assigns each bin an empirically estimated confidence.</li>
+  <li><strong>Isotonic regression</strong>: Learns a flexible, monotonic mapping from uncalibrated probabilities to calibrated probabilities.</li>
+  <li><strong>BBQ</strong>: Averages predictions across candidate binning schemes using Bayesian model averaging.</li>
+  <li><strong>Platt scaling</strong>: Fits a logistic transformation to the model's outputs.</li>
+  <li><strong>Vector and matrix scaling</strong>: Extend Platt scaling to multiclass classification using more parameters.</li>
+  <li><strong>Temperature scaling</strong>: Divides the logits by a single positive scalar \( T \) before applying softmax:</li>
+</ul>
+<p class="sb-eq">\[ {\hat{p} }_{k}= \frac{\exp ({z}_{k}/T)}{\sum_{j} \exp ({z}_{j}/T)} \]</p>
+<p>
+  The temperature is optimized on the validation set using negative log-likelihood (NLL). Because dividing all logits by the same positive scalar
+  preserves their ordering, temperature scaling does not change the predicted class or classification accuracy.
+</p>
+<h3>Experimental setup</h3>
+<p>
+  The paper evaluates image classification datasets including CIFAR-10, CIFAR-100, ImageNet, Caltech-UCSD Birds, Stanford Cars, and SVHN. Document
+  classification experiments use 20 Newsgroups, Reuters, and the Stanford Sentiment Treebank.
+</p>
+<p>
+  Architectures include ResNets, Wide ResNets, DenseNets, Deep Averaging Networks, and TreeLSTMs. For the Birds and Cars datasets, networks pretrained
+  on ImageNet are fine-tuned.
+</p>
+<p>
+  The authors follow the original papers' training procedures and hyperparameters where specified. Calibration is fitted using validation data and
+  evaluated on held-out test data, with the experiments assuming that the training, validation, and test sets are drawn from the same distribution.
+</p>
+<h2>Key Results</h2>
+<p>The following values are taken directly from Table 1 of the paper. All are ECE percentages, using 15 bins.</p>
+<div class="sb-note-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Dataset and model</th>
+        <th>Before calibration</th>
+        <th>Temperature scaling</th>
+        <th>Best ECE among listed methods</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>CIFAR-10, ResNet-110</td>
+        <td>4.60%</td>
+        <td>0.83%</td>
+        <td>0.54% (BBQ)</td>
+      </tr>
+      <tr>
+        <td>CIFAR-100, ResNet-110</td>
+        <td>16.53%</td>
+        <td>1.26%</td>
+        <td>1.26% (temperature scaling)</td>
+      </tr>
+      <tr>
+        <td>CIFAR-100, ResNet-110 with stochastic depth</td>
+        <td>12.67%</td>
+        <td>0.96%</td>
+        <td>0.90% (vector scaling)</td>
+      </tr>
+      <tr>
+        <td>ImageNet, DenseNet-161</td>
+        <td>6.28%</td>
+        <td>1.99%</td>
+        <td>1.99% (temperature scaling)</td>
+      </tr>
+      <tr>
+        <td>20 Newsgroups, DAN</td>
+        <td>8.02%</td>
+        <td>4.11%</td>
+        <td>3.60% (histogram binning)</td>
+      </tr>
+      <tr>
+        <td>Reuters, DAN</td>
+        <td>0.85%</td>
+        <td>0.91%</td>
+        <td>0.66% (vector scaling)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p><em>DAN = Deep Averaging Network. All comparisons use the values reported in the paper.</em></p>
+<p>The results support several conclusions.</p>
+<ul>
+  <li>
+    <strong>Modern networks can be substantially miscalibrated</strong>. On CIFAR-100, the standard ResNet-110 has an ECE of 16.53% before
+    calibration.
+  </li>
+  <li>
+    <strong>Temperature scaling is consistently effective, particularly for image classification</strong>. It reduces the CIFAR-100 ResNet-110 ECE
+    from 16.53% to 1.26%.
+  </li>
+  <li>
+    <strong>More complex calibration is not necessarily better</strong>. Temperature scaling frequently outperforms vector and matrix scaling despite
+    using far fewer parameters.
+  </li>
+  <li>
+    <strong>Calibration is dataset-dependent</strong>. On Reuters, the original ECE is already 0.85%, and temperature scaling does not improve it.
+  </li>
+  <li>
+    <strong>Calibration and accuracy can behave differently during training</strong>. The authors report that, on CIFAR-100, test error decreases from
+    approximately 29% to 27% during a period when NLL overfits. This is a figure-based result reported in the text, not a universal relationship.
+  </li>
+</ul>
+<p>
+  The paper also reports that temperature scaling is computationally inexpensive: its optimization can converge in approximately 10 iterations with a
+  conjugate-gradient solver, taking a fraction of a second on the hardware considered by the authors.
+</p>
+<h2>Limitations and Open Questions</h2>
+<p>The paper identifies several unresolved issues:</p>
+<ul>
+  <li>The reasons why modern architectural and training choices improve accuracy while worsening calibration are not fully understood.</li>
+  <li>The study assumes that training, validation, and test data come from the same distribution.</li>
+  <li>Calibration measurements may depend on the dataset split and the chosen binning scheme.</li>
+  <li>Flexible calibration methods such as matrix scaling can overfit validation data, particularly when the number of classes is large.</li>
+  <li>Temperature scaling is not uniformly effective across all datasets, as illustrated by Reuters.</li>
+</ul>
+<h2>Personal perspective</h2>
+<p>
+  The paper establishes an important distinction in machine learning: classification accuracy and confidence reliability are separate properties. A
+  neural network can predict the correct class more often while producing probability estimates that are less trustworthy.
+</p>
+<p>
+  Its central practical contribution is temperature scaling, a simple post-processing method that often substantially improves calibration without
+  changing the predicted classes.
+</p>
+<p>
+  For researchers working on trustworthy ML, the paper provides a foundational starting point for understanding post-hoc calibration. As a matter of
+  fact, this paper was one of the starting points for my Master’s thesis as well. Its main caveat is that successful calibration on a held-out test
+  distribution does not, by itself, establish reliability under distribution shift or provide a complete account of predictive uncertainty.
+</p>
+<p>Following points are my personal assessment:</p>
+<ol>
+  <li>
+    ECE depends on the evaluation design. ECE is useful but depends on how confidence bins are constructed. A low ECE under one binning scheme does
+    not establish that probabilities are reliable under every evaluation criterion.
+  </li>
+  <li>
+    Calibration on in-distribution data is not sufficient for deployment. The paper's same-distribution assumption limits what its results establish
+    about distribution shift. A model calibrated on familiar data may become miscalibrated when the input distribution changes.
+  </li>
+  <li>
+    Calibration is not the same as uncertainty quantification. Temperature scaling adjusts confidence in the predicted classes; it does not directly
+    provide a distribution over plausible models or fully characterize epistemic uncertainty.
+  </li>
+  <li>
+    Better calibration does not guarantee better decisions. The experiments focus on classification confidence. They do not establish that calibration
+    improves downstream decision-making, clinical outcomes, or safety in a deployed system.
+  </li>
+  <li>
+    The evidence is strongest for the evaluated benchmarks. The results cover several architectures and datasets, but they do not establish that
+    temperature scaling is universally optimal across all tasks, distributions, or modern model families.
+  </li>
+</ol>
+<p>
+  <strong>NOTE</strong>: The main paper reports dataset splits, model families, evaluation metrics, and the general calibration procedure. It refers
+  to supplementary sections for additional metrics, error tables, and reliability diagrams, which I have not gone through for the purpose of my
+  research and hence has not been verified.
+</p>

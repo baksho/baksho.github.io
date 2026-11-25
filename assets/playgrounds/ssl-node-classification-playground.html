@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Semi-supervised Node Classification Lab</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:700}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  #cv{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cv.grab{cursor:grab}#cv.drag{cursor:grabbing}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #aaa}
+  .rg{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid #222;vertical-align:-2px}.rg.th{border-width:3px}
+  .ln{display:inline-block;width:26px;height:0;border-top:2px solid #222;vertical-align:middle}.ln.da{border-top-style:dashed;border-top-width:1.5px}
+  .bd{display:inline-block;width:26px;height:10px;border-radius:2px}
+  #detail{min-height:70px}
+  #nums{grid-template-columns:1fr;gap:6px}
+  #nums .pr{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  #nums .pr b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  #nums .sec{grid-column:1/-1}
+  #bar{margin-bottom:0;align-items:flex-end}#cctl{align-items:flex-end}
+  #cctl{flex:1;gap:12px 20px}
+  #cctl .sl{flex:1 1 0;min-width:118px}
+  #cctl{flex-wrap:nowrap}
+  .kopts{display:flex;gap:16px;align-items:flex-start;min-height:34px}
+  .kopts label{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-weight:400;font-size:13px;margin:0;color:#222}
+  .kopts input{margin:3px 0 0}
+  .kopts small{display:block;color:#777;font-size:11.5px;line-height:1.25;margin-top:1px;max-width:112px}
+  input.num{width:52px;font-size:12.5px;padding:1px 5px;text-align:right;border:1px solid #ccc;border-radius:3px;background:#fff;color:#222;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  #hover{margin-top:6px;color:#555;min-height:20px;font-variant-numeric:tabular-nums}
+  .seg{display:flex;gap:6px;margin:8px 0 2px}.seg .tool{flex:1;text-align:center}
+  .tool.o.on{background:#e8590c;border-color:#e8590c}.tool.b.on{background:#0877bd;border-color:#0877bd}
+
+  #cv{aspect-ratio:16/10;cursor:default}
+  .pgrid{margin-top:20px}
+  .pgrid .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+  .pgrid .ph select{min-width:0;max-width:62%}
+  .pgrid canvas{aspect-ratio:1/1;cursor:default}
+  #cl2{aspect-ratio:1/1}
+  .fbtns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:12px 0 0}
+  .fbtns button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:9px 0;font-size:13px;cursor:pointer;color:#222;font-variant-numeric:tabular-nums}
+  .fbtns button:hover:not(:disabled){background:var(--navy);color:#fff;border-color:var(--navy)}
+  .fbtns button:disabled{opacity:.45;cursor:default}
+  table.tbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px}
+  table.tbl th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+  table.tbl td{text-align:right;padding:3px 8px 3px 0}
+  table.tbl tr.sel td{font-weight:700;color:#0b5f96}
+  table.tbl tr.ref td{color:#777;font-style:italic}
+  .cap{font-size:12px;color:#666;line-height:1.45;margin-top:8px}
+  .cap b{color:#333;font-weight:700}
+  #lam{margin-left:14px}
+  .msec{display:none}
+  .msec.on{display:block}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  #detail p{margin:0 0 6px}
+  #detail p:last-child{margin-bottom:0}
+  .bad{color:#b4430a}
+
+  /* ---- Bayes additions ---- */
+  #bar{align-items:flex-end}
+  .btns3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
+  .btns3 button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:8px 0;font-size:12.5px;cursor:pointer;color:#222}
+  .btns3 button:hover{background:#eef5fb}
+  .btns3 button.span2{grid-column:span 2}
+  .btns3 button.h{background:var(--navy);border-color:var(--navy);color:#fff}.btns3 button.h:hover{background:#12293a}
+  #cv.clk{cursor:crosshair}
+  #cv{aspect-ratio:2/1}
+  .lgd{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .lgd span{display:inline-flex;align-items:center;gap:6px}
+  .lgd i{display:inline-block;width:20px;height:0;border-top:2px solid #333}
+  .lgd i.d{border-top-style:dashed}.lgd i.o{border-top-style:dotted}
+  .lgd b.sq{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .lgd b.dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+
+  /* ---- node classification additions ---- */
+  #bar{gap:14px 24px;align-items:center}
+  #btns{flex:0 0 auto}
+  #endb{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{min-width:130px}
+  #cctl{flex-wrap:wrap}
+  #cctl .sl{flex:1 1 140px;max-width:240px}
+  #cctl input[type=range]{height:12px}
+  #cctl input[type=range]::-webkit-slider-thumb{width:10px;height:10px;margin-top:-3.5px}
+  #cctl input[type=range]::-moz-range-thumb{width:10px;height:10px}
+  #cctl input.num{width:44px;font-size:12px}
+  #cctl .sl.off{opacity:.4;pointer-events:none}
+  #grid{aspect-ratio:760/505;height:auto}
+  #grid .nd{cursor:pointer}
+  .srow{margin:9px 0 2px}
+  .srow .row{display:flex;justify-content:space-between;align-items:center;font-size:12.5px;color:#555;gap:8px}
+  .srow .row input.num{width:46px;font-size:12px}
+  .srow.off{opacity:.4;pointer-events:none}
+  .mtab{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums;font-size:12.5px;margin:4px 0 2px}
+  .mtab th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  .mtab th:first-child,.mtab td:first-child{text-align:left}
+  .mtab td{text-align:right;padding:3px 8px 3px 0}
+  .mtab tr.sel td{font-weight:700;color:#0b5f96}
+  #detail{min-height:84px}
+  .pgrid canvas{aspect-ratio:1/1}
+  .sw2{display:inline-block;width:11px;height:11px;border-radius:50%;vertical-align:-1px;margin-right:4px}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Semi-supervised Node Classification Lab</h1>
+  <p class="blurb">Only a handful of nodes in this graph have a known class. A two-layer <b>graph convolutional network</b> (GCN) is trained on those few labels, and it predicts the class of all the other nodes by mixing each node's features with its neighbours'. Press <b>Play</b> to watch the predictions form, <b>click a node</b> to label or unlabel it, and compare with a model that <b>ignores the graph</b> (an MLP) and with <b>label propagation</b>, which uses only the graph and the labels. The graph comes from a <b>stochastic block model</b> with a <b>homophily</b> slider (how often an edge joins two nodes of the same class), or from the real Zachary Karate Club. Slide homophily down and watch the graph stop helping, and then start hurting.</p>
+
+  <div id="bar"><div class="grp tr" id="btns"><button class="btn" id="play" title="Train / pause">&#9654;</button><button class="btn" id="step" title="Train one epoch">Step</button><button class="btn" id="reset" title="Back to the untrained network (epoch 0)">&#8634;</button><button class="btn" id="endb" title="Jump to the last epoch">To end</button></div><div id="status"></div><div id="cctl"></div></div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="chead"></div>
+      <svg id="grid" viewBox="0 0 760 505" role="img" aria-label="Graph coloured by the model's predictions"></svg>
+      <div class="lgd" id="legend"></div>
+      <div class="cap" id="capm"></div>
+      <div id="detail" class="card" style="margin:14px 0 0"></div>
+      <div class="pgrid">
+        <div><div class="ph"><span>Training curves</span></div><canvas id="cl"></canvas><div class="cap" id="capl"></div></div>
+        <div><div class="ph"><select id="rsel" aria-label="Choose the chart"></select></div><canvas id="cr"></canvas><div class="cap" id="capr"></div></div>
+      </div>
+      <div class="head" style="margin-top:22px">Comparison of the three methods</div>
+      <div class="card" id="cmp" style="margin:0"></div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Scenario</div>
+        <div class="row2" style="margin-top:2px"><select id="scn" style="width:100%"></select></div>
+        <div class="hint" id="scnhint"></div>
+
+        <div class="sub">Model shown on the graph</div>
+        <label class="radio"><input type="radio" name="model" value="gcn"><span>GCN: uses the graph<small>Â = D̃<sup>−½</sup>(A + I)D̃<sup>−½</sup>, two layers, ReLU</small></span></label>
+        <label class="radio"><input type="radio" name="model" value="mlp"><span>MLP: graph structure off<small>the same network with Â = I, so each node is classified from its own features</small></span></label>
+        <label class="radio"><input type="radio" name="model" value="lp"><span>Label propagation: labels and graph only<small>no features; the slider counts propagation steps</small></span></label>
+        <label class="chk"><input type="checkbox" id="shOther">Draw the other model (GCN or MLP) as a dashed curve</label>
+
+        <div class="sub">Graph</div>
+        <label class="radio"><input type="radio" name="src" value="sbm"><span>Stochastic block model<small>classes of equal size; edge probabilities set by the mean degree and homophily</small></span></label>
+        <label class="radio"><input type="radio" name="src" value="karate"><span>Zachary Karate Club (real)<small>34 members, 78 ties, two factions; features are simulated</small></span></label>
+        <div id="sbmctl"></div>
+        <div class="row2" style="margin-bottom:0"><button class="linkbtn" id="newg">New random graph, features and labels</button></div>
+
+        <div class="sub">Labelled nodes</div>
+        <div class="hint" style="margin:2px 0 4px" id="labhint"></div>
+        <div class="row2" style="margin-bottom:0"><button class="linkbtn" id="labres">Choose the labelled nodes at random again</button></div>
+
+        <div class="sub">Training and display</div>
+        <div id="trctl"></div>
+        <div class="row2" style="margin:8px 0 0"><span class="hint">Weight decay</span><select id="wd" style="min-width:80px"><option value="0">0</option><option value="0.0005">5e-4</option><option value="0.005">5e-3</option><option value="0.05">5e-2</option></select><span style="flex:1"></span><span class="hint">Colour</span><select id="colorby" style="min-width:90px"><option value="pred">prediction</option><option value="true">true class</option></select></div>
+        <label class="chk"><input type="checkbox" id="shCross">Draw edges between different classes in red</label>
+        <label class="chk"><input type="checkbox" id="shMark">Mark wrong predictions with a dashed red ring</label>
+        <label class="chk"><input type="checkbox" id="shTheory">Sweep chart: show the signal-to-noise gain of one averaging step</label>
+      </div>
+      <div class="head" style="margin-top:22px">Results</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+<h2>How it works</h2>
+<p>In <b>semi-supervised node classification</b> you are given a graph and the input features of every node, but the class of only a few nodes. The task is to predict the classes of all the others. Everything below is computed in your browser, and the training is deterministic, so the Epoch slider simply moves through a training run that has already been computed.</p>
+
+<h3>The data</h3>
+<ul>
+<li><b>Graph.</b> A <b>stochastic block model</b> (Holland, Laskey and Leinhardt, 1983): the nodes are split into K classes of equal size, and every pair of nodes is connected independently, with a higher probability inside a class than between classes. The page sets the probabilities from two numbers: the mean degree and the <b>edge homophily</b> h, the expected fraction of edges that join two nodes of the same class. For K classes, random wiring gives h = 1/K (0.5 for two classes). The randomness is coupled: for a fixed seed, raising h only adds within-class edges and removes between-class edges, so the graph changes smoothly as you drag the slider. I checked that the realised mean degree and the realised homophily match their targets (300 graphs per setting; for instance target h = 0.8 gave 0.796).</li>
+<li><b>Features.</b> Ten numbers per node: the node's class adds a shift of size "feature signal" along one axis of its own, and every one of the ten numbers has unit Gaussian noise. Most of the dimensions carry no class information, so a model with a few labels can easily overfit to noise.</li>
+<li><b>Labels.</b> A few nodes per class, chosen at random (or by you, by clicking). Test accuracy is always measured on all nodes without a label. Test labels are never used for training, model selection or early stopping.</li>
+<li><b>Karate Club.</b> The real Zachary Karate Club network (Zachary, 1977): 34 members, 78 ties, two factions of 17. The data has no node features, so the page simulates them in the same way as for the block model. About 86% of the ties join members of the same faction.</li>
+</ul>
+
+<h3>The three methods</h3>
+<div class="eqb">GCN:   P = softmax( Â · ReLU( Â X W₁ ) · W₂ ),   Â = D̃<sup>−½</sup>(A + I)D̃<sup>−½</sup><br>MLP:   the same, with Â = I  (graph structure off)<br>LP:    F ← α S F + (1 − α) Y,   S = D<sup>−½</sup> A D<sup>−½</sup>,  α = 0.9</div>
+<p>The GCN is the two-layer model of Kipf and Welling (2017), without bias terms. The hidden layer has 16 units. Training minimises the cross-entropy on the labelled nodes with Adam (learning rate 0.01, full batch) for 200 epochs, plus weight decay on both weight matrices (5e-4 unless you change it). There is no dropout, so the run is deterministic. The MLP is exactly the same network and the same initial weights with Â replaced by the identity, so the only difference between the two is whether a node can see its neighbours. <b>Label propagation</b> (Zhou et al., 2003) uses no features at all: the known labels are pushed along the edges for 200 steps, and every node gets the class with the largest score. A node that no label can reach gets no prediction and counts as wrong.</p>
+<p>I checked the implementation against an independent numpy version that rebuilds Â from the edge list and runs its own Adam: the training-loss trajectories of four GCN and MLP runs agree to 4e-16 over 120 epochs. The analytic gradient agrees with finite differences (largest relative error 3e-7), and label propagation after 300 steps matches its closed form (1 − α)(I − αS)<sup>−1</sup>Y to 1e-16.</p>
+
+<h3>What the page shows</h3>
+<p>All numbers in this section are means over 40 random graphs with the default settings (60 nodes, mean degree 4, feature signal 1, 3 labelled nodes per class, test accuracy after 200 epochs, standard error about 0.01 to 0.02), not the single graph you see on screen. The sweep chart on the page recomputes the same kind of curve with 8 graphs per point for whatever settings you choose.</p>
+<ul>
+<li><b>Two classes.</b> The MLP, which ignores the graph, scores 0.60 at every h (the features and labels do not depend on h). GCN scores 0.95 at h = 1, 0.88 at 0.9, 0.78 at 0.8 and 0.68 at 0.7. At h = 0.6 it is level with the MLP (0.58). It then <b>drops below the MLP</b>: 0.52 at h = 0.5, a minimum of about 0.50 near h = 0.3 to 0.4, and 0.54 at h = 0.2. At h = 0.1 it is level again (0.60), and at h = 0, where every edge joins the two classes, it rises to 0.71. Label propagation follows the homophilous end (0.98 at h = 1, 0.74 at 0.8) but never learns from heterophily: 0.46 at h = 0.</li>
+<li><b>Three classes.</b> The MLP scores 0.44. GCN is below it for h from 0 to 0.4 (0.34, 0.32, 0.34, 0.37 at h = 0, 0.1, 0.2, 0.3; 0.42 at 0.4), above it from h = 0.5 (0.48) and at 0.82 for h = 0.8. There is no recovery at low h this time.</li>
+<li><b>Feature signal.</b> With a weak signal (0.5) the graph helps at h = 0.8 (GCN 0.70 against 0.52). With a strong signal (3) the MLP already scores 0.89, GCN is level with it at h = 0.8 (0.90), and at h = 0.5 GCN is far worse (0.63).</li>
+<li><b>Number of labels.</b> At h = 0.8 with two classes, GCN scores 0.70, 0.75, 0.78, 0.80, 0.82 for 1, 2, 3, 5, 10 labels per class, and the MLP 0.56, 0.60, 0.60, 0.63, 0.64. The graph helps most when labels are scarce: with one label per class label propagation (0.66) is already well ahead of the MLP.</li>
+<li><b>Mean degree.</b> At h = 0.8, GCN scores 0.68, 0.78 and 0.91 for mean degree 2, 4 and 8. At h = 0.5, degree 8 gives 0.54, still below the MLP (0.60).</li>
+<li><b>Karate Club.</b> With simulated features of signal 1 and 60 random draws of features and labelled nodes, GCN scores 0.88, 0.90 and 0.91 for 1, 2 and 3 labelled members per faction. The MLP scores 0.55, 0.55 and 0.59, label propagation 0.80, 0.89 and 0.92.</li>
+</ul>
+
+<h3>Why the graph can hurt</h3>
+<p>One step of GCN averages a node with its neighbours. Take the simple mean version with a self-loop, mean degree d, K classes with equal means separated along their own axes, and unit noise. Averaging 1 + d independent noise terms shrinks the noise standard deviation by √(1 + d). The class signal changes too: the node keeps a share 1/(1 + d) of its own mean, and each neighbour contributes its own class mean, which belongs to the node's class with probability h and to each other class with probability (1 − h)/(K − 1). The class means of two nodes of different classes end up separated by a factor (1 + d·(h − (1 − h)/(K − 1)))/(1 + d) of what they were. Taking the ratio of the signal factor to the noise factor gives a <b>signal-to-noise gain</b>:</p>
+<div class="eqb">gain(h) = ( 1 + d · ( h − (1 − h)/(K − 1) ) ) / √(1 + d)</div>
+<p>The graph can only help where |gain| &gt; 1. Two classes make a distinctive case: for K = 2 the factor is 1 + d(2h − 1), which is negative for small h but large in size when h is near 0. The sign does not matter to a classifier that can learn the sign, so strong <b>heterophily is as useful as strong homophily</b>. In the middle, the signal cancels (h = 0.5 − 1/(2d) for K = 2) and only the noise reduction is left. With d = 4 the formula gives |gain| &lt; 1, that is, a graph that hurts, for h between 0.10 and 0.65 when K = 2. The measured curve is below the MLP over about the same range (equal at 0.1 and at 0.6). For K = 3 it gives |gain| &lt; 1 for every h up to 0.54, and no recovery at low h, because the minimum of the gain is −0.45: a neighbour of another class does not say which class you are. The measured GCN is below the MLP up to about 0.4 and above it from 0.5, so the formula is slightly pessimistic. You can draw the gain on the sweep chart with the last checkbox in Settings.</p>
+<p>I also measured the gain directly on 900-node graphs, using the GCN normalisation: signal-to-noise of the propagated features relative to the raw features. For K = 2 and d = 4 it was 2.11 at h = 1 (formula 2.24), 1.48 at h = 0.8 (1.52) and 0.82 at h = 0.6 (0.81). Near the cancellation point it is off: the formula gives 0.09 at h = 0.4 and I measured 0.22, because node degrees vary (a node's cancellation point depends on its own degree) and the formula uses the mean degree. For K = 3 the values at h = 0.6, 0.8 and 1 were 1.16, 1.64 and 2.09 (formula 1.16, 1.70, 2.24). This is a back-of-the-envelope model for one averaging step with a linear classifier. It ignores the second layer, the training from a handful of labels, and the normalisation by degree.</p>
+<p>This agrees with what the literature says about heterophily. Zhu et al. (2020) report that many popular GNNs fail on networks with heterophily and are even outperformed by models that ignore the graph, such as MLPs. Ma et al. (2022) show that this is not quite the full story: GCNs can achieve strong performance on some heterophilous graphs ("good" heterophily), which is the two-class h = 0 case here. Li, Han and Wu (2018) describe the GCN convolution as a form of Laplacian smoothing, which is the averaging the model above relies on.</p>
+
+<div class="warn"><b>Limits of this page.</b> The graphs have 20 to 150 nodes and the features are Gaussian, so the numbers show the mechanism, not the accuracy of GCN on real data sets. Heterophily here is the simplest kind: the between-class edges are spread evenly over all other classes. Real heterophilous graphs can be structured differently, and then the picture changes (that is the point of Ma et al., 2022). I used one training recipe (hidden size 16, learning rate 0.01, 200 epochs, no dropout, no early stopping, no hyper-parameter search); a tuned model may do better on the same data. A single graph on the screen is a small sample: with 54 test nodes, one node is worth 1.9 percentage points, and a single run can differ from the mean by more than 10 points. Use the sweep chart for the typical behaviour. Label propagation here is the plain version with α = 0.9 and counts unreachable nodes as wrong; in sparse graphs some nodes have no path to any label.</div>
+
+<h3>Things to try</h3>
+<ul>
+<li>Pick "Random edges", press To end, and compare GCN with the MLP. Then switch the model to MLP: the graph structure is off and accuracy goes up.</li>
+<li>Drag the homophily slider from 1 down to 0 with two classes and watch the navy dot on the sweep chart follow the U-shaped curve.</li>
+<li>Switch to three classes at h = 0.2 and check that the U-shape is gone.</li>
+<li>Set the feature signal to 0: the features say nothing about the class, so the MLP and GCN have nothing to learn from, while label propagation, which uses no features, is unaffected.</li>
+<li>Click an unlabelled node to label it and see how the predictions change. Choose "Accuracy by hops to a label" to see where the graph methods fail.</li>
+</ul>
+
+<h3>References</h3>
+<ul>
+<li>T. N. Kipf and M. Welling. Semi-Supervised Classification with Graph Convolutional Networks. ICLR 2017 (arXiv:1609.02907).</li>
+<li>P. W. Holland, K. B. Laskey and S. Leinhardt. Stochastic blockmodels: First steps. Social Networks 5(2):109–137, 1983.</li>
+<li>W. W. Zachary. An Information Flow Model for Conflict and Fission in Small Groups. Journal of Anthropological Research 33(4):452–473, 1977.</li>
+<li>D. Zhou, O. Bousquet, T. N. Lal, J. Weston and B. Schölkopf. Learning with Local and Global Consistency. Advances in Neural Information Processing Systems 16 (NIPS 2003).</li>
+<li>J. Zhu, Y. Yan, L. Zhao, M. Heimann, L. Akoglu and D. Koutra. Beyond Homophily in Graph Neural Networks: Current Limitations and Effective Designs. NeurIPS 2020.</li>
+<li>Y. Ma, X. Liu, N. Shah and J. Tang. Is Homophily a Necessity for Graph Neural Networks? ICLR 2022.</li>
+<li>Q. Li, Z. Han and X.-M. Wu. Deeper Insights into Graph Convolutional Networks for Semi-Supervised Learning. AAAI 2018.</li>
+</ul>
+
+  </div>
+</div>
+<script>const KARATE = {"y":[0,0,0,0,0,0,0,0,0,1,0,0,0,0,1,1,0,0,1,0,1,0,1,1,1,1,1,1,1,1,1,1,1,1],"edges":[[0,1],[0,2],[0,3],[0,4],[0,5],[0,6],[0,7],[0,8],[0,10],[0,11],[0,12],[0,13],[0,17],[0,19],[0,21],[0,31],[1,2],[1,3],[1,7],[1,13],[1,17],[1,19],[1,21],[1,30],[2,3],[2,7],[2,8],[2,9],[2,13],[2,27],[2,28],[2,32],[3,7],[3,12],[3,13],[4,6],[4,10],[5,6],[5,10],[5,16],[6,16],[8,30],[8,32],[8,33],[9,33],[13,33],[14,32],[14,33],[15,32],[15,33],[18,32],[18,33],[19,33],[20,32],[20,33],[22,32],[22,33],[23,25],[23,27],[23,29],[23,32],[23,33],[24,25],[24,27],[24,31],[25,31],[26,29],[26,33],[27,33],[28,31],[28,33],[29,32],[29,33],[30,32],[30,33],[31,32],[31,33],[32,33]],"pos":[[0.349,0.584],[0.449,0.688],[0.535,0.531],[0.4,0.441],[0.184,0.567],[0.118,0.475],[0.145,0.381],[0.415,0.578],[0.615,0.655],[0.806,0.237],[0.118,0.651],[0.193,0.828],[0.297,0.189],[0.516,0.635],[0.927,0.738],[0.799,0.86],[0.0,0.329],[0.27,0.955],[0.887,1.0],[0.481,0.402],[0.954,0.433],[0.352,0.952],[0.875,0.834],[0.815,0.393],[0.724,0.0],[0.747,0.173],[1.0,0.6],[0.723,0.31],[0.648,0.486],[0.907,0.545],[0.662,0.79],[0.665,0.365],[0.789,0.614],[0.756,0.6]]};
+</script>
+<script>/* Semi-supervised node classification: SBM generator, 2-layer GCN / MLP trained by Adam, label propagation. No DOM. */
+const SSL = (function () {
+  "use strict";
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function randn(r) { let u = 0; while (u < 1e-12) u = r(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * r()); }
+  const D_FEAT = 10, HID = 16;
+
+  /* ---------- graphs ---------- */
+  function finish(n, K, y, edges, pos) {
+    const adj = Array.from({length: n}, () => []);
+    for (const [u, v] of edges) { adj[u].push(v); adj[v].push(u); }
+    adj.forEach(a => a.sort((p, q) => p - q));
+    let same = 0; for (const [u, v] of edges) if (y[u] === y[v]) same++;
+    return {n, K, y, edges, adj, pos: pos || null, hReal: edges.length ? same / edges.length : null, dReal: 2 * edges.length / n};
+  }
+  /* Stochastic block model with K equal classes. Mean degree dbar, edge homophily h = (expected fraction of intra-class edges).
+     Every pair (i,j) owns a fixed uniform number u_ij (depends on seed only), so edges are nested when h or dbar change. */
+  function sbm(n, K, dbar, h, seed) {
+    const y = Array.from({length: n}, (_, i) => i % K), r = mulberry32(seed * 7919 + 13), m = n * dbar / 2;
+    let Pin = 0; for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) if (y[i] === y[j]) Pin++;
+    const Pout = n * (n - 1) / 2 - Pin, pin = Pin ? Math.min(1, h * m / Pin) : 0, pout = Pout ? Math.min(1, (1 - h) * m / Pout) : 0, edges = [];
+    for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { const u = r(); if (u < (y[i] === y[j] ? pin : pout)) edges.push([i, j]); }
+    return finish(n, K, y, edges, null);
+  }
+  function karate() { return finish(34, 2, KARATE.y.slice(), KARATE.edges.map(e => e.slice()), KARATE.pos.map(p => p.slice())); }
+  /* Gaussian features: class k has mean s * e_k (orthogonal axes), unit-variance noise in all D dimensions */
+  function features(y, K, s, seed, D) {
+    D = D || D_FEAT; const r = mulberry32(seed * 104729 + 5), n = y.length, X = new Float64Array(n * D);
+    for (let i = 0; i < n; i++) for (let j = 0; j < D; j++) X[i * D + j] = randn(r) + (j === y[i] ? s : 0);
+    return {X, D};
+  }
+  /* labelled nodes: per class a fixed random order, the first k of each class; the order does not change with k */
+  function pickLabeled(y, K, k, seed) {
+    const r = mulberry32(seed * 31337 + 1), out = [];
+    for (let c = 0; c < K; c++) { const idx = []; y.forEach((v, i) => { if (v === c) idx.push(i); }); for (let i = idx.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [idx[i], idx[j]] = [idx[j], idx[i]]; } out.push(...idx.slice(0, Math.min(k, idx.length))); }
+    return out.sort((a, b) => a - b);
+  }
+  /* force-directed layout (Fruchterman-Reingold), deterministic; returns positions in [0,1]^2 */
+  function layout(g, seed) {
+    const n = g.n, r = mulberry32(seed * 977 + 3); let px = Array.from({length: n}, () => r()), py = Array.from({length: n}, () => r());
+    const k = Math.sqrt(1 / n) * 0.9; let temp = 0.12;
+    for (let it = 0; it < 220; it++) {
+      const dx = new Array(n).fill(0), dy = new Array(n).fill(0);
+      for (let i = 0; i < n; i++) for (let j = i + 1; j < n; j++) { let ex = px[i] - px[j], ey = py[i] - py[j], d2 = ex * ex + ey * ey + 1e-4, f = k * k / d2; dx[i] += ex * f; dy[i] += ey * f; dx[j] -= ex * f; dy[j] -= ey * f; }
+      for (const [u, v] of g.edges) { const ex = px[u] - px[v], ey = py[u] - py[v], d = Math.sqrt(ex * ex + ey * ey) + 1e-9, f = d / k; dx[u] -= ex / d * d * f; dy[u] -= ey / d * d * f; dx[v] += ex / d * d * f; dy[v] += ey / d * d * f; }
+      for (let i = 0; i < n; i++) { dx[i] -= (px[i] - 0.5) * 1.2; dy[i] -= (py[i] - 0.5) * 1.2; const d = Math.hypot(dx[i], dy[i]) + 1e-9, s = Math.min(d, temp); px[i] += dx[i] / d * s; py[i] += dy[i] / d * s; }
+      temp = Math.max(0.002, temp * 0.975);
+    }
+    const q = (a, f) => { const s = a.slice().sort((u, v) => u - v); return s[Math.min(s.length - 1, Math.max(0, Math.round(f * (s.length - 1))))]; };
+    const x0 = q(px, 0.02), x1 = q(px, 0.98), y0 = q(py, 0.02), y1 = q(py, 0.98), cl = v => Math.max(0, Math.min(1, v));
+    return px.map((x, i) => [cl((x - x0) / ((x1 - x0) || 1)), cl((py[i] - y0) / ((y1 - y0) || 1))]);
+  }
+
+  /* ---------- sparse propagation matrices ---------- */
+  /* useGraph: A_hat = D~^-1/2 (A + I) D~^-1/2 ; otherwise A_hat = I (the model ignores the graph) */
+  function normAdj(g, useGraph) {
+    const n = g.n, rowPtr = new Int32Array(n + 1), col = [], val = [];
+    for (let i = 0; i < n; i++) {
+      rowPtr[i] = col.length;
+      if (!useGraph) { col.push(i); val.push(1); continue; }
+      const di = g.adj[i].length + 1, ids = [i].concat(g.adj[i]).sort((a, b) => a - b);
+      for (const j of ids) { col.push(j); val.push(1 / Math.sqrt(di * (g.adj[j].length + 1))); }
+    }
+    rowPtr[n] = col.length; return {n, rowPtr, col: Int32Array.from(col), val: Float64Array.from(val)};
+  }
+  function spmm(S, M, c) { const out = new Float64Array(S.n * c); for (let i = 0; i < S.n; i++) for (let p = S.rowPtr[i]; p < S.rowPtr[i + 1]; p++) { const j = S.col[p], w = S.val[p]; for (let q = 0; q < c; q++) out[i * c + q] += w * M[j * c + q]; } return out; }
+
+  /* ---------- 2-layer GCN (graph on) or MLP (graph off) ---------- */
+  function glorot(r, a, b) { const lim = Math.sqrt(6 / (a + b)), W = new Float64Array(a * b); for (let i = 0; i < W.length; i++) W[i] = (2 * r() - 1) * lim; return W; }
+  /* P: {g, X, D, lab:[idx], useGraph, epochs, lr, wd, seed, keep:bool}  returns {hist:{loss,testLoss,accTrain,accTest}, probs[], hid[], W0, W}  */
+  function trainNet(P) {
+    const g = P.g, n = g.n, K = g.K, D = P.D, H = P.H || HID, y = g.y, S = normAdj(g, P.useGraph), T = spmm(S, P.X, D), E = P.epochs, keep = P.keep !== false;
+    const isLab = new Uint8Array(n); P.lab.forEach(i => isLab[i] = 1); const nL = P.lab.length, nT = n - nL;
+    const r = mulberry32(P.seed * 4999 + 17); let W1 = glorot(r, D, H), W2 = glorot(r, H, K); const W0 = {W1: W1.slice(), W2: W2.slice()};
+    const m1 = new Float64Array(D * H), v1 = new Float64Array(D * H), m2 = new Float64Array(H * K), v2 = new Float64Array(H * K);
+    const hist = {loss: [], testLoss: [], accTrain: [], accTest: []}, probs = [], hid = [];
+    const b1 = 0.9, b2 = 0.999, eps = 1e-8;
+    for (let t = 0; t <= E; t++) {
+      const Z1 = new Float64Array(n * H), A1 = new Float64Array(n * H);
+      for (let i = 0; i < n; i++) for (let a = 0; a < D; a++) { const x = T[i * D + a]; if (x !== 0) for (let q = 0; q < H; q++) Z1[i * H + q] += x * W1[a * H + q]; }
+      for (let i = 0; i < n * H; i++) A1[i] = Z1[i] > 0 ? Z1[i] : 0;
+      const Sx = spmm(S, A1, H), Z2 = new Float64Array(n * K);
+      for (let i = 0; i < n; i++) for (let a = 0; a < H; a++) { const x = Sx[i * H + a]; if (x !== 0) for (let q = 0; q < K; q++) Z2[i * K + q] += x * W2[a * K + q]; }
+      const Pm = new Float64Array(n * K); let loss = 0, tl = 0, ac = 0, at = 0;
+      for (let i = 0; i < n; i++) {
+        let mx = -1e300; for (let q = 0; q < K; q++) mx = Math.max(mx, Z2[i * K + q]); let s = 0; for (let q = 0; q < K; q++) { Pm[i * K + q] = Math.exp(Z2[i * K + q] - mx); s += Pm[i * K + q]; } for (let q = 0; q < K; q++) Pm[i * K + q] /= s;
+        let am = 0; for (let q = 1; q < K; q++) if (Pm[i * K + q] > Pm[i * K + am]) am = q;
+        const ll = -Math.log(Math.max(1e-300, Pm[i * K + y[i]]));
+        if (isLab[i]) { loss += ll; if (am === y[i]) ac++; } else { tl += ll; if (am === y[i]) at++; }
+      }
+      hist.loss.push(loss / nL); hist.testLoss.push(nT ? tl / nT : null); hist.accTrain.push(ac / nL); hist.accTest.push(nT ? at / nT : null);
+      if (keep) { probs.push(Float32Array.from(Pm)); hid.push(Float32Array.from(A1)); }
+      if (t === E) break;
+      const G2 = new Float64Array(n * K);
+      for (const i of P.lab) for (let q = 0; q < K; q++) G2[i * K + q] = (Pm[i * K + q] - (q === y[i] ? 1 : 0)) / nL;
+      const dW2 = new Float64Array(H * K), dSx = new Float64Array(n * H);
+      for (const i of P.lab) for (let a = 0; a < H; a++) for (let q = 0; q < K; q++) { dW2[a * K + q] += Sx[i * H + a] * G2[i * K + q]; dSx[i * H + a] += G2[i * K + q] * W2[a * K + q]; }
+      for (let i = 0; i < H * K; i++) dW2[i] += P.wd * W2[i];
+      const dA1 = spmm(S, dSx, H), dW1 = new Float64Array(D * H);
+      for (let i = 0; i < n; i++) for (let q = 0; q < H; q++) { if (Z1[i * H + q] <= 0) continue; const gz = dA1[i * H + q]; if (gz === 0) continue; for (let a = 0; a < D; a++) dW1[a * H + q] += T[i * D + a] * gz; }
+      for (let i = 0; i < D * H; i++) dW1[i] += P.wd * W1[i];
+      const tt = t + 1, c1 = 1 - Math.pow(b1, tt), c2 = 1 - Math.pow(b2, tt);
+      const upd = (W, dW, m, v) => { for (let i = 0; i < W.length; i++) { m[i] = b1 * m[i] + (1 - b1) * dW[i]; v[i] = b2 * v[i] + (1 - b2) * dW[i] * dW[i]; W[i] -= P.lr * (m[i] / c1) / (Math.sqrt(v[i] / c2) + eps); } };
+      upd(W1, dW1, m1, v1); upd(W2, dW2, m2, v2);
+    }
+    return {hist, probs, hid, W0, W: {W1, W2}};
+  }
+  /* regularised loss and analytic gradient at given weights (used by the gradient check) */
+  function lossGrad(g, X, D, lab, useGraph, W1, W2, wd, H) {
+    const n = g.n, K = g.K, S = normAdj(g, useGraph), T = spmm(S, X, D), nL = lab.length, y = g.y;
+    const Z1 = new Float64Array(n * H), A1 = new Float64Array(n * H);
+    for (let i = 0; i < n; i++) for (let a = 0; a < D; a++) for (let q = 0; q < H; q++) Z1[i * H + q] += T[i * D + a] * W1[a * H + q];
+    for (let i = 0; i < n * H; i++) A1[i] = Math.max(0, Z1[i]);
+    const Sx = spmm(S, A1, H), Z2 = new Float64Array(n * K);
+    for (let i = 0; i < n; i++) for (let a = 0; a < H; a++) for (let q = 0; q < K; q++) Z2[i * K + q] += Sx[i * H + a] * W2[a * K + q];
+    let loss = 0; const G2 = new Float64Array(n * K);
+    for (const i of lab) { let mx = -1e300; for (let q = 0; q < K; q++) mx = Math.max(mx, Z2[i * K + q]); let s = 0; const e = []; for (let q = 0; q < K; q++) { e.push(Math.exp(Z2[i * K + q] - mx)); s += e[q]; } for (let q = 0; q < K; q++) G2[i * K + q] = (e[q] / s - (q === y[i] ? 1 : 0)) / nL; loss -= Math.log(e[y[i]] / s) / nL; }
+    let reg = 0; for (const w of W1) reg += w * w; for (const w of W2) reg += w * w; loss += wd / 2 * reg;
+    const dW2 = new Float64Array(H * K), dSx = new Float64Array(n * H);
+    for (let i = 0; i < n; i++) for (let a = 0; a < H; a++) for (let q = 0; q < K; q++) { dW2[a * K + q] += Sx[i * H + a] * G2[i * K + q]; dSx[i * H + a] += G2[i * K + q] * W2[a * K + q]; }
+    for (let i = 0; i < H * K; i++) dW2[i] += wd * W2[i];
+    const dA1 = spmm(S, dSx, H), dW1 = new Float64Array(D * H);
+    for (let i = 0; i < n; i++) for (let q = 0; q < H; q++) if (Z1[i * H + q] > 0) for (let a = 0; a < D; a++) dW1[a * H + q] += T[i * D + a] * dA1[i * H + q];
+    for (let i = 0; i < D * H; i++) dW1[i] += wd * W1[i];
+    return {loss, dW1, dW2};
+  }
+
+  /* ---------- label propagation (Zhou et al.): F <- alpha S F + (1 - alpha) Y,  S = D^-1/2 A D^-1/2 (no self-loops) ---------- */
+  function labelProp(g, lab, epochs, alpha) {
+    const n = g.n, K = g.K, y = g.y, isLab = new Uint8Array(n); lab.forEach(i => isLab[i] = 1);
+    const Y0 = new Float64Array(n * K); for (const i of lab) Y0[i * K + y[i]] = 1;
+    const deg = g.adj.map(a => a.length); let F = Float64Array.from(Y0); const probs = [], accTest = [];
+    const rec = () => { const P = new Float32Array(n * K); let ok = 0, tot = 0; for (let i = 0; i < n; i++) { let s = 0; for (let q = 0; q < K; q++) s += F[i * K + q]; let am = -1, mx = 1e-12; for (let q = 0; q < K; q++) { P[i * K + q] = s > 0 ? F[i * K + q] / s : 1 / K; if (F[i * K + q] > mx) { mx = F[i * K + q]; am = q; } } if (!isLab[i]) { tot++; if (am === y[i]) ok++; } } probs.push(P); accTest.push(tot ? ok / tot : null); };
+    rec();
+    for (let t = 0; t < epochs; t++) {
+      const N = new Float64Array(n * K);
+      for (let i = 0; i < n; i++) { for (const j of g.adj[i]) { const w = alpha / Math.sqrt(deg[i] * deg[j]); for (let q = 0; q < K; q++) N[i * K + q] += w * F[j * K + q]; } for (let q = 0; q < K; q++) N[i * K + q] += (1 - alpha) * Y0[i * K + q]; }
+      F = N; rec();
+    }
+    return {probs, accTest, F};
+  }
+
+  /* ---------- diagnostics ---------- */
+  function hopDist(g, lab) { const d = new Array(g.n).fill(Infinity), q = []; lab.forEach(i => { d[i] = 0; q.push(i); }); for (let h = 0; h < q.length; h++) for (const j of g.adj[q[h]]) if (d[j] === Infinity) { d[j] = d[q[h]] + 1; q.push(j); } return d; }
+  /* predicted class of node i; -1 when the model has no preference (all probabilities equal, e.g. label propagation never reached the node) */
+  function predOf(P, i, K) { let am = 0, same = true; for (let q = 1; q < K; q++) { if (P[i * K + q] > P[i * K + am]) am = q; if (Math.abs(P[i * K + q] - P[i * K]) > 1e-7) same = false; } return same ? -1 : am; }
+  function accByHop(g, lab, P) { // groups 1,2,3,4+ hops and unreachable, among unlabelled nodes
+    const d = hopDist(g, lab), isLab = new Set(lab), K = g.K, cnt = [0, 0, 0, 0, 0], ok = [0, 0, 0, 0, 0];
+    for (let i = 0; i < g.n; i++) { if (isLab.has(i)) continue; const gi = d[i] === Infinity ? 4 : Math.min(d[i], 4) - 1; cnt[gi]++; if (predOf(P, i, K) === g.y[i]) ok[gi]++; }
+    return {cnt, acc: cnt.map((c, i) => c ? ok[i] / c : null)};
+  }
+  /* 2-D PCA by power iteration with deflation; M: n x c row-major */
+  function pca2(M, n, c) {
+    const mu = new Float64Array(c); for (let i = 0; i < n; i++) for (let j = 0; j < c; j++) mu[j] += M[i * c + j] / n;
+    const C = Array.from({length: c}, () => new Float64Array(c)); for (let i = 0; i < n; i++) for (let a = 0; a < c; a++) for (let b = 0; b < c; b++) C[a][b] += (M[i * c + a] - mu[a]) * (M[i * c + b] - mu[b]) / n;
+    const vecs = [], vals = [];
+    for (let k = 0; k < 2; k++) {
+      let v = Float64Array.from({length: c}, (_, j) => 1 + 0.01 * ((j * 7 + k * 3) % 5)); let lam = 0;
+      for (let it = 0; it < 300; it++) { const w = new Float64Array(c); for (let a = 0; a < c; a++) for (let b = 0; b < c; b++) w[a] += C[a][b] * v[b]; let nm = Math.hypot(...w); if (nm < 1e-14) { lam = 0; break; } for (let a = 0; a < c; a++) v[a] = w[a] / nm; lam = nm; }
+      vecs.push(v); vals.push(lam); for (let a = 0; a < c; a++) for (let b = 0; b < c; b++) C[a][b] -= lam * v[a] * v[b];
+    }
+    const pts = Array.from({length: n}, (_, i) => vecs.map(v => { let s = 0; for (let j = 0; j < c; j++) s += (M[i * c + j] - mu[j]) * v[j]; return s; }));
+    return {pts, vals};
+  }
+  /* back-of-envelope SNR gain of one mean-aggregation step with self-loop (Gaussian classes s*e_k, expected degree d):
+     (1 + d (h - (1-h)/(K-1))) / sqrt(1 + d); |gain| > 1 means the aggregated features separate the classes better than the raw ones */
+  const gain = (h, d, K) => (1 + d * (h - (1 - h) / (K - 1))) / Math.sqrt(1 + d);
+
+  return {mulberry32, randn, sbm, karate, features, pickLabeled, layout, normAdj, spmm, trainNet, lossGrad, labelProp, hopDist, accByHop, predOf, pca2, gain, D_FEAT, HID};
+})();
+
+</script>
+<script>
+"use strict";
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+const FONT = "11px Roboto,Arial,sans-serif";
+function frame(c, w, h, o) {
+  const pw = w - o.l - o.r, ph = h - o.t - o.b, lx = v => o.xlog ? Math.log(v) : v;
+  const X = v => o.l + (lx(v) - lx(o.x[0])) / (lx(o.x[1]) - lx(o.x[0])) * pw, Y = v => o.t + (1 - (v - o.y[0]) / (o.y[1] - o.y[0])) * ph;
+  const Y2 = o.y2 ? (v => o.t + (1 - (v - o.y2[0]) / (o.y2[1] - o.y2[0])) * ph) : null;
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (const t of o.xt) { c.beginPath(); c.moveTo(X(t), o.t); c.lineTo(X(t), o.t + ph); c.stroke(); c.fillText((o.fx || (v => fm(v, 1)))(t), X(t), o.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const t of o.yt) { c.beginPath(); c.moveTo(o.l, Y(t)); c.lineTo(o.l + pw, Y(t)); c.stroke(); c.fillText((o.fy || (v => fm(v, 1)))(t), o.l - 5, Y(t)); }
+  if (o.y2) { c.textAlign = "left"; c.fillStyle = o.c2 || "#777"; for (const t of o.yt2) c.fillText((o.fy2 || (v => fm(v, 2)))(t), o.l + pw + 5, Y2(t)); c.fillStyle = "#777"; }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(o.l, o.t, pw, ph);
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  if (o.xlab) c.fillText(o.xlab, o.l + pw / 2, o.t + ph + 30);
+  if (o.ylab) { c.save(); c.translate(12, o.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylab, 0, 0); c.restore(); }
+  return {X, Y, Y2, pw, ph};
+}
+function clipTo(c, o, w, h) { c.save(); c.beginPath(); c.rect(o.l, o.t, w - o.l - o.r, h - o.t - o.b); c.clip(); }
+
+function drawLines(cv, o) {
+  const {c, w, h} = prep(cv), r = o.r || 14;
+  const fr = frame(c, w, h, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38, x: o.x, y: o.y, y2: o.y2, c2: o.c2, xt: o.xt, yt: o.yt, yt2: o.yt2, xlog: o.xlog, fx: o.fx, fy: o.fy, fy2: o.fy2, xlab: o.xlab, ylab: o.ylab});
+  const {X, Y, Y2} = fr; clipTo(c, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38}, w, h);
+  for (const s of o.series) {
+    const YY = s.ax2 ? Y2 : Y, pts = s.x.map((x, i) => [x, s.y[i]]).filter(p => p[1] !== null && isFinite(p[1]));
+    if (s.band) { c.fillStyle = s.color; c.globalAlpha = 0.16; c.beginPath(); s.x.forEach((x, i) => i ? c.lineTo(X(x), YY(s.band[1][i])) : c.moveTo(X(x), YY(s.band[1][i]))); for (let i = s.x.length - 1; i >= 0; i--) c.lineTo(X(s.x[i]), YY(s.band[0][i])); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    c.strokeStyle = s.color; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []); c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), YY(p[1])) : c.moveTo(X(p[0]), YY(p[1]))); c.stroke(); c.setLineDash([]);
+    if (s.dots) { c.fillStyle = s.color; pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), YY(p[1]), 2.6, 0, 2 * Math.PI); c.fill(); }); }
+  }
+  for (const v of o.vlines || []) { c.strokeStyle = v.color || "#555"; c.setLineDash([4, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(v.x), 12); c.lineTo(X(v.x), h - 38); c.stroke(); c.setLineDash([]); }
+  for (const m of o.marks || []) { c.fillStyle = m.color; c.beginPath(); c.arc(X(m.x), Y(m.y), 4.5, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.3; c.stroke(); }
+  c.restore();
+  if (o.legend) { c.font = FONT; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.82)"; c.fillRect(w - (o.y2 ? 46 : r) - 156, 14, 150, o.legend.length * 14 + 4); let y = 22; for (const s of o.legend) { c.fillStyle = s.color; c.fillRect(w - (o.y2 ? 46 : r) - 150, y - 4, 14, 3); c.fillStyle = "#444"; c.textAlign = "left"; c.fillText(s.t, w - (o.y2 ? 46 : r) - 130, y - 2); y += 14; } }
+  if (o.ylab2) { c.save(); c.translate(w - 8, 12 + (h - 50) / 2); c.rotate(Math.PI / 2); c.fillStyle = o.c2 || "#555"; c.font = FONT; c.textAlign = "center"; c.fillText(o.ylab2, 0, 0); c.restore(); }
+  if (o.msg) { c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(48, h / 2 - 14, w - 62, 28); c.fillStyle = "#555"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.msg, 48 + (w - 62) / 2, h / 2); }
+}
+const $ = id => document.getElementById(id);
+const BLUE = "#0877bd", ORG = "#e8590c", NAVY = "#1b3b4f", GREY = "#8a8f94", GREEN = "#2f9e44", PURP = "#7b4bb7", RED = "#d0021b";
+const CC = [ORG, BLUE, GREEN, PURP], CRGB = CC.map(c => [parseInt(c.slice(1, 3), 16), parseInt(c.slice(3, 5), 16), parseInt(c.slice(5, 7), 16)]);
+const CNAME = ["class A", "class B", "class C", "class D"];
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const fint = v => String(Math.round(v));
+const pct = (v, d = 0) => v === null || v === undefined || !isFinite(v) ? "–" : (100 * v).toFixed(d) + "%";
+function ticksFor(lo, hi) { const s0 = (hi - lo) / 4 || 1, p = Math.pow(10, Math.floor(Math.log10(s0))), f = s0 / p, s = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, t = []; for (let v = Math.ceil(lo / s - 1e-9) * s; v <= hi + 1e-9; v += s) t.push(+v.toFixed(10)); return t; }
+const E = 200, LR = 0.01, SWH = Array.from({length: 11}, (_, i) => i / 10);
+
+/* ---------- state ---------- */
+const S = {src: "sbm", n: 60, K: 2, dbar: 4, h: 0.8, s: 1, k: 3, seed: 1, wd: 5e-4, model: "gcn", epoch: 0, playing: false, speed: 20, shOther: true, colorBy: "pred", shMark: true, shCross: true, shTheory: false, rsel: "sweep", scn: "homo", manual: false, labKey: "", lab: [], hov: null};
+const SCEN = [
+  ["homo", "Homophilous (h = 0.8): graph helps", "Most edges join nodes of the same class, so averaging over neighbours removes feature noise. GCN and label propagation beat the model that ignores the graph.", {src: "sbm", n: 60, K: 2, dbar: 4, h: 0.8, s: 1, k: 3, seed: 5, model: "gcn", rsel: "sweep"}],
+  ["rand", "Random edges (h = 0.5): graph hurts", "Half the edges join different classes, which is what random wiring gives for two classes. Averaging over neighbours now mixes the classes and removes the signal. The MLP, which ignores the graph, is better.", {src: "sbm", n: 60, K: 2, dbar: 4, h: 0.5, s: 1, k: 3, seed: 5, model: "gcn", rsel: "sweep"}],
+  ["hetero", "Opposites attract (h = 0): helps again", "Every edge joins the two classes. A neighbour's features say 'I am the other class', and with two classes that is as informative as 'I am the same class'. The network can learn the flip, so GCN beats the MLP, but label propagation cannot.", {src: "sbm", n: 60, K: 2, dbar: 4, h: 0, s: 1, k: 3, seed: 4, model: "gcn", rsel: "sweep"}],
+  ["three", "Three classes (h = 0.2): graph hurts", "With three classes a neighbour of a different class does not tell you which class you belong to, so there is no way to turn low homophily into a signal. GCN falls below the MLP for every h up to about 0.4.", {src: "sbm", n: 60, K: 3, dbar: 4, h: 0.2, s: 1, k: 3, seed: 7, model: "gcn", rsel: "sweep"}],
+  ["strong", "Strong features (signal 3): little gain", "When each node's own features already separate the classes, there is little noise left to average away. At h = 0.8 GCN and the MLP are about equal, and at lower homophily the graph only hurts.", {src: "sbm", n: 60, K: 2, dbar: 4, h: 0.8, s: 3, k: 3, seed: 3, model: "gcn", rsel: "sweep"}],
+  ["one", "One label per class: labels spread", "With a single labelled node per class, the MLP has almost nothing to learn from, while label propagation and GCN use the edges to carry the labels outwards. Compare the accuracy by distance to the nearest label.", {src: "sbm", n: 60, K: 2, dbar: 4, h: 0.8, s: 1, k: 1, seed: 12, model: "lp", rsel: "hop"}],
+  ["karate", "Zachary Karate Club (real graph)", "34 club members, 78 ties, two factions. The factions are mostly connected internally (about 86% of ties stay inside a faction), so the graph is strongly homophilous. The features are simulated, because the data set has none.", {src: "karate", n: 34, K: 2, dbar: 4, h: 0.8, s: 1, k: 2, seed: 1, model: "gcn", rsel: "hop"}]
+];
+
+/* ---------- build graph, features, labels, models ---------- */
+let G = null, X = null, D = 0, R = null, POS = null;
+function buildGraph() {
+  if (S.src === "karate") { S.n = 34; S.K = 2; G = SSL.karate(); POS = G.pos; }
+  else { G = SSL.sbm(S.n, S.K, S.dbar, S.h, S.seed); POS = SSL.layout(G, S.seed); }
+  const key = [S.src, S.n, S.K, S.seed].join("|");
+  if (key !== S.labKey || !S.manual) { S.lab = SSL.pickLabeled(G.y, G.K, S.k, S.seed); S.manual = false; S.labKey = key; }
+}
+function buildFeatures() { const f = SSL.features(G.y, G.K, S.s, S.seed); X = f.X; D = f.D; }
+function trainAll() {
+  const base = {g: G, X, D, lab: S.lab, epochs: E, lr: LR, wd: S.wd, seed: S.seed};
+  R = {gcn: SSL.trainNet(Object.assign({useGraph: true}, base)), mlp: SSL.trainNet(Object.assign({useGraph: false}, base)), lp: SSL.labelProp(G, S.lab, E, 0.9)};
+  R.lp.hist = {accTest: R.lp.accTest};
+}
+let pend = 0, raf2 = 0;
+function queue(level) { pend = Math.max(pend, level); if (raf2) return; raf2 = requestAnimationFrame(() => { raf2 = 0; const l = pend; pend = 0; if (l >= 3) buildGraph(); if (l >= 2) buildFeatures(); trainAll(); draw(); scheduleSweep(); }); }
+
+/* ---------- graph drawing ---------- */
+const NX = p => 40 + p[0] * 680, NY = p => 28 + p[1] * 449;
+const nodeR = () => G.n <= 40 ? 13 : G.n <= 80 ? 10 : G.n <= 120 ? 8 : 6.5;
+function fillOf(P, i) {
+  const K = G.K; let r = 0, g = 0, b = 0, mx = 0; for (let q = 0; q < K; q++) { const p = P[i * K + q]; r += p * CRGB[q][0]; g += p * CRGB[q][1]; b += p * CRGB[q][2]; mx = Math.max(mx, p); }
+  const conf = Math.max(0, (mx - 1 / K) / (1 - 1 / K)), t = 0.18 + 0.82 * conf, c = v => Math.round(255 * (1 - t) + v * t);
+  return `rgb(${c(r)},${c(g)},${c(b)})`;
+}
+const isLab = i => S.lab.includes(i);
+function drawGraph() {
+  const g = G, n = g.n, K = g.K, P = R[S.model].probs[S.epoch], rr = nodeR(), labSet = new Set(S.lab); let out = "";
+  for (const [u, v] of g.edges) { const cross = g.y[u] !== g.y[v] && S.shCross; out += `<line x1="${NX(POS[u])}" y1="${NY(POS[u])}" x2="${NX(POS[v])}" y2="${NY(POS[v])}" stroke="${cross ? "#e48a8a" : "#c9cfd3"}" stroke-width="${cross ? 1.5 : 1.3}"${cross ? ' stroke-dasharray="4 3"' : ""}/>`; }
+  for (let i = 0; i < n; i++) {
+    const x = NX(POS[i]), y = NY(POS[i]), lab = labSet.has(i), pred = SSL.predOf(P, i, K), wrong = !lab && pred !== g.y[i], fill = S.colorBy === "true" || lab ? CC[g.y[i]] : fillOf(P, i);
+    out += `<g class="nd" data-n="${i}"><circle cx="${x}" cy="${y}" r="${rr + 5}" fill="transparent"/>`;
+    if (lab) out += `<circle cx="${x}" cy="${y}" r="${rr + 3.2}" fill="none" stroke="${NAVY}" stroke-width="2.4"/>`;
+    if (S.shMark && wrong && S.colorBy === "pred") out += `<circle cx="${x}" cy="${y}" r="${rr + 4}" fill="none" stroke="${RED}" stroke-width="1.8" stroke-dasharray="3 2"/>`;
+    out += `<circle cx="${x}" cy="${y}" r="${rr}" fill="${fill}" stroke="${CC[g.y[i]]}" stroke-width="2.4"/>`;
+    if (n <= 40) out += `<text x="${x}" y="${y + 3.6}" text-anchor="middle" font-size="10" font-weight="600" fill="${lab ? "#fff" : "#222"}">${i}</text>`;
+    out += `</g>`;
+  }
+  $("grid").innerHTML = out;
+}
+function nodeInfo(i) {
+  const g = G, K = g.K, rm = S.model, P = R[rm].probs[S.epoch], lab = isLab(i), nb = g.adj[i], same = nb.filter(j => g.y[j] === g.y[i]).length, pred = SSL.predOf(P, i, K), hd = SSL.hopDist(g, S.lab)[i];
+  let conf = 0; for (let q = 0; q < K; q++) conf = Math.max(conf, P[i * K + q]);
+  const dot = c => `<span class="sw2" style="background:${CC[c]}"></span>`;
+  let t = `<p><b>Node ${i}</b>: true class ${dot(g.y[i])}${CNAME[g.y[i]]}, ${lab ? "<b>labelled</b> (its class is known to the model)" : "unlabelled"}, ${nb.length} neighbour${nb.length === 1 ? "" : "s"}${nb.length ? `, ${same} of them in its own class (${pct(same / nb.length)})` : ""}.</p>`;
+  if (lab) t += `<p>Click it to remove its label. Labelled nodes are the only nodes whose class the loss function sees.</p>`;
+  else t += `<p>${rm === "lp" ? "Label propagation" : rm.toUpperCase()} at ${rm === "lp" ? "step" : "epoch"} ${S.epoch}: ${pred < 0 ? "no label has reached this node yet, so there is no prediction" : `predicts ${dot(pred)}${CNAME[pred]} with confidence ${pct(conf)} (${pred === g.y[i] ? "correct" : "<b style='color:" + RED + "'>wrong</b>"})`}. Distance to the nearest labelled node: ${hd === Infinity ? "no path" : hd + " hop" + (hd === 1 ? "" : "s")}. Click to label it.</p>`;
+  return t;
+}
+function setDetail() { $("detail").innerHTML = S.hov !== null && S.hov < G.n ? nodeInfo(S.hov) : `<p>Hover over a node to see its details, click it to label or unlabel it.</p><p>Node <b>fill</b> = the model's prediction (paler = less confident), node <b>border</b> = true class. Labelled nodes have an extra dark ring.</p>`; }
+
+/* ---------- charts ---------- */
+function curveChart() {
+  const m = S.model, h = R[m].hist, xs = Array.from({length: E + 1}, (_, i) => i), other = m === "gcn" ? "mlp" : "gcn", lp = m === "lp";
+  const series = [], leg = [];
+  series.push({x: xs, y: h.accTest, color: lp ? GREEN : BLUE, w: 2.4}); leg.push({color: lp ? GREEN : BLUE, t: "test accuracy (" + (lp ? "LP" : m.toUpperCase()) + ")"});
+  if (!lp) { series.push({x: xs, y: h.accTrain, color: GREY, w: 1.4}); leg.push({color: GREY, t: "accuracy on labelled nodes"}); }
+  if (S.shOther) { series.push({x: xs, y: R[other].hist.accTest, color: other === "mlp" ? ORG : BLUE, w: 1.6, dash: [5, 3]}); leg.push({color: other === "mlp" ? ORG : BLUE, t: "test accuracy (" + other.toUpperCase() + ", dashed)"}); }
+  let y2 = null, yt2 = null;
+  if (!lp) { const mx = Math.max(...h.loss, 0.7), top = Math.ceil(mx * 2) / 2; series.push({x: xs, y: h.loss, color: NAVY, w: 1.2, dash: [2, 3], ax2: true}); leg.push({color: NAVY, t: "training loss (right axis)"}); y2 = [0, top]; yt2 = ticksFor(0, top); }
+  drawLines($("cl"), {x: [0, E], y: [0, 1], xt: [0, 50, 100, 150, 200], fx: fint, yt: [0, 0.25, 0.5, 0.75, 1], fy: v => pct(v), xlab: lp ? "propagation step" : "epoch", ylab: "accuracy", y2, yt2, fy2: v => fm(v, 1), ylab2: y2 ? "loss" : null, c2: NAVY, series, legend: leg, vlines: [{x: S.epoch, color: "#555"}], marks: h.accTest[S.epoch] === null ? [] : [{x: S.epoch, y: h.accTest[S.epoch], color: NAVY}], r: 14});
+  $("capl").innerHTML = `<b>Test accuracy</b> is measured on all nodes without a label. It is never used for training or for stopping: the curves show a fixed ${E} epochs, with no early stopping and no validation set.`;
+}
+function drawBars(cv, groups, series, chance, ylab) {
+  const {c, w, h} = prep(cv), L = 46, Rr = 12, T = 12, B = 58, pw = w - L - Rr, ph = h - T - B, Y = v => T + (1 - v) * ph;
+  c.font = FONT; c.textBaseline = "middle"; c.textAlign = "right"; c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  for (const t of [0, 0.25, 0.5, 0.75, 1]) { c.beginPath(); c.moveTo(L, Y(t)); c.lineTo(L + pw, Y(t)); c.stroke(); c.fillText(pct(t), L - 5, Y(t)); }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(L, T, pw, ph);
+  if (chance) { c.strokeStyle = "#999"; c.setLineDash([4, 3]); c.beginPath(); c.moveTo(L, Y(chance)); c.lineTo(L + pw, Y(chance)); c.stroke(); c.setLineDash([]); }
+  const gw = pw / groups.length, bw = Math.min(26, gw * 0.8 / series.length);
+  groups.forEach((gr, gi) => {
+    const x0 = L + gi * gw + gw / 2 - bw * series.length / 2;
+    series.forEach((s, si) => { const v = s.vals[gi]; if (v === null || v === undefined) return; c.fillStyle = s.color; c.fillRect(x0 + si * bw, Y(v), bw - 2, Math.max(1, Y(0) - Y(v))); });
+    c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "top"; c.fillText(gr[0], L + gi * gw + gw / 2, T + ph + 5); c.fillStyle = "#999"; c.fillText(gr[1], L + gi * gw + gw / 2, T + ph + 19);
+  });
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic"; c.save(); c.translate(11, T + ph / 2); c.rotate(-Math.PI / 2); c.fillText(ylab, 0, 0); c.restore();
+  c.font = FONT; let lx = L + 6; c.textAlign = "left"; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(L + 2, 14, series.length * 66 + 6, 17);
+  series.forEach(s => { c.fillStyle = s.color; c.fillRect(lx, 18, 10, 9); c.fillStyle = "#444"; c.fillText(s.name, lx + 14, 23); lx += 66; });
+}
+function hopChart() {
+  const lab = S.lab, g = G, mk = m => SSL.accByHop(g, lab, R[m].probs[S.epoch]), a = mk("gcn"), b = mk("mlp"), c = mk("lp"), names = ["1 hop", "2 hops", "3 hops", "4+ hops", "no path"];
+  drawBars($("cr"), names.map((t, i) => [t, "n=" + a.cnt[i]]), [{name: "GCN", color: BLUE, vals: a.acc}, {name: "MLP", color: ORG, vals: b.acc}, {name: "LP", color: GREEN, vals: c.acc}], 1 / g.K, "test accuracy");
+  $("capr").innerHTML = `<b>Distance to the nearest labelled node</b>, at the epoch shown. Nodes close to a label are usually easier for the two graph methods. Label propagation can only predict nodes that a label path reaches; 'no path' nodes get no prediction and count as wrong. The MLP does not care about distance.`;
+}
+function localChart() {
+  const g = G, K = g.K, bins = [[0, 0.25], [0.25, 0.5], [0.5, 0.75], [0.75, 1.0001]], names = [["0–25%", ""], ["25–50%", ""], ["50–75%", ""], ["75–100%", ""], ["no neighbour", ""]], isL = new Set(S.lab), cnt = [0, 0, 0, 0, 0], ok = {gcn: [0, 0, 0, 0, 0], mlp: [0, 0, 0, 0, 0], lp: [0, 0, 0, 0, 0]};
+  for (let i = 0; i < g.n; i++) {
+    if (isL.has(i)) continue; const nb = g.adj[i]; let bi = 4; if (nb.length) { const f = nb.filter(j => g.y[j] === g.y[i]).length / nb.length; bi = bins.findIndex(b => f >= b[0] && f < b[1]); }
+    cnt[bi]++; for (const m of ["gcn", "mlp", "lp"]) if (SSL.predOf(R[m].probs[S.epoch], i, K) === g.y[i]) ok[m][bi]++;
+  }
+  names.forEach((t, i) => t[1] = "n=" + cnt[i]);
+  drawBars($("cr"), names, [{name: "GCN", color: BLUE, vals: ok.gcn.map((v, i) => cnt[i] ? v / cnt[i] : null)}, {name: "MLP", color: ORG, vals: ok.mlp.map((v, i) => cnt[i] ? v / cnt[i] : null)}, {name: "LP", color: GREEN, vals: ok.lp.map((v, i) => cnt[i] ? v / cnt[i] : null)}], 1 / K, "test accuracy");
+  $("capr").innerHTML = `Unlabelled nodes grouped by the <b>share of their neighbours that belong to their own class</b> (local homophily). Where most neighbours are of the same class the graph helps the most. Nodes whose neighbours mostly belong to other classes are the ones that averaging misleads, unless the whole graph is heterophilous in a consistent way (two classes).`;
+}
+function pcaChart() {
+  const m = S.model, cv = $("cr");
+  if (m === "lp") { drawLines(cv, {x: [0, 1], y: [0, 1], xt: [], yt: [], series: [], msg: "Label propagation has no hidden layer. Choose GCN or MLP."}); $("capr").innerHTML = ""; return; }
+  const hid = R[m].hid[S.epoch], n = G.n, H = SSL.HID, {pts} = SSL.pca2(Float64Array.from(hid), n, H), {c, w, h} = prep(cv);
+  let x0 = Math.min(...pts.map(p => p[0])), x1 = Math.max(...pts.map(p => p[0])), y0 = Math.min(...pts.map(p => p[1])), y1 = Math.max(...pts.map(p => p[1])); const px = Math.max(x1 - x0, 1e-6) * 0.1, py = Math.max(y1 - y0, 1e-6) * 0.1; x0 -= px; x1 += px; y0 -= py; y1 += py;
+  const fr = frame(c, w, h, {l: 44, r: 12, t: 12, b: 38, x: [x0, x1], y: [y0, y1], xt: ticksFor(x0, x1), yt: ticksFor(y0, y1), fx: v => fm(v, 1), fy: v => fm(v, 1), xlab: "first principal component", ylab: "second principal component"});
+  clipTo(c, {l: 44, r: 12, t: 12, b: 38}, w, h); const labSet = new Set(S.lab);
+  for (let i = 0; i < n; i++) { const lab = labSet.has(i); c.fillStyle = CC[G.y[i]]; c.globalAlpha = lab ? 1 : 0.75; c.beginPath(); c.arc(fr.X(pts[i][0]), fr.Y(pts[i][1]), lab ? 6 : 4.2, 0, 2 * Math.PI); c.fill(); c.globalAlpha = 1; if (lab) { c.strokeStyle = NAVY; c.lineWidth = 2; c.stroke(); } }
+  c.restore();
+  $("capr").innerHTML = `The ${SSL.HID} hidden numbers of every node after the first layer, projected to 2 dimensions with PCA. Colour = <b>true</b> class; dark ring = labelled. When the model works the classes separate. Switch between GCN and MLP to compare: GCN's first layer has already averaged each node with its neighbours.`;
+}
+/* sweep over homophily */
+let SW = null, swTok = 0, swTimer = 0;
+const SWSEEDS = () => S.n > 100 ? 4 : 8;
+function swKey() { return JSON.stringify([S.src, S.n, S.K, S.dbar, S.s, S.k, S.wd]); }
+function scheduleSweep() { clearTimeout(swTimer); if (S.src !== "sbm") { swTok++; SW = null; if (S.rsel === "sweep") drawRight(); return; } swTimer = setTimeout(startSweep, 300); }
+function stat(a) { const m = a.reduce((s, v) => s + v, 0) / a.length, sd = Math.sqrt(a.reduce((s, v) => s + (v - m) * (v - m), 0) / Math.max(1, a.length - 1)); return {m, se: sd / Math.sqrt(a.length)}; }
+function startSweep() {
+  const key = swKey(); if (SW && SW.key === key) return; const tok = ++swTok, ns = SWSEEDS(), par = {n: S.n, K: S.K, d: S.dbar, s: S.s, k: S.k, wd: S.wd};
+  SW = {key, done: 0, gcn: [], mlp: [], lp: [], ns};
+  const step = () => {
+    if (tok !== swTok) return; const i = SW.done; if (i >= SWH.length) { if (S.rsel === "sweep") drawRight(); return; }
+    const a = [[], [], []];
+    for (let sd = 1; sd <= ns; sd++) {
+      const g = SSL.sbm(par.n, par.K, par.d, SWH[i], sd), f = SSL.features(g.y, g.K, par.s, sd), lab = SSL.pickLabeled(g.y, g.K, par.k, sd), P = {g, X: f.X, D: f.D, lab, epochs: E, lr: LR, wd: par.wd, seed: sd, keep: false};
+      a[0].push(SSL.trainNet(Object.assign({useGraph: true}, P)).hist.accTest[E]); a[1].push(SSL.trainNet(Object.assign({useGraph: false}, P)).hist.accTest[E]); a[2].push(SSL.labelProp(g, lab, E, 0.9).accTest[E]);
+    }
+    SW.gcn.push(stat(a[0])); SW.mlp.push(stat(a[1])); SW.lp.push(stat(a[2])); SW.done++; if (S.rsel === "sweep") drawRight(); setTimeout(step, 0);
+  };
+  setTimeout(step, 0); if (S.rsel === "sweep") drawRight();
+}
+function sweepChart() {
+  const cv = $("cr");
+  if (S.src !== "sbm") { drawLines(cv, {x: [0, 1], y: [0, 1], xt: [0, 0.5, 1], yt: [0, 0.5, 1], series: [], xlab: "homophily h", ylab: "test accuracy", msg: "The sweep needs the stochastic block model."}); $("capr").innerHTML = "The Karate Club graph has a fixed structure, so its homophily cannot be varied."; return; }
+  const dn = SW ? SW.done : 0, hs = SWH.slice(0, dn), series = [], leg = [];
+  if (dn) {
+    const band = k => [SW[k].map(s => s.m - s.se), SW[k].map(s => s.m + s.se)];
+    series.push({x: hs, y: SW.mlp.map(s => s.m), color: ORG, w: 2, band: band("mlp")}, {x: hs, y: SW.gcn.map(s => s.m), color: BLUE, w: 2.4, band: band("gcn")}, {x: hs, y: SW.lp.map(s => s.m), color: GREEN, w: 2, band: band("lp")});
+  }
+  leg.push({color: BLUE, t: "GCN"}, {color: ORG, t: "MLP (graph off)"}, {color: GREEN, t: "label propagation"});
+  let y2 = null, yt2 = null, gx = null;
+  if (S.shTheory) { const xs = Array.from({length: 101}, (_, i) => i / 100), gv = xs.map(h => Math.abs(SSL.gain(h, S.dbar, S.K))); series.push({x: xs, y: gv, color: PURP, w: 1.5, dash: [2, 3], ax2: true}, {x: [0, 1], y: [1, 1], color: PURP, w: 1, ax2: true}); y2 = [0, 2.5]; yt2 = [0, 0.5, 1, 1.5, 2, 2.5]; leg.push({color: PURP, t: "|SNR gain| (right axis)"}); }
+  const cur = R.gcn.hist.accTest[E];
+  drawLines(cv, {x: [0, 1], y: [0, 1], xt: [0, 0.2, 0.4, 0.6, 0.8, 1], yt: [0, 0.25, 0.5, 0.75, 1], fy: v => pct(v), fx: v => String(+v.toFixed(1)), xlab: "edge homophily h", ylab: "test accuracy after " + E + " epochs", y2, yt2, fy2: v => fm(v, 1), ylab2: y2 ? "gain" : null, c2: PURP, series, legend: leg, marks: S.src === "sbm" ? [{x: S.h, y: cur, color: NAVY}] : [], r: 14, msg: dn < SWH.length ? `computing the sweep: ${dn} of ${SWH.length} homophily values` : ""});
+  $("capr").innerHTML = `Every point is the mean over ${SW ? SW.ns : SWSEEDS()} random graphs (band = standard error) with your current settings, except homophily. The navy dot is the single graph on the left. Where the blue curve is <b>below</b> the orange one, the graph does harm. ${S.shTheory ? "The dotted purple line is a back-of-the-envelope signal-to-noise gain of averaging a node with its neighbours; the graph can only help where it is above 1 (formula under How it works)." : ""}`;
+}
+function drawRight() { const r = S.rsel; if (r === "sweep") sweepChart(); else if (r === "hop") hopChart(); else if (r === "loc") localChart(); else pcaChart(); }
+
+/* ---------- results ---------- */
+function drawNums() {
+  const g = G, e = S.epoch, hd = SSL.hopDist(g, S.lab), within2 = hd.filter(d => d > 0 && d <= 2).length, nolab = hd.filter(d => d === Infinity).length, nU = g.n - S.lab.length, rm = S.model, h = R[rm].hist;
+  const sec = t => `<div class="sec">${t}</div>`, row = (a, b) => `<div class="pr"><span>${a}</span><b>${b}</b></div>`;
+  let t = sec("Graph") + row("Nodes / edges", g.n + " / " + g.edges.length) + row("Mean degree", fm(g.dReal, 2)) + row("Edge homophily (realised)", g.hReal === null ? "–" : fm(g.hReal, 2)) +
+    row("Labelled nodes", S.lab.length + " of " + g.n) + row("Unlabelled within 2 hops of a label", pct(nU ? within2 / nU : 0)) + row("Unlabelled with no path to a label", nolab);
+  t += sec((rm === "lp" ? "Label propagation, step " : rm.toUpperCase() + ", epoch ") + e);
+  if (rm !== "lp") t += row("Training loss", fm(h.loss[e], 3)) + row("Accuracy on labelled nodes", pct(h.accTrain[e])) + row("Test loss (unlabelled)", fm(h.testLoss[e], 3));
+  t += row("Test accuracy (unlabelled)", pct(h.accTest[e], 1));
+  $("nums").innerHTML = t;
+  const dlt = R.gcn.hist.accTest[E] - R.mlp.hist.accTest[E];
+  $("cmp").innerHTML = `<table class="mtab"><tr><th>Test accuracy on unlabelled nodes</th><th>epoch ${e}</th><th>epoch ${E}</th></tr>` + [["gcn", "GCN (uses graph and features)"], ["mlp", "MLP (features only, graph off)"], ["lp", "Label propagation (graph and labels only)"]].map(([k, nm]) => `<tr class="${k === rm ? "sel" : ""}"><td>${nm}</td><td>${pct(R[k].hist.accTest[e], 1)}</td><td>${pct(R[k].hist.accTest[E], 1)}</td></tr>`).join("") + `</table><div class="cap" style="margin-top:6px"><b>Effect of the graph on this one graph</b> (GCN minus MLP, epoch ${E}): <b style="color:${dlt >= 0 ? GREEN : RED}">${dlt >= 0 ? "+" : "−"}${fm(Math.abs(100 * dlt), 1)} percentage points</b>. One graph is a small sample: with ${G.n - S.lab.length} test nodes one node is worth ${fm(100 / (G.n - S.lab.length), 1)} points, so use the sweep chart for the typical behaviour.</div>`;
+
+}
+
+/* ---------- top-level draw ---------- */
+function draw() {
+  S.epoch = Math.min(E, Math.max(0, Math.round(S.epoch)));
+  drawGraph(); curveChart(); drawRight(); drawNums(); setDetail();
+  const m = S.model, acc = R[m].hist.accTest[S.epoch];
+  $("chead").innerHTML = `${m === "gcn" ? "GCN" : m === "mlp" ? "MLP, graph structure off" : "Label propagation"} <span style="color:#888;text-transform:none;letter-spacing:0">· ${m === "lp" ? "step" : "epoch"} ${S.epoch} of ${E} · test accuracy ${pct(acc, 1)}</span>`;
+  $("status").innerHTML = `${S.epoch} <small>${m === "lp" ? "steps" : "epochs"} · test acc ${pct(acc)}</small>`;
+  $("legend").innerHTML = CC.slice(0, G.K).map((c, i) => `<span><b class="dot" style="background:${c}"></b>${CNAME[i]}</span>`).join("") + `<span>fill: prediction (paler = less sure)</span><span>border: true class</span><span><i style="border-color:${NAVY}"></i>dark ring: labelled</span>` + (S.shCross ? `<span><i class="d" style="border-color:#e48a8a"></i>edge between classes</span>` : "") + (S.shMark && S.colorBy === "pred" ? `<span><b class="dot" style="background:#fff;border:1.6px dashed ${RED}"></b>wrong</span>` : "");
+  $("capm").innerHTML = `${S.src === "sbm" ? "Homophily h = " + fm(S.h, 2) + " (realised " + (G.hReal === null ? "–" : fm(G.hReal, 2)) + "), mean degree " + fm(G.dReal, 1) + "." : "Zachary Karate Club: realised homophily " + fm(G.hReal, 2) + "."} <b>Click a node</b> to label or unlabel it (the models retrain at once).`;
+  $("labhint").textContent = S.manual ? `You chose ${S.lab.length} labelled nodes by hand.` : `${S.k} per class, chosen at random. Click nodes on the graph to change them.`;
+  $("play").innerHTML = S.playing ? "&#10074;&#10074;" : "&#9654;"; $("step").disabled = $("endb").disabled = S.epoch >= E; $("reset").disabled = S.epoch === 0; syncSliders();
+}
+
+/* ---------- sliders ---------- */
+const TOP = [
+  {k: "epoch", lab: "Epoch", lo: 0, hi: E, int: 1, tip: "Training is deterministic and already computed for all 200 epochs; this slider moves through it.", get: () => S.epoch, set: v => { S.playing = false; S.epoch = v; draw(); }},
+  {k: "h", lab: "Homophily h", lo: 0, hi: 1, step: 0.01, dec: 2, tip: "Fraction of edges that join two nodes of the same class (expected value under the block model). 0.5 = random for two classes.", get: () => S.h, set: v => { S.h = v; queue(3); }, off: () => S.src !== "sbm"},
+  {k: "s", lab: "Feature signal", lo: 0, hi: 3, step: 0.05, dec: 2, tip: "Distance of each class mean from the origin along its own axis, in units of the noise. 0 = features carry no information about the class.", get: () => S.s, set: v => { S.s = v; queue(2); }},
+  {k: "k", lab: "Labelled / class", lo: 1, hi: 10, int: 1, tip: "How many nodes of each class are labelled. This resets any nodes you toggled by hand.", get: () => S.k, set: v => { S.k = v; S.manual = false; queue(3); }}
+];
+const SET = [
+  {k: "n", lab: "Number of nodes", lo: 20, hi: 150, int: 1, tip: "Number of nodes in the generated graph.", get: () => S.n, set: v => { S.n = v; queue(3); }, off: () => S.src !== "sbm"},
+  {k: "dbar", lab: "Mean degree", lo: 1, hi: 10, step: 0.5, dec: 1, tip: "Average number of neighbours per node.", get: () => S.dbar, set: v => { S.dbar = v; queue(3); }, off: () => S.src !== "sbm"}
+];
+const TR = [{k: "speed", lab: "Play speed (epochs/s)", lo: 2, hi: 60, int: 1, tip: "How many epochs per second the play button advances.", get: () => S.speed, set: v => { S.speed = v; }}];
+const showV = (d, v) => d.int ? String(Math.round(v)) : v.toFixed(d.dec || 2);
+function mkSliders(list, box, cls) {
+  box.innerHTML = "";
+  for (const d of list) {
+    const g = document.createElement("div"); g.className = cls; g.id = "w_" + d.k; g.title = d.tip;
+    g.innerHTML = `<div class="row"><span>${d.lab}</span><input class="num" type="text" inputmode="decimal" id="nb_${d.k}" aria-label="value"></div><input type="range" id="sl_${d.k}" min="${d.lo}" max="${d.hi}" step="${d.step || 1}">`; box.appendChild(g);
+    const rg = $("sl_" + d.k), nb = $("nb_" + d.k);
+    rg.addEventListener("input", () => { const v = +rg.value; nb.value = showV(d, v); d.set(v); });
+    const commit = () => { let v = parseFloat(nb.value.replace(",", ".").replace("−", "-")); if (!isFinite(v)) { nb.value = showV(d, d.get()); nb.blur(); return; } v = Math.max(d.lo, Math.min(d.hi, v)); if (d.int) v = Math.round(v); rg.value = v; nb.value = showV(d, v); nb.blur(); d.set(v); };
+    nb.addEventListener("change", commit); nb.addEventListener("keydown", e => { if (e.key === "Enter") commit(); }); nb.addEventListener("blur", () => { nb.value = showV(d, d.get()); });
+    nb.title = "Type a value between " + d.lo + " and " + d.hi + " and press Enter";
+  }
+}
+function syncSliders() { for (const d of TOP.concat(SET, TR)) { const rg = $("sl_" + d.k), nb = $("nb_" + d.k), w = $("w_" + d.k); if (!rg) continue; rg.value = d.get(); if (document.activeElement !== nb) nb.value = showV(d, d.get()); if (d.off) w.classList.toggle("off", d.off()); } if (S.src === "karate") { $("nb_h").value = fm(G.hReal, 2); $("sl_h").value = G.hReal; } }
+
+/* ---------- play ---------- */
+let last = 0, acc = 0;
+function tick(now) { if (!S.playing) return; acc += (now - last) / 1000 * S.speed; last = now; const k = Math.floor(acc); acc -= k; S.epoch = Math.min(E, S.epoch + k); if (S.epoch >= E) S.playing = false; draw(); if (S.playing) requestAnimationFrame(tick); }
+function play() { if (S.epoch >= E) S.epoch = 0; S.playing = true; acc = 0; last = performance.now(); requestAnimationFrame(tick); draw(); }
+
+/* ---------- UI ---------- */
+function syncUI() {
+  document.querySelectorAll("input[name=model]").forEach(e => e.checked = e.value === S.model); document.querySelectorAll("input[name=src]").forEach(e => e.checked = e.value === S.src);
+  $("shOther").checked = S.shOther; $("shCross").checked = S.shCross; $("shMark").checked = S.shMark; $("shTheory").checked = S.shTheory; $("colorby").value = S.colorBy; $("wd").value = String(S.wd); $("rsel").value = S.rsel;
+  $("scn").value = S.scn; const sc = SCEN.find(x => x[0] === S.scn); $("scnhint").textContent = sc ? sc[2] : "Custom settings.";
+  $("sbmctl").innerHTML = ""; const kb = document.createElement("div"); kb.className = "srow" + (S.src !== "sbm" ? " off" : ""); kb.id = "w_K";
+  kb.innerHTML = `<div class="row"><span>Number of classes</span><select id="ksel"><option>2</option><option>3</option><option>4</option></select></div>`; $("sbmctl").appendChild(kb); $("ksel").value = String(S.K); $("ksel").onchange = e => { S.K = +e.target.value; S.manual = false; custom(); queue(3); };
+  const box = document.createElement("div"); $("sbmctl").appendChild(box); mkSliders(SET, box, "srow");
+}
+function custom() { S.scn = ""; $("scn").value = ""; $("scnhint").textContent = "Custom settings."; }
+function applyScenario(id) { const sc = SCEN.find(x => x[0] === id); S.playing = false; Object.assign(S, sc[3], {scn: id, manual: false, epoch: 0, hov: null}); syncUI(); mkSliders(TOP, $("cctl"), "grp sl"); mkSliders(TR, $("trctl"), "srow"); buildGraph(); buildFeatures(); trainAll(); S.epoch = 0; draw(); scheduleSweep(); }
+function bind() {
+  $("scn").innerHTML = SCEN.map(x => `<option value="${x[0]}">${x[1]}</option>`).join("") + `<option value="" hidden>Custom</option>`;
+  $("rsel").innerHTML = [["sweep", "Accuracy vs homophily"], ["hop", "Accuracy by hops to a label"], ["loc", "Accuracy by local homophily"], ["pca", "Hidden layer (PCA)"]].map(x => `<option value="${x[0]}">${x[1]}</option>`).join("");
+  $("play").onclick = () => { if (S.playing) { S.playing = false; draw(); } else play(); };
+  $("step").onclick = () => { S.playing = false; S.epoch = Math.min(E, S.epoch + 1); draw(); };
+  $("reset").onclick = () => { S.playing = false; S.epoch = 0; draw(); };
+  $("endb").onclick = () => { S.playing = false; S.epoch = E; draw(); };
+  $("scn").onchange = e => { if (e.target.value) applyScenario(e.target.value); };
+  document.querySelectorAll("input[name=model]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.model = e.value; draw(); } }));
+  document.querySelectorAll("input[name=src]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.src = e.value; S.manual = false; if (S.src === "karate") { S.K = 2; S.n = 34; } else { S.n = 60; } custom(); syncUI(); queue(3); } }));
+  $("shOther").onchange = e => { S.shOther = e.target.checked; draw(); }; $("shCross").onchange = e => { S.shCross = e.target.checked; draw(); }; $("shMark").onchange = e => { S.shMark = e.target.checked; draw(); };
+  $("shTheory").onchange = e => { S.shTheory = e.target.checked; draw(); };
+  $("colorby").onchange = e => { S.colorBy = e.target.value; draw(); };
+  $("wd").onchange = e => { S.wd = +e.target.value; custom(); queue(1); };
+  $("rsel").onchange = e => { S.rsel = e.target.value; drawRight(); };
+  $("newg").onclick = () => { S.seed++; S.manual = false; custom(); queue(3); };
+  $("labres").onclick = () => { S.manual = false; S.lab = SSL.pickLabeled(G.y, G.K, S.k, S.seed); queue(1); };
+  $("grid").addEventListener("mouseover", ev => { const nd = ev.target.closest("[data-n]"); if (nd) { S.hov = +nd.dataset.n; setDetail(); } });
+  $("grid").addEventListener("click", ev => {
+    const nd = ev.target.closest("[data-n]"); if (!nd) return; const i = +nd.dataset.n; S.hov = i;
+    const at = S.lab.indexOf(i); if (at >= 0) { if (S.lab.length <= 1) return; S.lab.splice(at, 1); } else S.lab.push(i); S.lab.sort((a, b) => a - b); S.manual = true; custom(); queue(1);
+  });
+  window.addEventListener("resize", draw);
+}
+bind(); applyScenario("homo");
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>

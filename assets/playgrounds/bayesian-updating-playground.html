@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script src="sb-theme.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bayesian Updating Lab</title>
+<style>
+  :root{--orange:#e8590c;--blue:#0877bd;--navy:#1b3b4f;--ink:#333;--muted:#777;--line:#ddd;--bg:#fff;--panel:#f7f7f7}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif}
+  #app{max-width:1180px;margin:0 auto;padding:0 20px 60px}
+  h1{font-size:36px;font-weight:700;letter-spacing:-.01em;margin:44px 0 10px;color:#222}
+  .blurb{color:#666;margin:0 0 30px;font-size:15px;max-width:820px}
+  select,button,input{font:inherit}
+  select{padding:5px 8px;border:1px solid #ccc;border-radius:4px;background:#fff;min-width:92px;font-size:12.5px}
+  #bar,#pbar{display:flex;flex-wrap:wrap;justify-content:flex-start;align-items:center;gap:16px 28px;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px 28px}
+  #bar .grp,#pbar .grp{display:flex;flex-direction:column;gap:4px}
+  #bar .grp.tr,#pbar .grp.tr{flex-direction:row;align-items:center;gap:10px}
+  #bar label,#pbar label{font-size:13px;font-weight:600;color:#444}
+  .btn{border:1px solid #ccc;background:#fff;border-radius:50%;width:38px;height:38px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;font-size:16px;color:#444}
+  .btn:hover{background:#f0f0f0}
+  .btn:disabled{opacity:.35;cursor:default}.btn:disabled:hover{background:#fff}
+  #play{width:52px;height:52px;background:var(--navy);border-color:var(--navy);color:#fff;font-size:20px}
+  #play:hover{background:#12293a}
+  #play:disabled:hover{background:var(--navy)}
+  #pause{font-size:13px;letter-spacing:-1px}
+  #step{font-size:12px;width:auto;border-radius:19px;padding:0 14px}
+  #status{font-size:22px;font-weight:300;letter-spacing:.02em;font-variant-numeric:tabular-nums;color:#222}
+  #status small{display:block;margin-top:1px;font-size:13px;color:#888;letter-spacing:0}
+  #main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:0 36px;margin-top:34px;align-items:start}
+  .head{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 12px}
+  .acc{color:#0877bd;font-weight:600}
+  canvas{display:block}
+  #gridwrap{width:100%}
+  #grid{display:block;width:100%;height:auto;border:1px solid #cfd3d6;border-radius:3px;background:#fff;user-select:none;-webkit-user-select:none;touch-action:pan-y}
+  #grid.paint{cursor:crosshair;touch-action:none}
+  #grid text{font-family:Roboto,"Helvetica Neue",Helvetica,Arial,sans-serif;pointer-events:none}
+  .legend{display:flex;flex-wrap:wrap;gap:6px 22px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .bar{display:inline-block;width:120px;height:10px;border-radius:2px;background:linear-gradient(90deg,rgba(232,89,12,.8),#fff 50%,rgba(8,119,189,.8));border:1px solid #d6d6d6}
+  #detail{margin-top:14px;border:1px solid var(--line);border-radius:8px;padding:10px 14px;font-size:12.5px;color:#444;min-height:96px;background:#fff}
+  #detail b{color:#222;font-weight:700}
+  #detail table{border-collapse:collapse;margin-top:5px;font-variant-numeric:tabular-nums}
+  #detail td{padding:1px 14px 1px 0;font-size:12.5px}
+  #detail tr.best td{font-weight:700;color:#0b5f96}
+  #lastup{margin-top:10px;font-size:12.5px;color:#555;line-height:1.5;min-height:38px}
+  .chartbox{margin:22px 0 0}
+  #cchart{margin-top:30px}
+  #cctl,#pbar .pc{display:flex;flex-wrap:wrap;gap:12px 22px;align-items:flex-end;flex:1;min-width:0}
+  #cctl .grp,#pbar .pc .grp{display:flex;flex-direction:column;gap:4px}
+  #cctl .sl,#pbar .sl{flex:1;min-width:132px}
+  #cctl .sl .row,#pbar .sl .row{display:flex;justify-content:space-between;font-size:13px;font-weight:600;color:#444}
+  #cctl .sl .row b,#pbar .sl .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  #cctl input[type=range],#pbar input[type=range]{margin:2px 0 0}
+  #cdata{min-width:178px}
+  .chartbox .ct{font-size:13px;font-weight:700;color:#222;margin-bottom:6px}
+  .chartframe{border:1px solid #d3d6d8;border-radius:6px;background:#fafafa;padding:8px 10px 6px}
+  #chart{width:100%;height:235px}
+  .note{font-size:12px;color:var(--muted);margin:6px 0 0 4px}
+  .card{border:1px solid var(--line);border-radius:8px;padding:12px 14px;margin-bottom:14px;background:#fff}
+  .nums{display:grid;grid-template-columns:1fr auto;gap:6px 10px;font-size:13px;align-items:baseline}
+  .nums b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  .nums .sec{grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:#888;margin-top:6px}
+  .nums .sec:first-child{margin-top:0}
+  .slider{margin:9px 0 2px}
+  .slider .row{display:flex;justify-content:space-between;font-size:12.5px;color:#555}
+  .slider .row b{font-weight:500;color:#222;font-variant-numeric:tabular-nums}
+  .slider .hint{font-size:11.5px;color:#999;margin-top:1px}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:16px;margin:3px 0 0;background:transparent;cursor:pointer}
+  input[type=range]::-webkit-slider-runnable-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-moz-range-track{height:3px;background:#cfd4d8;border-radius:2px}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:12px;height:12px;border-radius:50%;background:var(--navy);border:0;margin-top:-4.5px}
+  input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;background:var(--navy);border:0}
+  .setcard{border:1.5px solid #0877bd;background:#f4f9fd;padding-top:4px}
+  .setcard .sub{font-size:11.5px;font-weight:500;letter-spacing:.05em;color:#0877bd;text-transform:uppercase;margin:14px 0 2px;border-top:1px solid #d3e6f3;padding-top:10px}
+  .setcard .sub:first-child{border-top:0;margin-top:8px;padding-top:0}
+  .radio{display:flex;gap:8px;align-items:flex-start;font-size:13px;color:#444;margin:6px 0;cursor:pointer}
+  .radio input{margin-top:3px}
+  .radio small{display:block;color:#999;font-size:11.5px}
+  .row2{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:8px 0}
+  .tools{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+  .tool{border:1px solid #c5d5e2;background:#fff;border-radius:5px;padding:4px 9px;cursor:pointer;font-size:12.5px;color:#333}
+  .tool:hover{background:#eef5fb}
+  .tool.on{background:var(--navy);border-color:var(--navy);color:#fff}
+  .hint{font-size:11.5px;color:#999}
+  .linkbtn{background:none;border:0;padding:0;color:#0877bd;font-size:12px;cursor:pointer;text-decoration:underline}
+  .divider{position:relative;margin:52px 0 0;border-top:1px solid #e3e3e3;height:0}
+  .divider button{position:absolute;left:50%;top:-23px;transform:translateX(-50%);width:46px;height:46px;border-radius:50%;background:#fff;border:1px solid #e0e0e0;box-shadow:0 2px 6px rgba(0,0,0,.12);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .prose{max-width:680px;margin:0 auto;padding-top:90px}
+  .prose h2{font-size:26px;font-weight:600;margin:0 0 18px;color:#222}
+  .prose h3{font-size:17px;font-weight:600;margin:26px 0 6px;color:#333}
+  .prose p,.prose li{font-size:16px;line-height:1.7;color:#444}
+  .prose p{margin:0 0 12px}
+  .prose ul{padding-left:20px;margin:6px 0}
+  .prose .eq{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:2px 7px}
+  .prose .eqb{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:14px;background:#f3f5f6;border-radius:4px;padding:8px 12px;margin:8px 0 14px;overflow-x:auto;line-height:1.6}
+  .warn{background:#fff7ec;border:1px solid #f2d3a6;border-radius:6px;padding:10px 12px;font-size:14px;color:#6a4a14;margin:12px 0}
+  .cwrap{width:100%}
+  #scatter{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  .pgrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .pgrid .ph{font-size:12px;font-weight:500;letter-spacing:.04em;color:#555;text-transform:uppercase;margin:0 0 8px}
+  .pgrid canvas{width:100%;aspect-ratio:1/1;border:1px solid #cfd3d6;border-radius:3px;background:#fff}
+  #c3d{cursor:grab;touch-action:none}#c3d.drag{cursor:grabbing}
+  .vbar{display:grid;grid-template-columns:150px 1fr 60px;gap:6px 10px;align-items:center;font-size:12.5px;color:#444;margin-top:5px}
+  .vbar .tr{position:relative;height:12px;background:#eceff1;border-radius:3px}
+  .vbar .fl{position:absolute;left:0;top:0;bottom:0;border-radius:3px;background:#0877bd}
+  .vbar .fl.o{background:#e8590c}
+  .vbar .mk{position:absolute;top:-3px;bottom:-3px;width:2px;background:#1b3b4f}
+  .vbar b{font-weight:500;text-align:right;font-variant-numeric:tabular-nums}
+  .chk{display:flex;gap:8px;align-items:center;font-size:12.5px;color:#444;margin:6px 0;cursor:pointer}
+  select{max-width:100%}
+  #cv{display:block;width:100%;aspect-ratio:4/3;border:1px solid #cfd3d6;border-radius:3px;background:#fff;cursor:crosshair;touch-action:none;user-select:none;-webkit-user-select:none}
+  #cv.grab{cursor:grab}#cv.drag{cursor:grabbing}
+  .sw{display:inline-block;width:11px;height:11px;border-radius:50%;border:1.5px solid #fff;box-shadow:0 0 0 1px #aaa}
+  .rg{display:inline-block;width:13px;height:13px;border-radius:50%;border:1.5px solid #222;vertical-align:-2px}.rg.th{border-width:3px}
+  .ln{display:inline-block;width:26px;height:0;border-top:2px solid #222;vertical-align:middle}.ln.da{border-top-style:dashed;border-top-width:1.5px}
+  .bd{display:inline-block;width:26px;height:10px;border-radius:2px}
+  #detail{min-height:70px}
+  #nums{grid-template-columns:1fr;gap:6px}
+  #nums .pr{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+  #nums .pr b{font-weight:500;font-variant-numeric:tabular-nums;color:#222;text-align:right}
+  #nums .sec{grid-column:1/-1}
+  #bar{margin-bottom:0;align-items:flex-end}#cctl{align-items:flex-end}
+  #cctl{flex:1;gap:12px 20px}
+  #cctl .sl{flex:1 1 0;min-width:118px}
+  #cctl{flex-wrap:nowrap}
+  .kopts{display:flex;gap:16px;align-items:flex-start;min-height:34px}
+  .kopts label{display:flex;gap:7px;align-items:flex-start;cursor:pointer;font-weight:400;font-size:13px;margin:0;color:#222}
+  .kopts input{margin:3px 0 0}
+  .kopts small{display:block;color:#777;font-size:11.5px;line-height:1.25;margin-top:1px;max-width:112px}
+  input.num{width:52px;font-size:12.5px;padding:1px 5px;text-align:right;border:1px solid #ccc;border-radius:3px;background:#fff;color:#222;font-variant-numeric:tabular-nums}
+  input.num:focus{outline:2px solid #0877bd33;border-color:#0877bd}
+  #hover{margin-top:6px;color:#555;min-height:20px;font-variant-numeric:tabular-nums}
+  .seg{display:flex;gap:6px;margin:8px 0 2px}.seg .tool{flex:1;text-align:center}
+  .tool.o.on{background:#e8590c;border-color:#e8590c}.tool.b.on{background:#0877bd;border-color:#0877bd}
+
+  #cv{aspect-ratio:16/10;cursor:default}
+  .pgrid{margin-top:20px}
+  .pgrid .ph{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:30px}
+  .pgrid .ph select{min-width:0;max-width:62%}
+  .pgrid canvas{aspect-ratio:1/1;cursor:default}
+  #cl2{aspect-ratio:1/1}
+  .fbtns{display:grid;grid-template-columns:repeat(11,1fr);gap:6px;margin:12px 0 0}
+  .fbtns button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:9px 0;font-size:13px;cursor:pointer;color:#222;font-variant-numeric:tabular-nums}
+  .fbtns button:hover:not(:disabled){background:var(--navy);color:#fff;border-color:var(--navy)}
+  .fbtns button:disabled{opacity:.45;cursor:default}
+  table.tbl{border-collapse:collapse;width:100%;font-variant-numeric:tabular-nums;font-size:12.5px;margin-top:6px}
+  table.tbl th{font-weight:600;font-size:11px;letter-spacing:.04em;text-transform:uppercase;color:#888;text-align:right;padding:2px 8px 4px 0;border-bottom:1px solid #e3e3e3}
+  table.tbl th:first-child,table.tbl td:first-child{text-align:left}
+  table.tbl td{text-align:right;padding:3px 8px 3px 0}
+  table.tbl tr.sel td{font-weight:700;color:#0b5f96}
+  table.tbl tr.ref td{color:#777;font-style:italic}
+  .cap{font-size:12px;color:#666;line-height:1.45;margin-top:8px}
+  .cap b{color:#333;font-weight:700}
+  #lam{margin-left:14px}
+  .msec{display:none}
+  .msec.on{display:block}
+  .lg{display:inline-block;width:12px;height:12px;border-radius:2px;vertical-align:-2px;margin-right:4px}
+  #detail p{margin:0 0 6px}
+  #detail p:last-child{margin-bottom:0}
+  .bad{color:#b4430a}
+
+  /* ---- Bayes additions ---- */
+  #bar{align-items:flex-end}
+  .btns3{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}
+  .btns3 button{border:1px solid #c5d5e2;background:#fff;border-radius:6px;padding:8px 0;font-size:12.5px;cursor:pointer;color:#222}
+  .btns3 button:hover{background:#eef5fb}
+  .btns3 button.span2{grid-column:span 2}
+  .btns3 button.h{background:var(--navy);border-color:var(--navy);color:#fff}.btns3 button.h:hover{background:#12293a}
+  #cv.clk{cursor:crosshair}
+  #cv{aspect-ratio:2/1}
+  .lgd{display:flex;flex-wrap:wrap;gap:6px 18px;margin:10px 0 0 2px;font-size:12px;color:#555;align-items:center}
+  .lgd span{display:inline-flex;align-items:center;gap:6px}
+  .lgd i{display:inline-block;width:20px;height:0;border-top:2px solid #333}
+  .lgd i.d{border-top-style:dashed}.lgd i.o{border-top-style:dotted}
+  .lgd b.sq{display:inline-block;width:12px;height:12px;border-radius:2px}
+  .lgd b.dot{display:inline-block;width:9px;height:9px;border-radius:50%}
+  @media (max-width:980px){#main{grid-template-columns:1fr}#side{margin-top:30px}}
+</style>
+</head>
+<body>
+<div id="app">
+  <h1>Bayesian Updating Lab</h1>
+  <p class="blurb">Bayesian inference keeps a <b>distribution</b> over the unknown quantity instead of a single estimate. You start with a <b>prior</b> (what you believed before), multiply by the <b>likelihood</b> (how well each value explains the data) and renormalise to get the <b>posterior</b>. For three classic models every step has a closed form, so this page shows the exact curves, not an approximation: the <b>bias of a coin</b>, the <b>mean of a Gaussian</b>, and a <b>regression line</b>. Add data, change the prior, and see how many observations it takes to overrule a <b>wrong prior</b>. Choose the mode at the top of <b>Settings</b>.</p>
+
+  <div id="bar"><div id="cctl"></div></div>
+
+  <div id="main">
+    <div id="stage">
+      <div class="head" id="chead"></div>
+      <canvas id="cv"></canvas>
+      <div class="lgd" id="legend"></div>
+      <div class="cap" id="capm"></div>
+      <div class="pgrid">
+        <div><div class="ph"><span id="lhead"></span></div><canvas id="cl"></canvas><div class="cap" id="capl"></div></div>
+        <div><div class="ph"><select id="rsel" aria-label="Choose the chart"></select></div><canvas id="cr"></canvas><div class="cap" id="capr"></div></div>
+      </div>
+      <div id="detail" class="card" style="margin:16px 0 0"></div>
+    </div>
+
+    <div id="side">
+      <div class="head acc">Settings</div>
+      <div class="card setcard">
+        <div class="sub">Mode</div>
+        <label class="radio"><input type="radio" name="mode" value="1" checked><span>1 &middot; Coin<small>Beta prior, heads and tails</small></span></label>
+        <label class="radio"><input type="radio" name="mode" value="2"><span>2 &middot; Gaussian mean<small>measure a quantity with known noise</small></span></label>
+        <label class="radio"><input type="radio" name="mode" value="3"><span>3 &middot; Regression line<small>click points, see all lines that fit</small></span></label>
+
+        <div class="sub">Scenario</div>
+        <div class="row2" style="margin-top:2px"><select id="scn" style="width:100%"></select></div>
+        <div class="hint" id="scnhint"></div>
+
+        <div class="sub">Data</div>
+        <div class="btns3" id="dbtns"></div>
+        <div class="hint" id="dhint" style="margin-top:4px"></div>
+        <div class="row2" style="margin-bottom:0"><button class="linkbtn" id="reseed">New random sample</button></div>
+
+        <div class="sub">Show</div>
+        <label class="chk"><input type="checkbox" id="shTruth" checked>The true value (green), used for the simulated data</label>
+        <label class="chk msec" data-m="12"><input type="checkbox" id="shLik" checked>The likelihood (grey)</label>
+        <label class="chk msec" data-m="12"><input type="checkbox" id="shCI" checked>95% credible interval</label>
+        <label class="chk msec" data-m="1"><input type="checkbox" id="shPts" checked>Point estimates: MAP, posterior mean, maximum likelihood</label>
+        <div class="msec" data-m="3">
+          <label class="radio"><input type="radio" name="rm" value="samples" checked><span>Posterior: random lines<small>each line is one plausible (intercept, slope) drawn from the posterior</small></span></label>
+          <label class="radio"><input type="radio" name="rm" value="map"><span>Point estimate only (MAP)<small>the single best line; hides the uncertainty</small></span></label>
+          <label class="chk"><input type="checkbox" id="shBand" checked>95% predictive band</label>
+        </div>
+      </div>
+      <div class="head" style="margin-top:22px">Results</div>
+      <div class="card"><div class="nums" id="nums"></div></div>
+    </div>
+  </div>
+
+  <div class="divider"><button onclick="document.getElementById('how').scrollIntoView()" title="How it works"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg></button></div>
+
+  <div class="prose" id="how">
+    <h2>How it works</h2>
+    <p>Everything on this page is computed in your browser, and every curve is exact: for each of the three models the prior and the likelihood combine into a posterior of the same family (a <b>conjugate</b> pair), so nothing is sampled or approximated. Only the random lines in Mode 3 and the simulated data are random.</p>
+
+    <h3>The one rule behind all three modes</h3>
+    <div class="eqb">posterior(&theta;) &prop; prior(&theta;) &times; likelihood(data | &theta;)</div>
+    <p>The grey likelihood curve says how well each value of the unknown explains the data. Multiplying it by the prior and rescaling to area 1 gives the posterior. With a flat prior the posterior equals the (rescaled) likelihood, which is why the grey and blue curves coincide in the default coin scenario.</p>
+
+    <h3>Mode 1: the coin (Beta prior)</h3>
+    <ul>
+      <li><b>Prior.</b> Beta(a, b) with a = (prior mean) &times; (strength) and b = (1 &minus; prior mean) &times; (strength). It acts like <b>strength = a + b imaginary flips</b>: a heads and b tails seen before the first real flip.</li>
+      <li><b>Update.</b> With h heads and t tails the posterior is Beta(a + h, b + t). The data only add to the counts, so the order of the flips does not matter and updating one flip at a time gives the same posterior as updating once.</li>
+      <li><b>Prior against data.</b> The posterior mean is (a + h) / (a + b + n), a weighted average of the prior mean and h/n. The data get the weight n / (n + strength). At n = strength the prior and the data count equally.</li>
+      <li><b>MAP and mean.</b> The MAP is the highest point of the posterior, (A &minus; 1) / (A + B &minus; 2) for A = a + h and B = b + t. It differs from the mean and is undefined or sits at an end when A or B is at most 1. The 95% interval shown is the equal-tailed one: 2.5% of the posterior probability on each side.</li>
+    </ul>
+
+    <h3>Mode 2: the mean of a Gaussian (known noise)</h3>
+    <ul>
+      <li>Each measurement is the unknown mean plus noise with a known standard deviation &sigma;. The prior is Normal(&mu;&#8320;, &tau;&#8320;&sup2;).</li>
+      <li>The posterior is Normal again. <b>Precisions</b> (1 / variance) add: 1/&tau;&#8320;&sup2; + n/&sigma;&sup2;. The posterior mean is the precision-weighted average of the prior mean and the sample mean, with weight n&tau;&#8320;&sup2; / (n&tau;&#8320;&sup2; + &sigma;&sup2;) on the data. Because a Gaussian is symmetric, its MAP equals its mean.</li>
+      <li>A new measurement has two sources of uncertainty, the noise &sigma; and what is still unknown about the mean, so the predicted variance is &sigma;&sup2; + &tau;&#8345;&sup2;.</li>
+    </ul>
+
+    <h3>Mode 3: the regression line</h3>
+    <ul>
+      <li>The model is y = w&#8320; + w&#8321;x + noise, with known noise &sigma; and independent Normal(0, &tau;&sup2;) priors on both weights.</li>
+      <li>The posterior over (w&#8320;, w&#8321;) is a two-dimensional Gaussian with precision matrix I/&tau;&sup2; + &Phi;&#7511;&Phi;/&sigma;&sup2; and mean (posterior covariance) &times; &Phi;&#7511;y/&sigma;&sup2;, where &Phi; has a row (1, x) per point. The heat map shows this density; the thin lines in the main plot are draws from it.</li>
+      <li>The posterior mean is exactly the <b>ridge regression</b> solution with penalty &sigma;&sup2;/&tau;&sup2;. So the MAP line is ridge regression, and the posterior adds the uncertainty that ridge regression leaves out.</li>
+      <li>The prediction variance at x is &sigma;&sup2; + &phi;&#7511;(posterior covariance)&phi; with &phi; = (1, x). It is smallest near the data and grows away from them.</li>
+    </ul>
+
+    <h3>What the plots mean</h3>
+    <ul>
+      <li><b>Running estimates</b> compare the posterior mean with the raw estimate (h/n or the sample mean). Early on the posterior is pulled towards the prior mean; later the two agree.</li>
+      <li><b>Weight of the data</b> is the share of the posterior mean that comes from the data rather than from the prior.</li>
+      <li><b>Flips needed to overrule the prior</b> uses the expected data: the posterior mean is then (prior mean &times; s + n&theta;) / (s + n), so its distance to the true &theta; is s &middot; |prior mean &minus; &theta;| / (s + n). Requiring this to be at most &epsilon; = 0.05 gives n &ge; s(|prior mean &minus; &theta;| / &epsilon; &minus; 1). For a prior mean of 0.8 and &theta; = 0.3 that is n &ge; 9s. In the Gaussian mode the same argument gives n &ge; (&sigma;&sup2;/&tau;&#8320;&sup2;)(|&mu;&#8320; &minus; &mu;| / &epsilon; &minus; 1) with &epsilon; = 0.1.</li>
+    </ul>
+
+    <h3>What I measured with this page's code</h3>
+    <p><b>How long a wrong prior lasts (coin).</b> True &theta; = 0.3, prior mean 0.8, 2000 simulated runs per row. The middle column is the formula above; the right column is the simulated number of flips after which the posterior mean stays within 0.05 of 0.3 (median, with the 10% and 90% quantiles in brackets, looked at up to 3000 flips).</p>
+    <table class="tbl" style="max-width:600px"><tr><th>Prior strength</th><th>formula, expected data</th><th>simulated: stays within 0.05 from</th></tr>
+      <tr><td>2</td><td>18</td><td>107 flips [34, 315]</td></tr>
+      <tr><td>10</td><td>90</td><td>136 flips [48, 365]</td></tr>
+      <tr><td>30</td><td>270</td><td>308 flips [156, 616]</td></tr>
+      <tr><td>100</td><td>900</td><td>946 flips [635, 1346]</td></tr>
+    </table>
+    <p>The formula is a good guide when the prior is strong. For weak priors it is too optimistic, because with few flips the raw share of heads itself fluctuates by more than 0.05.</p>
+    <p><b>Credible intervals and a wrong prior (coin).</b> A 95% credible interval is a statement about your belief under the model. To see how it behaves if the model is wrong, I fixed the true &theta; = 0.3 and counted, over 4000 simulated data sets per cell, how often the 95% interval contained 0.3:</p>
+    <table class="tbl" style="max-width:600px"><tr><th>Prior</th><th>n = 10</th><th>n = 20</th><th>n = 100</th><th>n = 300</th></tr>
+      <tr><td>Flat, Beta(1, 1)</td><td>91.9%</td><td>97.9%</td><td>95.2%</td><td>94.6%</td></tr>
+      <tr><td>Confident and wrong, Beta(24, 6)</td><td>0.0%</td><td>0.0%</td><td>15.8%</td><td>57.5%</td></tr>
+      <tr><td>Confident and right, Beta(9, 21)</td><td>100.0%</td><td>99.9%</td><td>97.4%</td><td>95.3%</td></tr>
+    </table>
+    <div class="warn"><b>Read this carefully.</b> These are frequencies at one fixed true value, which is a frequentist question. A credible interval only promises 95% on average if the true value really is drawn from the prior. A confident wrong prior produces narrow intervals that miss the truth almost every time at small n, and 300 flips still leave it missing 42% of the time here. The posterior is only as trustworthy as the prior and the model.</div>
+    <p><b>Shrinkage in Gaussian measurements.</b> The weight on the data, n&tau;&#8320;&sup2; / (n&tau;&#8320;&sup2; + &sigma;&sup2;), for &sigma; = 1: with &tau;&#8320; = 3 it is 0.900 after one measurement and 0.978 after five; with a confident prior &tau;&#8320; = 0.5 it is 0.200, 0.556, 0.833 and 0.962 after 1, 5, 20 and 100 measurements.</p>
+    <p><b>A tight prior in regression.</b> True line (0, 1.5), noise 0.3, x uniform on [&minus;1, 1], 1000 runs per row. The posterior mean slope is averaged over runs, with the least-squares slope and the share of runs in which the 95% interval for the slope contains the truth:</p>
+    <table class="tbl" style="max-width:700px"><tr><th>Prior sd &tau;</th><th>points</th><th>mean posterior slope</th><th>mean least-squares slope</th><th>interval contains 1.5</th></tr>
+      <tr><td>0.3</td><td>3</td><td>0.574</td><td>1.514</td><td>1.8%</td></tr>
+      <tr><td>0.3</td><td>5</td><td>0.832</td><td>1.506</td><td>7.6%</td></tr>
+      <tr><td>0.3</td><td>20</td><td>1.290</td><td>1.502</td><td>55.2%</td></tr>
+      <tr><td>0.3</td><td>100</td><td>1.455</td><td>1.500</td><td>86.8%</td></tr>
+      <tr><td>2</td><td>3</td><td>1.364</td><td>1.514</td><td>95.0%</td></tr>
+      <tr><td>2</td><td>20</td><td>1.497</td><td>1.502</td><td>95.3%</td></tr>
+    </table>
+    <p>The tight prior shrinks the slope hard; with a vague prior (&tau; = 2) the posterior mean is close to least squares and the intervals cover about 95% of the time. (For three points the least-squares slope is averaged over the runs where it exists.)</p>
+
+    <h3>Checks I ran</h3>
+    <ul>
+      <li>The special functions behind the Beta distribution (log-gamma, the Beta cdf and its quantiles for the credible intervals) agree with SciPy to about 1e-14 on the test points.</li>
+      <li>For all three models, the closed-form posteriors agree with a <b>brute-force posterior</b> computed by multiplying prior and likelihood on a fine grid and normalising, which uses none of the conjugate formulas. Wherever the grid covers the whole distribution and is fine enough, the differences in mean and spread are at rounding level (about 1e-15). The one exception is the coin with a U-shaped Beta, whose spike at the end needed a change of variable and still differs by 2.5e-7. My first, coarser grids showed larger differences (up to 0.1 in a covariance); in each case I traced this to the grid (too narrow, or too coarse for a spike) and not to the formulas.</li>
+      <li>A second implementation of the regression formulas in NumPy matches to 4e-16. Updating one point at a time, and updating in reversed order, gives the same posterior as updating all at once (differences below 3e-16).</li>
+      <li>For data generated and clicked in the page itself, the numbers shown by the page match brute-force grids (coin mean exactly, interval ends to about 1e-6, the grid resolution; Gaussian and regression to rounding).</li>
+    </ul>
+
+    <h3>What this page leaves out</h3>
+    <ul>
+      <li>The noise level &sigma; is assumed known. With unknown noise the posterior for the mean is no longer Gaussian (it involves a Student-t distribution); this page does not cover that.</li>
+      <li>Only one-parameter and two-parameter conjugate models. Most real models have no closed form and need approximation such as MCMC or variational inference.</li>
+      <li>No model comparison: the page does not compute the marginal likelihood, so it cannot tell you which prior is better supported by the data.</li>
+      <li>Simulated data come from exactly the model the page assumes. Real data rarely do, and the interval table above shows what a wrong assumption costs.</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+      <li>Gelman, A., Carlin, J. B., Stern, H. S., Dunson, D. B., Vehtari, A., Rubin, D. B. <i>Bayesian Data Analysis</i>, 3rd edition. Chapman &amp; Hall/CRC Press, 2013. Single-parameter models (Beta-Binomial, Normal).</li>
+      <li>Bishop, C. M. <i>Pattern Recognition and Machine Learning</i>. Springer, 2006. Chapter 3, Linear Models for Regression (Bayesian linear regression).</li>
+      <li>Murphy, K. P. <i>Probabilistic Machine Learning: An Introduction</i>. MIT Press, 2022.</li>
+    </ul>
+
+  </div>
+</div>
+<script>/* Closed-form Bayesian updating: Beta-Binomial, Gaussian mean (known variance), Bayesian linear regression (known noise). */
+const BU = (function () {
+  "use strict";
+  const LG = [0.99999999999980993, 676.5203681218851, -1259.1392167224028, 771.32342877765313, -176.61502916214059, 12.507343278686905, -0.13857109526572012, 9.9843695780195716e-6, 1.5056327351493116e-7];
+  function lgamma(x) {
+    if (x < 0.5) return Math.log(Math.PI / Math.abs(Math.sin(Math.PI * x))) - lgamma(1 - x);
+    x -= 1; let a = LG[0]; const t = x + 7.5;
+    for (let i = 1; i < 9; i++) a += LG[i] / (x + i);
+    return 0.5 * Math.log(2 * Math.PI) + (x + 0.5) * Math.log(t) - t + Math.log(a);
+  }
+  const lbeta = (a, b) => lgamma(a) + lgamma(b) - lgamma(a + b);
+  function betaPdf(x, a, b) { if (x <= 0 || x >= 1) return (x === 0 && a === 1) || (x === 1 && b === 1) ? Math.exp(-lbeta(a, b)) : (a < 1 && x <= 0) || (b < 1 && x >= 1) ? Infinity : 0; return Math.exp((a - 1) * Math.log(x) + (b - 1) * Math.log(1 - x) - lbeta(a, b)); }
+  function betacf(a, b, x) {
+    const FP = 1e-300, qab = a + b, qap = a + 1, qam = a - 1;
+    let c = 1, d = 1 - qab * x / qap; if (Math.abs(d) < FP) d = FP; d = 1 / d; let h = d;
+    for (let m = 1; m <= 400; m++) {
+      const m2 = 2 * m; let aa = m * (b - m) * x / ((qam + m2) * (a + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d; h *= d * c;
+      aa = -(a + m) * (qab + m) * x / ((a + m2) * (qap + m2));
+      d = 1 + aa * d; if (Math.abs(d) < FP) d = FP; c = 1 + aa / c; if (Math.abs(c) < FP) c = FP; d = 1 / d;
+      const del = d * c; h *= del; if (Math.abs(del - 1) < 3e-15) break;
+    }
+    return h;
+  }
+  function betaCdf(x, a, b) {
+    if (x <= 0) return 0; if (x >= 1) return 1;
+    const bt = Math.exp(a * Math.log(x) + b * Math.log(1 - x) - lbeta(a, b));
+    return x < (a + 1) / (a + b + 2) ? bt * betacf(a, b, x) / a : 1 - bt * betacf(b, a, 1 - x) / b;
+  }
+  function betaQ(p, a, b) { let lo = 0, hi = 1; for (let i = 0; i < 60; i++) { const m = (lo + hi) / 2; if (betaCdf(m, a, b) < p) lo = m; else hi = m; } return (lo + hi) / 2; }
+  const normPdf = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2) / (s * Math.sqrt(2 * Math.PI));
+
+  /* ---- coin: prior Beta(a,b), h heads, t tails ---- */
+  function coin(a, b, h, t) {
+    const A = a + h, B = b + t, n = A + B;
+    let mode = null; if (A > 1 && B > 1) mode = (A - 1) / (A + B - 2); else if (A <= 1 && B > 1) mode = 0; else if (A > 1 && B <= 1) mode = 1;
+    return {A, B, mean: A / n, sd: Math.sqrt(A * B / (n * n * (n + 1))), mode, ci: [betaQ(0.025, A, B), betaQ(0.975, A, B)]};
+  }
+  /* ---- Gaussian mean, known sigma: prior N(mu0, tau0^2); data array ---- */
+  function gauss(mu0, tau0, sigma, data) {
+    const n = data.length, sx = data.reduce((s, v) => s + v, 0), prec = 1 / (tau0 * tau0) + n / (sigma * sigma);
+    const taun = Math.sqrt(1 / prec), mun = (mu0 / (tau0 * tau0) + sx / (sigma * sigma)) / prec;
+    return {n, xbar: n ? sx / n : null, mun, taun, w: n * tau0 * tau0 / (n * tau0 * tau0 + sigma * sigma), predSd: Math.sqrt(sigma * sigma + taun * taun)};
+  }
+  /* ---- Bayesian linear regression, basis [1, x], prior w ~ N(m0, P0^{-1}), noise precision beta ---- */
+  const inv2 = M => { const d = M[0][0] * M[1][1] - M[0][1] * M[1][0]; return [[M[1][1] / d, -M[0][1] / d], [-M[1][0] / d, M[0][0] / d]]; };
+  function linregGen(m0, P0, beta, pts) {
+    let P = [[P0[0][0], P0[0][1]], [P0[1][0], P0[1][1]]];
+    let r = [P0[0][0] * m0[0] + P0[0][1] * m0[1], P0[1][0] * m0[0] + P0[1][1] * m0[1]];
+    for (const [x, y] of pts) { P[0][0] += beta; P[0][1] += beta * x; P[1][0] += beta * x; P[1][1] += beta * x * x; r[0] += beta * y; r[1] += beta * x * y; }
+    const S = inv2(P);
+    return {P, S, m: [S[0][0] * r[0] + S[0][1] * r[1], S[1][0] * r[0] + S[1][1] * r[1]]};
+  }
+  function linreg(tau, sigma, pts) { const a = 1 / (tau * tau); return linregGen([0, 0], [[a, 0], [0, a]], 1 / (sigma * sigma), pts); }
+  const predVar = (post, x, sigma) => sigma * sigma + post.S[0][0] + 2 * x * post.S[0][1] + x * x * post.S[1][1];
+  function ols(pts) {
+    const n = pts.length; if (n < 2) return null;
+    let sx = 0, sy = 0, sxx = 0, sxy = 0; for (const [x, y] of pts) { sx += x; sy += y; sxx += x * x; sxy += x * y; }
+    const d = n * sxx - sx * sx; if (Math.abs(d) < 1e-9) return null;
+    const w1 = (n * sxy - sx * sy) / d; return [(sy - w1 * sx) / n, w1];
+  }
+  function mulberry32(a) { return function () { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+  function randn(rng) { let u = 0; while (u === 0) u = rng(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * rng()); }
+  function sampleZ(post, z0, z1) { // w = m + L z, L = Cholesky factor of S
+    const S = post.S, l00 = Math.sqrt(S[0][0]), l10 = S[1][0] / l00, l11 = Math.sqrt(Math.max(S[1][1] - l10 * l10, 0));
+    return [post.m[0] + l00 * z0, post.m[1] + l10 * z0 + l11 * z1];
+  }
+  const sampleW = (post, rng) => sampleZ(post, randn(rng), randn(rng));
+  return {lgamma, lbeta, betaPdf, betaCdf, betaQ, normPdf, coin, gauss, linreg, linregGen, predVar, ols, mulberry32, randn, sampleW, sampleZ};
+})();
+if (typeof module !== "undefined") module.exports = BU;
+</script>
+<script>
+"use strict";
+function prep(cv) { const d = window.devicePixelRatio || 1, w = cv.clientWidth, h = cv.clientHeight; cv.width = Math.round(w * d); cv.height = Math.round(h * d); const c = cv.getContext("2d"); c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, w, h); return {c, w, h}; }
+const FONT = "11px Roboto,Arial,sans-serif";
+function frame(c, w, h, o) {
+  const pw = w - o.l - o.r, ph = h - o.t - o.b, lx = v => o.xlog ? Math.log(v) : v;
+  const X = v => o.l + (lx(v) - lx(o.x[0])) / (lx(o.x[1]) - lx(o.x[0])) * pw, Y = v => o.t + (1 - (v - o.y[0]) / (o.y[1] - o.y[0])) * ph;
+  const Y2 = o.y2 ? (v => o.t + (1 - (v - o.y2[0]) / (o.y2[1] - o.y2[0])) * ph) : null;
+  c.font = FONT; c.lineWidth = 1;
+  c.strokeStyle = "#ececec"; c.fillStyle = "#777";
+  c.textAlign = "center"; c.textBaseline = "top";
+  for (const t of o.xt) { c.beginPath(); c.moveTo(X(t), o.t); c.lineTo(X(t), o.t + ph); c.stroke(); c.fillText((o.fx || (v => fm(v, 1)))(t), X(t), o.t + ph + 4); }
+  c.textAlign = "right"; c.textBaseline = "middle";
+  for (const t of o.yt) { c.beginPath(); c.moveTo(o.l, Y(t)); c.lineTo(o.l + pw, Y(t)); c.stroke(); c.fillText((o.fy || (v => fm(v, 1)))(t), o.l - 5, Y(t)); }
+  if (o.y2) { c.textAlign = "left"; c.fillStyle = o.c2 || "#777"; for (const t of o.yt2) c.fillText((o.fy2 || (v => fm(v, 2)))(t), o.l + pw + 5, Y2(t)); c.fillStyle = "#777"; }
+  c.strokeStyle = "#c9cdd0"; c.strokeRect(o.l, o.t, pw, ph);
+  c.fillStyle = "#555"; c.textAlign = "center"; c.textBaseline = "alphabetic";
+  if (o.xlab) c.fillText(o.xlab, o.l + pw / 2, o.t + ph + 30);
+  if (o.ylab) { c.save(); c.translate(12, o.t + ph / 2); c.rotate(-Math.PI / 2); c.fillText(o.ylab, 0, 0); c.restore(); }
+  return {X, Y, Y2, pw, ph};
+}
+function clipTo(c, o, w, h) { c.save(); c.beginPath(); c.rect(o.l, o.t, w - o.l - o.r, h - o.t - o.b); c.clip(); }
+
+function drawLines(cv, o) {
+  const {c, w, h} = prep(cv), r = o.r || 14;
+  const fr = frame(c, w, h, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38, x: o.x, y: o.y, y2: o.y2, c2: o.c2, xt: o.xt, yt: o.yt, yt2: o.yt2, xlog: o.xlog, fx: o.fx, fy: o.fy, fy2: o.fy2, xlab: o.xlab, ylab: o.ylab});
+  const {X, Y, Y2} = fr; clipTo(c, {l: 48, r: o.y2 ? 46 : r, t: 12, b: 38}, w, h);
+  for (const s of o.series) {
+    const YY = s.ax2 ? Y2 : Y, pts = s.x.map((x, i) => [x, s.y[i]]).filter(p => p[1] !== null && isFinite(p[1]));
+    if (s.band) { c.fillStyle = s.color; c.globalAlpha = 0.16; c.beginPath(); s.x.forEach((x, i) => i ? c.lineTo(X(x), YY(s.band[1][i])) : c.moveTo(X(x), YY(s.band[1][i]))); for (let i = s.x.length - 1; i >= 0; i--) c.lineTo(X(s.x[i]), YY(s.band[0][i])); c.closePath(); c.fill(); c.globalAlpha = 1; }
+    c.strokeStyle = s.color; c.lineWidth = s.w || 2; c.setLineDash(s.dash || []); c.beginPath(); pts.forEach((p, i) => i ? c.lineTo(X(p[0]), YY(p[1])) : c.moveTo(X(p[0]), YY(p[1]))); c.stroke(); c.setLineDash([]);
+    if (s.dots) { c.fillStyle = s.color; pts.forEach(p => { c.beginPath(); c.arc(X(p[0]), YY(p[1]), 2.6, 0, 2 * Math.PI); c.fill(); }); }
+  }
+  for (const v of o.vlines || []) { c.strokeStyle = v.color || "#555"; c.setLineDash([4, 3]); c.lineWidth = 1.2; c.beginPath(); c.moveTo(X(v.x), 12); c.lineTo(X(v.x), h - 38); c.stroke(); c.setLineDash([]); }
+  for (const m of o.marks || []) { c.fillStyle = m.color; c.beginPath(); c.arc(X(m.x), Y(m.y), 4.5, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.3; c.stroke(); }
+  c.restore();
+  if (o.legend) { c.font = FONT; c.textBaseline = "middle"; c.fillStyle = "rgba(255,255,255,.82)"; c.fillRect(w - (o.y2 ? 46 : r) - 156, 14, 150, o.legend.length * 14 + 4); let y = 22; for (const s of o.legend) { c.fillStyle = s.color; c.fillRect(w - (o.y2 ? 46 : r) - 150, y - 4, 14, 3); c.fillStyle = "#444"; c.textAlign = "left"; c.fillText(s.t, w - (o.y2 ? 46 : r) - 130, y - 2); y += 14; } }
+  if (o.ylab2) { c.save(); c.translate(w - 8, 12 + (h - 50) / 2); c.rotate(Math.PI / 2); c.fillStyle = o.c2 || "#555"; c.font = FONT; c.textAlign = "center"; c.fillText(o.ylab2, 0, 0); c.restore(); }
+  if (o.msg) { c.fillStyle = "rgba(255,255,255,.85)"; c.fillRect(48, h / 2 - 14, w - 62, 28); c.fillStyle = "#555"; c.font = "12.5px Roboto,Arial,sans-serif"; c.textAlign = "center"; c.textBaseline = "middle"; c.fillText(o.msg, 48 + (w - 62) / 2, h / 2); }
+}
+const $ = id => document.getElementById(id);
+const BLUE = "#0877bd", ORG = "#e8590c", NAVY = "#1b3b4f", GREY = "#8a8f94", GREEN = "#2f9e44";
+const fm = (v, d = 2) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toFixed(d).replace("-", "−");
+const pct = (v, d = 1) => (100 * v).toFixed(d) + "%";
+const f2 = v => v === null || v === undefined || !isFinite(v) ? "–" : fm(v, 2);
+const f3 = v => v === null || v === undefined || !isFinite(v) ? "–" : fm(v, 3);
+const fint = v => String(Math.round(v));
+function nice(hi, n = 4) { const raw = Math.max(hi, 1e-9) / n, p = Math.pow(10, Math.floor(Math.log10(raw))), f = raw / p, s = (f <= 1 ? 1 : f <= 2 ? 2 : f <= 5 ? 5 : 10) * p, top = Math.ceil(hi / s - 1e-9) * s, t = []; for (let v = 0; v <= top + 1e-9; v += s) t.push(+v.toFixed(10)); return {t, top}; }
+const EPS_C = 0.05, EPS_G = 0.1;
+
+/* ---------- state ---------- */
+const S = {mode: 1, seed: 1, scn: {1: "weak", 2: "weak", 3: "good"}, rsel: {1: "weight", 2: "weight", 3: "psd"}, rm: "samples", shTruth: true, shLik: true, shCI: true, shPts: true, shBand: true,
+  c: {pm: 0.5, ps: 2, th: 0.3, data: []}, g: {mu0: 0, tau0: 3, sig: 1, mu: 1.5, data: []}, r: {tau: 2, sig: 0.3, w0: -0.2, w1: 0.8, nl: 12, data: []}, map: null};
+const SCEN = {
+  1: [["weak", "Biased coin (θ = 0.3), weak prior", {pm: 0.5, ps: 2, th: 0.3}, "The prior is worth 2 imaginary flips, so the data take over quickly."],
+      ["fair", "Fair coin (θ = 0.5), weak prior", {pm: 0.5, ps: 2, th: 0.5}, "A fair coin and an open mind."],
+      ["wrong", "Biased coin (θ = 0.3), confident WRONG prior", {pm: 0.8, ps: 30, th: 0.3}, "The prior says 80% heads and is worth 30 imaginary flips. How many real flips does it take to overrule it?"],
+      ["right", "Biased coin (θ = 0.3), confident right prior", {pm: 0.3, ps: 30, th: 0.3}, "A strong prior that happens to be right: the posterior is narrow from the start."]],
+  2: [["weak", "True mean 1.5, weak prior", {mu0: 0, tau0: 3, sig: 1, mu: 1.5}, "A vague prior around 0 (sd 3)."],
+      ["wrong", "True mean 1.5, confident WRONG prior", {mu0: -3, tau0: 0.5, sig: 1, mu: 1.5}, "The prior says −3 with sd 0.5, far from the truth."],
+      ["noisy", "True mean 1.5, very noisy measurements", {mu0: 0, tau0: 1, sig: 2.5, mu: 1.5}, "Large noise: each measurement says little, so the prior keeps its influence for longer."],
+      ["right", "True mean 1.5, confident right prior", {mu0: 1.5, tau0: 0.5, sig: 1, mu: 1.5}, "A strong prior at the right place."]],
+  3: [["good", "Moderate prior, line (−0.2, 0.8)", {tau: 2, sig: 0.3, w0: -0.2, w1: 0.8}, "The prior allows slopes and intercepts of size about 2."],
+      ["wrong", "Tight prior, steep line (0, 1.5): WRONG prior", {tau: 0.3, sig: 0.3, w0: 0, w1: 1.5}, "The prior says weights are near 0 (sd 0.3), but the true slope is 1.5. The prior pulls the line flat until enough points arrive."],
+      ["noisy", "Very noisy data", {tau: 2, sig: 1, w0: -0.2, w1: 0.8}, "With large noise many lines remain plausible even after many points."],
+      ["vague", "Very vague prior", {tau: 5, sig: 0.3, w0: -0.2, w1: 0.8}, "Almost no prior information: the posterior mean is close to least squares."]]
+};
+const N0 = {1: 8, 2: 4, 3: 4};
+const cur = () => S.mode === 1 ? S.c : S.mode === 2 ? S.g : S.r;
+const RNG = {};
+function resetRng() { for (const m of [1, 2, 3]) RNG[m] = BU.mulberry32(S.seed * 1000 + m); }
+const ZS = Array.from({length: 50}, (_, i) => { const r = BU.mulberry32(777 + i); return [BU.randn(r), BU.randn(r)]; });
+function simulate(k, mode) {
+  mode = mode || S.mode; const rng = RNG[mode], d = (mode === 1 ? S.c : mode === 2 ? S.g : S.r), out = [];
+  for (let i = 0; i < k; i++) {
+    if (mode === 1) out.push(rng() < S.c.th ? 1 : 0);
+    else if (mode === 2) out.push(S.g.mu + S.g.sig * BU.randn(rng));
+    else { const x = 2 * rng() - 1; out.push([x, S.r.w0 + S.r.w1 * x + S.r.sig * BU.randn(rng)]); }
+  }
+  d.data.push(...out);
+}
+function initData() { cur().data.length = 0; simulate(N0[S.mode]); }
+
+/* ---------- top bar ---------- */
+const SL = {
+  1: [{k: "pm", lab: "Prior mean", lo: 0.05, hi: 0.95, tip: "Where the prior puts its centre: the prior's average guess for the probability of heads.", get: () => S.c.pm, set: v => S.c.pm = v},
+      {k: "ps", lab: "Prior strength (imaginary flips)", lo: 2, hi: 500, log: 1, int: 1, tip: "How many imaginary flips the prior is worth. The prior is Beta(a, b) with a = mean x strength and b = (1 - mean) x strength.", get: () => S.c.ps, set: v => S.c.ps = v},
+      {k: "th", lab: "True θ (for simulated flips)", lo: 0.02, hi: 0.98, tip: "The probability of heads used to simulate flips. It only affects flips you add from now on, not the ones already there.", get: () => S.c.th, set: v => S.c.th = v}],
+  2: [{k: "mu0", lab: "Prior mean μ₀", lo: -4, hi: 4, tip: "Centre of the prior belief about the unknown mean.", get: () => S.g.mu0, set: v => S.g.mu0 = v},
+      {k: "tau0", lab: "Prior sd τ₀", lo: 0.2, hi: 4, log: 1, tip: "How uncertain the prior is. Small = confident.", get: () => S.g.tau0, set: v => S.g.tau0 = v},
+      {k: "sig", lab: "Noise sd σ (known)", lo: 0.3, hi: 3, log: 1, tip: "Spread of a single measurement around the true mean. The model assumes this value is known. It also sets the spread of simulated samples.", get: () => S.g.sig, set: v => S.g.sig = v},
+      {k: "mu", lab: "True mean (for simulated data)", lo: -4, hi: 4, tip: "The value used to simulate samples. It only affects samples you add from now on.", get: () => S.g.mu, set: v => S.g.mu = v}],
+  3: [{k: "tau", lab: "Prior sd of weights τ", lo: 0.1, hi: 5, log: 1, tip: "Prior: intercept and slope are independent Normal(0, τ²). Small τ = a strong preference for a flat line through 0.", get: () => S.r.tau, set: v => S.r.tau = v},
+      {k: "sig", lab: "Noise sd σ (known)", lo: 0.1, hi: 1.5, log: 1, tip: "Spread of y around the line. The model assumes this value is known. It also sets the noise of simulated points.", get: () => S.r.sig, set: v => S.r.sig = v},
+      {k: "w0", lab: "True intercept", lo: -1.5, hi: 1.5, tip: "Intercept of the line used to simulate points (only new points are affected).", get: () => S.r.w0, set: v => S.r.w0 = v},
+      {k: "w1", lab: "True slope", lo: -2, hi: 2, tip: "Slope of the line used to simulate points (only new points are affected).", get: () => S.r.w1, set: v => S.r.w1 = v},
+      {k: "nl", lab: "Lines drawn", lo: 1, hi: 50, int: 1, tip: "How many random lines from the posterior are drawn (random-lines view only).", get: () => S.r.nl, set: v => S.r.nl = v}]
+};
+const toPos = (d, v) => d.log ? Math.log10(v) : v;
+const fromPos = (d, p) => { let v = d.log ? Math.pow(10, p) : p; if (d.int) v = Math.round(v); return v; };
+const showV = (d, v) => d.int ? String(v) : (Math.abs(v) >= 10 ? v.toFixed(1) : v.toFixed(2));
+let rafId = 0; const schedule = () => { if (rafId) return; rafId = requestAnimationFrame(() => { rafId = 0; draw(); }); };
+function renderBar() {
+  const box = $("cctl"); box.innerHTML = "";
+  for (const d of SL[S.mode]) {
+    const g = document.createElement("div"); g.className = "grp sl"; g.title = d.tip;
+    g.innerHTML = `<div class="row"><span>${d.lab}</span><input class="num" type="text" inputmode="decimal" id="nb_${d.k}" aria-label="value"></div><input type="range" id="sl_${d.k}" min="${toPos(d, d.lo)}" max="${toPos(d, d.hi)}" step="${d.log ? 0.01 : (d.int ? 1 : 0.01)}">`;
+    box.appendChild(g);
+    const rg = $("sl_" + d.k), nb = $("nb_" + d.k);
+    rg.value = toPos(d, d.get()); nb.value = showV(d, d.get());
+    rg.addEventListener("input", () => { let v = fromPos(d, +rg.value); v = Math.max(d.lo, Math.min(d.hi, v)); d.set(v); nb.value = showV(d, v); schedule(); });
+    const commit = () => { let v = parseFloat(nb.value.replace(",", ".").replace("−", "-")); if (!isFinite(v)) { nb.blur(); nb.value = showV(d, d.get()); return; } v = Math.max(d.lo, Math.min(d.hi, v)); if (d.int) v = Math.round(v); d.set(v); rg.value = toPos(d, v); nb.value = showV(d, v); nb.blur(); schedule(); };
+    nb.addEventListener("change", commit); nb.addEventListener("keydown", e => { if (e.key === "Enter") commit(); }); nb.addEventListener("blur", () => { nb.value = showV(d, d.get()); });
+    nb.title = "Type a value between " + d.lo + " and " + d.hi + " and press Enter";
+  }
+}
+
+/* ---------- posteriors ---------- */
+function coinPost() {
+  const c = S.c, n = c.data.length, h = c.data.reduce((s, v) => s + v, 0), t = n - h, a = c.pm * c.ps, b = (1 - c.pm) * c.ps;
+  return Object.assign({n, h, t, a, b, s: c.ps, m: c.pm, w: n / (n + c.ps), mle: n ? h / n : null}, BU.coin(a, b, h, t));
+}
+const gaussPost = () => Object.assign({sig: S.g.sig, mu0: S.g.mu0, tau0: S.g.tau0}, BU.gauss(S.g.mu0, S.g.tau0, S.g.sig, S.g.data));
+const regPost = () => Object.assign({}, BU.linreg(S.r.tau, S.r.sig, S.r.data), {n: S.r.data.length});
+
+/* ---------- plotting ---------- */
+function plotCurves(cv, o) {
+  const {c, w, h} = prep(cv), yn = nice(o.ymax, 4);
+  const fr = frame(c, w, h, {l: 48, r: 14, t: 12, b: 38, x: o.x, y: [0, yn.top], xt: o.xt, yt: yn.t, fx: o.fx || (v => String(+v.toFixed(2))), fy: v => String(+v.toFixed(2)), xlab: o.xlab, ylab: o.ylab});
+  S.map = {l: 48, t: 12, pw: fr.pw, ph: fr.ph, x: o.x, y: [0, yn.top]};
+  clipTo(c, {l: 48, r: 14, t: 12, b: 38}, w, h);
+  if (o.ci) { c.fillStyle = "rgba(8,119,189,.11)"; c.fillRect(fr.X(o.ci[0]), 12, fr.X(o.ci[1]) - fr.X(o.ci[0]), fr.ph); }
+  const N = 400;
+  for (const cu of o.curves) {
+    c.beginPath();
+    for (let i = 0; i < N; i++) { const x = o.x[0] + (i + 0.5) / N * (o.x[1] - o.x[0]), y = cu.f(x); i ? c.lineTo(fr.X(x), fr.Y(y)) : c.moveTo(fr.X(x), fr.Y(y)); }
+    if (cu.fill) { const p = new Path2D(); c.save(); c.lineTo(fr.X(o.x[1]), fr.Y(0)); c.lineTo(fr.X(o.x[0]), fr.Y(0)); c.closePath(); c.fillStyle = cu.color; c.globalAlpha = cu.fill; c.fill(); c.restore(); c.beginPath(); for (let i = 0; i < N; i++) { const x = o.x[0] + (i + 0.5) / N * (o.x[1] - o.x[0]), y = cu.f(x); i ? c.lineTo(fr.X(x), fr.Y(y)) : c.moveTo(fr.X(x), fr.Y(y)); } }
+    c.strokeStyle = cu.color; c.lineWidth = cu.w || 2; c.setLineDash(cu.dash || []); c.stroke(); c.setLineDash([]);
+  }
+  for (const v of o.vl || []) { c.strokeStyle = v.color; c.lineWidth = v.w || 1.6; c.setLineDash(v.dash || []); c.beginPath(); c.moveTo(fr.X(v.x), 12); c.lineTo(fr.X(v.x), 12 + fr.ph); c.stroke(); c.setLineDash([]); }
+  for (const x of o.dots || []) { c.fillStyle = "rgba(27,59,79,.7)"; c.beginPath(); c.arc(fr.X(x), fr.Y(0) - 7, 3.6, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1; c.stroke(); }
+  c.restore();
+}
+function setLegend(items) { $("legend").innerHTML = items.map(it => it[0] === "dot" ? `<span><b class="dot" style="background:${it[1]}"></b>${it[2]}</span>` : it[0] === "sq" ? `<span><b class="sq" style="background:${it[1]}"></b>${it[2]}</span>` : `<span><i class="${it[3] || ""}" style="border-color:${it[1]}"></i>${it[2]}</span>`).join(""); }
+const logTicks = (lo, hi) => [1, 2, 5, 10, 20, 50, 100, 200, 500, 1000].filter(v => v >= lo && v <= hi);
+
+/* ---------- Mode 1: coin ---------- */
+function prefixes1(P, step) { const d = S.c.data, ks = [], mean = [], mle = [], lo = [], hi = []; let h = 0; for (let k = 0; k <= d.length; k++) { if (k > 0) h += d[k - 1]; if (k % step === 0 || k === d.length) { ks.push(k); mean.push((P.a + h) / (P.s + k)); mle.push(k ? h / k : null); const q = BU.coin(P.a, P.b, h, k - h).ci; lo.push(q[0]); hi.push(q[1]); } } return {ks, mean, mle, lo, hi}; }
+function draw1() {
+  const P = coinPost(); S.P = P;
+  const curves = [{f: x => BU.betaPdf(x, P.a, P.b), color: ORG, dash: [6, 4], w: 1.8}];
+  let ymax = 0; const G = 300, pk = f => { let m = 0; for (let i = 0; i < G; i++) m = Math.max(m, f((i + .5) / G)); return m; };
+  const post = x => BU.betaPdf(x, P.A, P.B);
+  if (P.n && S.shLik) curves.unshift({f: x => BU.betaPdf(x, P.h + 1, P.t + 1), color: GREY, fill: 0.18, w: 1.4});
+  curves.push({f: post, color: BLUE, fill: 0.22, w: 2.4});
+  ymax = Math.max(pk(post), P.n && S.shLik ? pk(x => BU.betaPdf(x, P.h + 1, P.t + 1)) : 0);
+  if (!P.n) ymax = Math.min(Math.max(ymax, pk(x => BU.betaPdf(x, P.a, P.b))), 12); else ymax = Math.max(ymax, Math.min(pk(x => BU.betaPdf(x, P.a, P.b)), ymax * 1.4));
+  const vl = []; if (S.shPts) { if (P.mode !== null) vl.push({x: P.mode, color: NAVY, w: 1.8}); vl.push({x: P.mean, color: BLUE, dash: [2, 3], w: 2}); if (P.n) vl.push({x: P.mle, color: GREY, dash: [2, 3], w: 2}); }
+  if (S.shTruth) vl.push({x: S.c.th, color: GREEN, dash: [6, 4], w: 1.8});
+  plotCurves($("cv"), {x: [0, 1], xt: [0, 0.2, 0.4, 0.6, 0.8, 1], ymax, curves, vl, ci: S.shCI ? P.ci : null, xlab: "coin bias θ (probability of heads)", ylab: "density"});
+  setLegend([["l", ORG, "prior", "d"], ...(P.n && S.shLik ? [["sq", "rgba(138,143,148,.5)", "likelihood (rescaled to area 1)"]] : []), ["sq", "rgba(8,119,189,.45)", "posterior"], ...(S.shCI ? [["sq", "rgba(8,119,189,.16)", "95% credible interval"]] : []), ...(S.shPts ? [["l", NAVY, "MAP"], ["l", BLUE, "posterior mean", "o"], ...(P.n ? [["l", GREY, "max. likelihood h/n", "o"]] : [])] : []), ...(S.shTruth ? [["l", GREEN, "true θ", "d"]] : [])]);
+  // left: running estimates
+  const n = P.n, step = Math.max(1, Math.ceil(n / 120)), R = prefixes1(P, step), xn = nice(Math.max(n, 10));
+  drawLines($("cl"), {x: [0, xn.top], y: [0, 1], xt: xn.t, yt: [0, 0.2, 0.4, 0.6, 0.8, 1], fx: fint, xlab: "flips so far", ylab: "estimate of θ",
+    series: [{x: [0, xn.top], y: [P.m, P.m], color: ORG, dash: [6, 4], w: 1.4}, ...(S.shTruth ? [{x: [0, xn.top], y: [S.c.th, S.c.th], color: GREEN, dash: [6, 4], w: 1.4}] : []), {x: R.ks, y: R.mean, color: BLUE, w: 2.2, band: S.shCI ? [R.lo, R.hi] : null}, {x: R.ks.slice(1), y: R.mle.slice(1), color: GREY, w: 1.4}],
+    legend: [{color: BLUE, t: "posterior mean"}, {color: GREY, t: "h / n"}, {color: ORG, t: "prior mean"}], msg: n ? "" : "Add flips to see the estimates evolve"});
+  // right
+  const sel = S.rsel[1];
+  if (sel === "weight") {
+    const N = nice(Math.max(40, 3 * P.s, n * 1.2)).top, xs = [], ys = []; for (let i = 0; i <= 120; i++) { const x = N * i / 120; xs.push(x); ys.push(x / (x + P.s)); }
+    drawLines($("cr"), {x: [0, N], y: [0, 1], xt: nice(N).t, yt: [0, 0.25, 0.5, 0.75, 1], fx: fint, fy: v => pct(v, 0), xlab: "flips n", ylab: "weight of the data in the posterior mean", series: [{x: xs, y: ys, color: NAVY, w: 2.2}], vlines: P.s <= N ? [{x: P.s, color: ORG}] : [], marks: [{x: Math.min(n, N), y: n / (n + P.s), color: ORG}]});
+  } else if (sel === "width") {
+    const xn2 = nice(Math.max(n, 10));
+    drawLines($("cr"), {x: [0, xn2.top], y: [0, 1], xt: xn2.t, yt: [0, 0.25, 0.5, 0.75, 1], fx: fint, xlab: "flips so far", ylab: "width of the 95% credible interval", series: [{x: R.ks, y: R.hi.map((v, i) => v - R.lo[i]), color: NAVY, w: 2.2}], marks: [{x: n, y: P.ci[1] - P.ci[0], color: ORG}]});
+  } else {
+    const gap = Math.abs(P.m - S.c.th), f = s => Math.max(0, s * (gap / EPS_C - 1)), xs = [], ys = []; for (let i = 0; i <= 100; i++) { const s = Math.pow(10, Math.log10(2) + (Math.log10(500) - Math.log10(2)) * i / 100); xs.push(s); ys.push(f(s)); }
+    const yn = nice(Math.max(1, f(500)));
+    drawLines($("cr"), {x: [2, 500], xlog: 1, y: [0, yn.top], xt: logTicks(2, 500), yt: yn.t, fx: fint, fy: fint, xlab: "prior strength (imaginary flips, log scale)", ylab: "flips needed (expected)", series: [{x: xs, y: ys, color: NAVY, w: 2.2}], marks: [{x: P.s, y: f(P.s), color: ORG}], msg: gap <= EPS_C ? "The prior mean is already within 0.05 of the true θ" : ""});
+  }
+}
+
+/* ---------- Mode 2: Gaussian mean ---------- */
+function draw2() {
+  const P = gaussPost(); S.P = P; const d = S.g.data, n = P.n;
+  const post = x => BU.normPdf(x, P.mun, P.taun), prior = x => BU.normPdf(x, P.mu0, P.tau0), lik = x => BU.normPdf(x, P.xbar, P.sig / Math.sqrt(n));
+  const curves = []; if (n && S.shLik) curves.push({f: lik, color: GREY, fill: 0.18, w: 1.4});
+  curves.push({f: prior, color: ORG, dash: [6, 4], w: 1.8}, {f: post, color: BLUE, fill: 0.22, w: 2.4});
+  const ymax = Math.max(BU.normPdf(0, 0, P.taun), n && S.shLik ? BU.normPdf(0, 0, P.sig / Math.sqrt(n)) : 0, n ? 0 : BU.normPdf(0, 0, P.tau0));
+  const vl = []; if (S.shTruth) vl.push({x: S.g.mu, color: GREEN, dash: [6, 4], w: 1.8});
+  if (n) vl.push({x: P.mun, color: BLUE, dash: [2, 3], w: 2}), vl.push({x: P.xbar, color: GREY, dash: [2, 3], w: 2});
+  plotCurves($("cv"), {x: [-6, 6], xt: [-6, -4, -2, 0, 2, 4, 6], fx: fint, ymax: Math.max(ymax * 1.05, 0.1), curves, vl, dots: d.map(x => Math.max(-6, Math.min(6, x))), ci: S.shCI ? [P.mun - 1.96 * P.taun, P.mun + 1.96 * P.taun] : null, xlab: "mean μ (the unknown), and the measurements x", ylab: "density"});
+  setLegend([["l", ORG, "prior", "d"], ...(n && S.shLik ? [["sq", "rgba(138,143,148,.5)", "likelihood (rescaled to area 1)"]] : []), ["sq", "rgba(8,119,189,.45)", "posterior"], ...(S.shCI ? [["sq", "rgba(8,119,189,.16)", "95% credible interval"]] : []), ...(n ? [["l", BLUE, "posterior mean = MAP", "o"], ["l", GREY, "sample mean", "o"]] : []), ["dot", "rgba(27,59,79,.7)", "measurements"], ...(S.shTruth ? [["l", GREEN, "true mean", "d"]] : [])]);
+  // left: running estimates
+  const step = Math.max(1, Math.ceil(n / 120)), ks = [], mn = [], lo = [], hi = [], sm = []; let sx = 0;
+  for (let k = 0; k <= n; k++) { if (k > 0) sx += d[k - 1]; if (k % step === 0 || k === n) { const q = BU.gauss(P.mu0, P.tau0, P.sig, d.slice(0, k)); ks.push(k); mn.push(q.mun); lo.push(q.mun - 1.96 * q.taun); hi.push(q.mun + 1.96 * q.taun); sm.push(k ? sx / k : null); } }
+  const xn = nice(Math.max(n, 10));
+  drawLines($("cl"), {x: [0, xn.top], y: [-6, 6], xt: xn.t, yt: [-6, -3, 0, 3, 6], fx: fint, fy: fint, xlab: "measurements so far", ylab: "estimate of μ",
+    series: [{x: [0, xn.top], y: [P.mu0, P.mu0], color: ORG, dash: [6, 4], w: 1.4}, ...(S.shTruth ? [{x: [0, xn.top], y: [S.g.mu, S.g.mu], color: GREEN, dash: [6, 4], w: 1.4}] : []), {x: ks, y: mn, color: BLUE, w: 2.2, band: S.shCI ? [lo, hi] : null}, {x: ks.slice(1), y: sm.slice(1), color: GREY, w: 1.4}],
+    legend: [{color: BLUE, t: "posterior mean"}, {color: GREY, t: "sample mean"}, {color: ORG, t: "prior mean"}], msg: n ? "" : "Add measurements to see the estimates evolve"});
+  const sel = S.rsel[2], s2t = P.sig * P.sig / (P.tau0 * P.tau0);
+  if (sel === "weight") {
+    const N = nice(Math.max(30, 3 * s2t, n * 1.2)).top, xs = [], ys = []; for (let i = 0; i <= 120; i++) { const x = N * i / 120; xs.push(x); ys.push(x / (x + s2t)); }
+    drawLines($("cr"), {x: [0, N], y: [0, 1], xt: nice(N).t, yt: [0, 0.25, 0.5, 0.75, 1], fx: fint, fy: v => pct(v, 0), xlab: "measurements n", ylab: "weight of the data in the posterior mean", series: [{x: xs, y: ys, color: NAVY, w: 2.2}], vlines: s2t <= N ? [{x: s2t, color: ORG}] : [], marks: [{x: Math.min(n, N), y: P.w, color: ORG}]});
+  } else if (sel === "sd") {
+    const N = nice(Math.max(30, n * 1.2)).top, xs = [], ys = [], ys2 = []; for (let i = 0; i <= 120; i++) { const x = N * i / 120; xs.push(x); ys.push(Math.sqrt(1 / (1 / (P.tau0 * P.tau0) + x / (P.sig * P.sig)))); ys2.push(x > 0 ? P.sig / Math.sqrt(x) : null); }
+    const yn = nice(Math.max(P.tau0, 0.5));
+    drawLines($("cr"), {x: [0, N], y: [0, yn.top], xt: nice(N).t, yt: yn.t, fx: fint, xlab: "measurements n", ylab: "sd of the belief about μ", series: [{x: xs.slice(1), y: ys2.slice(1), color: GREY, dash: [5, 4], w: 1.5}, {x: xs, y: ys, color: NAVY, w: 2.2}], marks: [{x: Math.min(n, N), y: P.taun, color: ORG}], legend: [{color: NAVY, t: "posterior sd"}, {color: GREY, t: "data alone: σ / √n"}]});
+  } else {
+    const gap = Math.abs(P.mu0 - S.g.mu), f = t => Math.max(0, (P.sig * P.sig / (t * t)) * (gap / EPS_G - 1)), xs = [], ys = []; for (let i = 0; i <= 100; i++) { const t = Math.pow(10, Math.log10(0.2) + (Math.log10(4) - Math.log10(0.2)) * i / 100); xs.push(t); ys.push(f(t)); }
+    const yn = nice(Math.max(1, f(0.2)));
+    drawLines($("cr"), {x: [0.2, 4], xlog: 1, y: [0, yn.top], xt: [0.2, 0.5, 1, 2, 4], fx: v => String(v), yt: yn.t, fy: fint, xlab: "prior sd τ₀ (log scale)", ylab: "measurements needed (expected)", series: [{x: xs, y: ys, color: NAVY, w: 2.2}], marks: [{x: P.tau0, y: f(P.tau0), color: ORG}], msg: gap <= EPS_G ? "The prior mean is already within 0.1 of the true mean" : ""});
+  }
+}
+
+/* ---------- Mode 3: regression ---------- */
+const XR = [-1, 1], YR = [-3, 3], WR = [-2.5, 2.5];
+function draw3() {
+  const P = regPost(); S.P = P; const d = S.r.data, n = d.length, r = S.r, cv = $("cv"), {c, w, h} = prep(cv);
+  const fr = frame(c, w, h, {l: 48, r: 14, t: 12, b: 38, x: XR, y: YR, xt: [-1, -0.5, 0, 0.5, 1], yt: [-3, -2, -1, 0, 1, 2, 3], fx: v => fm(v, 1), fy: fint, xlab: "input x", ylab: "output y"});
+  S.map = {l: 48, t: 12, pw: fr.pw, ph: fr.ph, x: XR, y: YR};
+  clipTo(c, {l: 48, r: 14, t: 12, b: 38}, w, h);
+  const xs = Array.from({length: 61}, (_, i) => -1 + i / 30);
+  if (S.shBand) { c.fillStyle = "rgba(8,119,189,.12)"; c.beginPath(); xs.forEach((x, i) => { const m = P.m[0] + P.m[1] * x, s = Math.sqrt(BU.predVar(P, x, r.sig)); i ? c.lineTo(fr.X(x), fr.Y(m + 1.96 * s)) : c.moveTo(fr.X(x), fr.Y(m + 1.96 * s)); }); for (let i = xs.length - 1; i >= 0; i--) { const x = xs[i], m = P.m[0] + P.m[1] * x, s = Math.sqrt(BU.predVar(P, x, r.sig)); c.lineTo(fr.X(x), fr.Y(m - 1.96 * s)); } c.closePath(); c.fill(); }
+  const W = [];
+  if (S.rm === "samples") for (let i = 0; i < r.nl; i++) { const wv = BU.sampleZ(P, ZS[i][0], ZS[i][1]); W.push(wv); c.strokeStyle = "rgba(8,119,189,.38)"; c.lineWidth = 1.2; c.beginPath(); c.moveTo(fr.X(-1), fr.Y(wv[0] - wv[1])); c.lineTo(fr.X(1), fr.Y(wv[0] + wv[1])); c.stroke(); }
+  if (S.shTruth) { c.strokeStyle = GREEN; c.lineWidth = 1.8; c.setLineDash([6, 4]); c.beginPath(); c.moveTo(fr.X(-1), fr.Y(r.w0 - r.w1)); c.lineTo(fr.X(1), fr.Y(r.w0 + r.w1)); c.stroke(); c.setLineDash([]); }
+  c.strokeStyle = NAVY; c.lineWidth = 2.6; c.beginPath(); c.moveTo(fr.X(-1), fr.Y(P.m[0] - P.m[1])); c.lineTo(fr.X(1), fr.Y(P.m[0] + P.m[1])); c.stroke();
+  for (const [x, y] of d) { c.fillStyle = "rgba(232,89,12,.85)"; c.beginPath(); c.arc(fr.X(x), fr.Y(y), 4.2, 0, 2 * Math.PI); c.fill(); c.strokeStyle = "#fff"; c.lineWidth = 1.2; c.stroke(); }
+  c.restore();
+  setLegend([["dot", "rgba(232,89,12,.85)", "data points (click the plot to add one)"], ["l", NAVY, S.rm === "map" ? "MAP line = posterior mean line" : "posterior mean line"], ...(S.rm === "samples" ? [["l", "rgba(8,119,189,.5)", "random lines from the posterior"]] : []), ...(S.shBand ? [["sq", "rgba(8,119,189,.2)", "95% predictive band (includes noise)"]] : []), ...(S.shTruth ? [["l", GREEN, "true line", "d"]] : [])]);
+  // left: weight space heat map
+  const cl = $("cl"), p2 = prep(cl), f2c = frame(p2.c, p2.w, p2.h, {l: 48, r: 14, t: 12, b: 38, x: WR, y: WR, xt: [-2, -1, 0, 1, 2], yt: [-2, -1, 0, 1, 2], fx: fint, fy: fint, xlab: "intercept w₀", ylab: "slope w₁"});
+  const NG = 64, cw = f2c.pw / NG, chh = f2c.ph / NG, Pm = P.P;
+  for (let j = 0; j < NG; j++) for (let i = 0; i < NG; i++) {
+    const a = WR[0] + (i + .5) / NG * (WR[1] - WR[0]), b = WR[1] - (j + .5) / NG * (WR[1] - WR[0]), da = a - P.m[0], db = b - P.m[1], q = Pm[0][0] * da * da + 2 * Pm[0][1] * da * db + Pm[1][1] * db * db, dn = Math.exp(-q / 2);
+    if (dn > 0.01) { p2.c.fillStyle = `rgba(8,119,189,${(0.92 * Math.pow(dn, 0.7)).toFixed(3)})`; p2.c.fillRect(48 + i * cw, 12 + j * chh, cw + 0.6, chh + 0.6); }
+  }
+  p2.c.strokeStyle = "#c9cdd0"; p2.c.strokeRect(48, 12, f2c.pw, f2c.ph);
+  for (const wv of W) { p2.c.fillStyle = "rgba(27,59,79,.55)"; p2.c.beginPath(); p2.c.arc(f2c.X(wv[0]), f2c.Y(wv[1]), 2.2, 0, 2 * Math.PI); p2.c.fill(); }
+  if (S.shTruth) { p2.c.strokeStyle = GREEN; p2.c.lineWidth = 2.2; p2.c.beginPath(); p2.c.arc(f2c.X(r.w0), f2c.Y(r.w1), 5.5, 0, 2 * Math.PI); p2.c.stroke(); }
+  p2.c.fillStyle = ORG; p2.c.beginPath(); p2.c.arc(f2c.X(P.m[0]), f2c.Y(P.m[1]), 4, 0, 2 * Math.PI); p2.c.fill(); p2.c.strokeStyle = "#fff"; p2.c.lineWidth = 1.2; p2.c.stroke();
+  // right
+  const sel = S.rsel[3];
+  if (sel === "psd") {
+    const xs2 = Array.from({length: 81}, (_, i) => -1 + i / 40), tot = xs2.map(x => Math.sqrt(BU.predVar(P, x, r.sig))), pri = xs2.map(x => Math.sqrt(r.sig * r.sig + r.tau * r.tau * (1 + x * x))), top = nice(Math.max(...tot, ...pri) * 1.05);
+    drawLines($("cr"), {x: XR, y: [0, top.top], xt: [-1, -0.5, 0, 0.5, 1], yt: top.t, fx: v => fm(v, 1), fy: v => String(+v.toFixed(2)), xlab: "input x", ylab: "sd of the prediction for a new y",
+      series: [{x: xs2, y: pri, color: ORG, dash: [6, 4], w: 1.5}, {x: XR, y: [r.sig, r.sig], color: GREY, dash: [5, 4], w: 1.4}, {x: xs2, y: tot, color: NAVY, w: 2.2}], marks: d.map(p => ({x: p[0], y: 0, color: "rgba(232,89,12,.9)"})),
+      legend: [{color: NAVY, t: "now"}, {color: ORG, t: "before any data"}, {color: GREY, t: "noise σ alone"}]});
+  } else {
+    const s0 = r.tau, s1 = Math.sqrt(P.S[1][1]), xs3 = Array.from({length: 201}, (_, i) => -3 + i * 0.03), top = nice(Math.max(BU.normPdf(0, 0, s0), BU.normPdf(0, 0, s1)) * 1.05);
+    drawLines($("cr"), {x: [-3, 3], y: [0, top.top], xt: [-3, -2, -1, 0, 1, 2, 3], yt: top.t, fx: fint, fy: v => String(+v.toFixed(2)), xlab: "slope w₁", ylab: "density",
+      series: [{x: xs3, y: xs3.map(x => BU.normPdf(x, 0, s0)), color: ORG, dash: [6, 4], w: 1.6}, {x: xs3, y: xs3.map(x => BU.normPdf(x, P.m[1], s1)), color: BLUE, w: 2.4, band: [xs3.map(() => 0), xs3.map(x => BU.normPdf(x, P.m[1], s1))]}],
+      vlines: S.shTruth ? [{x: r.w1, color: GREEN}] : [], legend: [{color: BLUE, t: "posterior of the slope"}, {color: ORG, t: "prior"}, ...(S.shTruth ? [{color: GREEN, t: "true slope"}] : [])]});
+  }
+}
+
+/* ---------- captions ---------- */
+const CAPM = {
+  1: "<b>Prior, likelihood and posterior for the coin.</b> x: the unknown bias θ of the coin, the probability that it lands heads; y: density (area under each curve = 1). Orange dashed: what you believed before. Grey: how well each θ explains the flips (the likelihood, rescaled to area 1). Blue: the posterior, your belief after the flips. The posterior sits between prior and likelihood, closer to whichever is narrower; with a flat prior (strength 2, mean 0.5) it coincides with the likelihood. Shaded: the 95% credible interval, which contains θ with probability 0.95 under the model.",
+  2: "<b>Prior, likelihood and posterior for the mean.</b> x: the unknown true mean μ, with the measurements marked as dots at the bottom; y: density. Orange dashed: the prior. Grey: the likelihood, centred on the sample mean and as wide as σ/√n. Blue: the posterior, which is again a bell curve whose centre lies between the two. Click on the plot to add your own measurement at that x.",
+  3: "<b>Data space.</b> x: input; y: output. Dots are the data. Each thin blue line is one (intercept, slope) pair drawn from the posterior; together they show which lines the data still allow. The navy line is the posterior mean, which is also the MAP line here. The shaded band is where a new y is expected with 95% probability, so it includes the noise. Click on the plot to add a point."
+};
+const CAPL = {
+  1: "<b>Running estimates.</b> x: number of flips so far; y: estimate of θ. Blue: posterior mean with its 95% interval (shaded); grey: the raw share of heads h/n; orange dashed: the prior mean; green dashed: the true θ. It shows how the prior pulls the early estimates and how both curves meet as flips accumulate.",
+  2: "<b>Running estimates.</b> x: number of measurements so far; y: estimate of μ. Blue: posterior mean with its 95% interval (shaded); grey: the plain sample mean; orange dashed: the prior mean; green dashed: the true mean. It shows how the prior pulls the early estimates and how both curves meet as data accumulate.",
+  3: "<b>Weight space.</b> x: intercept w₀; y: slope w₁. Each point is one candidate line; blue shading is the posterior density (darker = more plausible). The orange dot is the posterior mean, the dark dots are the random lines drawn on the left plot, the green ring the true line. With no data this is the prior; every point added squeezes the cloud, and the tilt of the cloud shows that intercept and slope are traded off against each other."
+};
+const CAPR = {
+  1: {weight: "<b>Weight of the data.</b> x: number of flips n; y: share of the posterior mean that comes from the data, n / (n + s), where s is the prior strength. The remainder is the prior's share. At n = s (orange line) data and prior count equally. It shows how fast the data take over for the prior strength you chose. Orange dot: now.",
+      width: "<b>Interval width.</b> x: flips so far; y: width of the 95% credible interval. It shows how much the uncertainty about θ has shrunk; it falls roughly like 1/√n and does not depend on whether the prior is right. Orange dot: now.",
+      wrong: "<b>Flips needed to overrule the prior.</b> x: prior strength (log scale); y: number of flips after which the posterior mean is within 0.05 of the true θ, if the flips come out exactly at the true rate (expected data). Each extra imaginary flip in the prior costs the same number of real flips. Uses your prior mean and true θ. Orange dot: your prior."},
+  2: {weight: "<b>Weight of the data.</b> x: number of measurements n; y: share of the posterior mean that comes from the data, nτ₀² / (nτ₀² + σ²). The rest comes from the prior. At n = σ²/τ₀² (orange line) both count equally. It shows how many measurements it takes before the data dominate. Orange dot: now.",
+      sd: "<b>Uncertainty about μ.</b> x: number of measurements; y: standard deviation of the belief about μ. Navy: posterior; grey dashed: the uncertainty from the data alone, σ/√n. The posterior is always narrower than the data alone because the prior adds information. Orange dot: now.",
+      wrong: "<b>Measurements needed to overrule the prior.</b> x: prior sd τ₀ (log scale); y: number of measurements after which the posterior mean is within 0.1 of the true mean, if the data come out exactly at the true mean (expected data). A tighter prior (small τ₀) needs more. Uses your prior mean, true mean and σ. Orange dot: your prior."},
+  3: {psd: "<b>Where the model is unsure.</b> x: input; y: standard deviation of the prediction for a new y. Navy: now; orange dashed: before any data; grey dashed: the noise σ, which no amount of data removes. The navy curve is lowest near the data (orange ticks along the bottom) and rises away from them: the model knows where it is extrapolating.",
+      slope: "<b>Belief about the slope.</b> x: slope w₁; y: density. Orange dashed: prior; blue: posterior. It is the single-parameter view of the heat map on the left: how far the data have narrowed the slope, and where they moved it. Green line: the true slope."}
+};
+const RSEL = {1: [["weight", "Weight of the data vs flips"], ["width", "Interval width vs flips"], ["wrong", "Flips needed to overrule the prior"]], 2: [["weight", "Weight of the data vs n"], ["sd", "Uncertainty about μ vs n"], ["wrong", "Data needed to overrule the prior"]], 3: [["psd", "Prediction uncertainty vs x"], ["slope", "Belief about the slope"]]};
+const LHEAD = {1: "Running estimates of the bias", 2: "Running estimates of the mean", 3: "Weight space (intercept, slope)"};
+const HEAD = {1: "Coin: prior, likelihood and posterior", 2: "Gaussian mean: prior, likelihood and posterior", 3: "Regression: lines the data allow"};
+
+/* ---------- results and explanation ---------- */
+const row = (a, b) => `<div class="pr"><span>${a}</span><b>${b}</b></div>`, sec = t => `<div class="sec">${t}</div>`;
+function info1(P) {
+  const w = P.w, mode = P.mode === null ? "–" : f3(P.mode);
+  $("nums").innerHTML = sec("Data") + row("Flips n (heads h, tails t)", `${P.n} (${P.h}, ${P.t})`) + row("Share of heads h / n", P.n ? f3(P.mle) : "–")
+    + sec("Prior (Beta)") + row("a, b", `${f2(P.a)}, ${f2(P.b)}`) + row("Mean, strength a + b", `${f3(P.m)}, ${f2(P.s)}`)
+    + sec("Posterior (Beta)") + row("A, B", `${f2(P.A)}, ${f2(P.B)}`) + row("Posterior mean", f3(P.mean)) + row("MAP (mode)", mode) + row("Posterior sd", f3(P.sd)) + row("95% credible interval", `[${f3(P.ci[0])}, ${f3(P.ci[1])}]`)
+    + sec("Prior against data") + row("Share of the mean from the prior", pct(1 - w, 1)) + row("Share from the data", pct(w, 1)) + row("Probability next flip is heads", f3(P.mean));
+  const g = Math.abs(P.mean - S.c.th);
+  $("detail").innerHTML = `<p><b>Update rule.</b> The prior Beta(${f2(P.a)}, ${f2(P.b)}) behaves like ${f2(P.s)} imaginary flips: ${f2(P.a)} heads and ${f2(P.b)} tails seen before the first real one. Each real flip just adds one to a count: the posterior is Beta(${f2(P.a)} + ${P.h}, ${f2(P.b)} + ${P.t}) = Beta(${f2(P.A)}, ${f2(P.B)}). The order of the flips does not matter, and updating flip by flip gives the same result as updating once with all of them.</p>
+  <p><b>Prior versus data.</b> The posterior mean is a weighted average, (1 &minus; w) &times; prior mean + w &times; h/n, with w = n / (n + s) = ${f3(w)}. Right now the prior supplies ${pct(1 - w, 0)} of the answer. ${S.shTruth ? `The posterior mean is ${f3(g)} away from the true θ = ${f2(S.c.th)}.` : ""}</p>
+  <p><b>MAP or full posterior?</b> The MAP is the highest point of the posterior, (A &minus; 1)/(A + B &minus; 2). It differs from the posterior mean, and it is undefined or sits at an end when A or B is at most 1 (here ${P.mode === null ? "it is undefined" : "it is " + f3(P.mode)}). It also carries no uncertainty, whereas the credible interval tells you how much to trust it. For predicting the next flip the right number is the posterior mean, ${f3(P.mean)}, not the MAP.</p>`;
+}
+function info2(P) {
+  const n = P.n, prior = 1 / (P.tau0 * P.tau0), dat = n / (P.sig * P.sig);
+  $("nums").innerHTML = sec("Data") + row("Measurements n", n) + row("Sample mean", n ? f3(P.xbar) : "–")
+    + sec("Prior (Gaussian)") + row("μ₀, τ₀", `${f2(P.mu0)}, ${f2(P.tau0)}`) + row("Precision 1/τ₀²", f2(prior))
+    + sec("Posterior (Gaussian)") + row("Precision 1/τ₀² + n/σ²", f2(prior + dat)) + row("Posterior mean μₙ (= MAP)", f3(P.mun)) + row("Posterior sd τₙ", f3(P.taun)) + row("95% credible interval", `[${f3(P.mun - 1.96 * P.taun)}, ${f3(P.mun + 1.96 * P.taun)}]`)
+    + sec("Prior against data") + row("Share of the mean from the prior", pct(1 - P.w, 1)) + row("Share from the data", pct(P.w, 1))
+    + sec("Next measurement") + row("Predicted mean", f3(P.mun)) + row("Predicted sd √(σ² + τₙ²)", f3(P.predSd));
+  $("detail").innerHTML = `<p><b>Update rule.</b> Work with <b>precisions</b> (1 / variance): the posterior precision is the prior precision ${f2(prior)} plus ${f2(dat)} from the ${n} measurement${n === 1 ? "" : "s"}, which gives ${f2(prior + dat)}. So the posterior is always at least as sharp as the prior, and more data make it sharper without limit.</p>
+  <p><b>Prior versus data.</b> The posterior mean is the precision-weighted average (1 &minus; w) &times; μ₀ + w &times; (sample mean), with w = nτ₀² / (nτ₀² + σ²) = ${f3(P.w)}. The prior supplies ${pct(1 - P.w, 0)} of the answer. ${S.shTruth ? `The posterior mean is ${f3(Math.abs(P.mun - S.g.mu))} away from the true mean ${f2(S.g.mu)}.` : ""} For a Gaussian the posterior is also a Gaussian, so its highest point (MAP) and its mean coincide.</p>
+  <p><b>Predicting a new measurement.</b> A future value has two sources of uncertainty: the noise σ = ${f2(P.sig)} and what is still unknown about μ, τₙ = ${f3(P.taun)}. They add as variances: predicted sd ${f3(P.predSd)}. More data shrink the second part but never the first.</p>`;
+}
+function info3(P) {
+  const r = S.r, n = P.n, o = BU.ols(r.data), lam = r.sig * r.sig / (r.tau * r.tau), sd0 = Math.sqrt(P.S[0][0]), sd1 = Math.sqrt(P.S[1][1]), cor = P.S[0][1] / (sd0 * sd1);
+  $("nums").innerHTML = sec("Data") + row("Points n", n) + row("Least-squares line (w₀, w₁)", o ? `${f2(o[0])}, ${f2(o[1])}` : "needs 2 points at different x")
+    + sec("Prior") + row("Weights ~ Normal(0, τ²), τ", f2(r.tau)) + row("Noise sd σ (assumed known)", f2(r.sig)) + row("Equivalent ridge penalty σ²/τ²", f3(lam))
+    + sec("Posterior mean (= MAP line)") + row("Intercept w₀ ± sd", `${f3(P.m[0])} ± ${f3(sd0)}`) + row("Slope w₁ ± sd", `${f3(P.m[1])} ± ${f3(sd1)}`) + row("Correlation of w₀ and w₁", f2(cor)) + row("95% interval for the slope", `[${f2(P.m[1] - 1.96 * sd1)}, ${f2(P.m[1] + 1.96 * sd1)}]`)
+    + sec("Prediction sd (with noise)") + row("at x = −1", f3(Math.sqrt(BU.predVar(P, -1, r.sig)))) + row("at x = 0", f3(Math.sqrt(BU.predVar(P, 0, r.sig)))) + row("at x = +1", f3(Math.sqrt(BU.predVar(P, 1, r.sig))));
+  $("detail").innerHTML = `<p><b>Update rule.</b> With a Gaussian prior on the weights and Gaussian noise, the posterior over (w₀, w₁) is again Gaussian. Its precision matrix is I/τ² + ΦᵀΦ/σ², where Φ has a row (1, x) for every point, and its mean is (posterior covariance) &times; Φᵀy/σ². Each added point adds a rank-one term, so the cloud in the weight-space plot can only shrink.</p>
+  <p><b>MAP and ridge regression.</b> The posterior mean is also the MAP, and it is exactly the ridge-regression solution with penalty σ²/τ² = ${f3(lam)}: a tight prior is a strong penalty that pulls the line towards (0, 0). ${o ? `Compare with least squares (${f2(o[0])}, ${f2(o[1])}): the posterior mean is (${f2(P.m[0])}, ${f2(P.m[1])}).` : "With fewer than two points at different x there is no least-squares line."} ${S.shTruth ? `The true line is (${f2(r.w0)}, ${f2(r.w1)}).` : ""}</p>
+  <p><b>Why the full posterior matters.</b> The MAP line is one point of the cloud. The random lines show the others, and the prediction uncertainty (right plot) grows away from the data. A prediction is the average over all plausible lines, with variance σ² + φᵀ(posterior covariance)φ, where φ = (1, x).</p>`;
+}
+
+/* ---------- main draw ---------- */
+function draw() {
+  const m = S.mode;
+  $("chead").textContent = HEAD[m]; $("lhead").textContent = LHEAD[m];
+  $("cv").classList.toggle("clk", m > 1);
+  if (m === 1) { draw1(); info1(S.P); } else if (m === 2) { draw2(); info2(S.P); } else { draw3(); info3(S.P); }
+  $("capm").innerHTML = CAPM[m]; $("capl").innerHTML = CAPL[m]; $("capr").innerHTML = CAPR[m][S.rsel[m]];
+}
+
+/* ---------- UI ---------- */
+function dataButtons() {
+  const m = S.mode, box = $("dbtns"), defs = m === 1 ? [["Heads", () => cur().data.push(1), "h"], ["Tails", () => cur().data.push(0), "h"], ["Undo", () => cur().data.pop()], ["+10 flips", () => simulate(10)], ["+100 flips", () => simulate(100)], ["Clear", () => { cur().data.length = 0; }]]
+    : [[m === 2 ? "+1 sample" : "+1 point", () => simulate(1)], ["+10", () => simulate(10)], ["+100", () => simulate(100)], ["Undo", () => cur().data.pop()], ["Clear", () => { cur().data.length = 0; }, "span2"]];
+  box.innerHTML = ""; defs.forEach(([t, fn, cls]) => { const b = document.createElement("button"); b.textContent = t; if (cls) b.className = cls; b.onclick = () => { fn(); draw(); }; box.appendChild(b); });
+  $("dhint").textContent = m === 1 ? "Heads and Tails add your own flip; the +10 and +100 buttons add flips simulated with the true θ." : m === 2 ? "Click anywhere on the main plot to add your own measurement, or add simulated ones from the true mean." : "Click anywhere on the main plot to add your own point, or add points simulated from the true line.";
+}
+function syncUI() {
+  document.querySelectorAll(".msec").forEach(e => { e.style.display = e.dataset.m.includes(String(S.mode)) ? (e.tagName === "LABEL" ? "flex" : "block") : "none"; });
+  const sq = S.mode === 3; $("cl").style.aspectRatio = sq ? "5/4" : "4/3"; $("cr").style.aspectRatio = sq ? "5/4" : "4/3";
+  const sc = SCEN[S.mode]; $("scn").innerHTML = sc.map(s => `<option value="${s[0]}">${s[1]}</option>`).join(""); $("scn").value = S.scn[S.mode]; $("scnhint").textContent = sc.find(s => s[0] === S.scn[S.mode])[3];
+  const sel = $("rsel"); sel.innerHTML = RSEL[S.mode].map(o => `<option value="${o[0]}">${o[1]}</option>`).join(""); sel.value = S.rsel[S.mode];
+  renderBar(); dataButtons();
+}
+function applyScenario(first) { const s = SCEN[S.mode].find(x => x[0] === S.scn[S.mode]); Object.assign(cur(), s[2]); syncUI(); if (!first) { resetRng(); } initData(); draw(); }
+function bind() {
+  document.querySelectorAll("input[name=mode]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.mode = +e.value; syncUI(); draw(); } }));
+  $("scn").onchange = e => { S.scn[S.mode] = e.target.value; applyScenario(false); };
+  $("rsel").onchange = e => { S.rsel[S.mode] = e.target.value; draw(); };
+  $("reseed").onclick = () => { S.seed++; resetRng(); initData(); draw(); };
+  for (const [id, k] of [["shTruth", "shTruth"], ["shLik", "shLik"], ["shCI", "shCI"], ["shPts", "shPts"], ["shBand", "shBand"]]) $(id).onchange = e => { S[k] = e.target.checked; draw(); };
+  document.querySelectorAll("input[name=rm]").forEach(e => e.addEventListener("change", () => { if (e.checked) { S.rm = e.value; draw(); } }));
+  $("cv").addEventListener("pointerdown", e => {
+    if (S.mode === 1 || !S.map) return; const r = $("cv").getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top, M = S.map;
+    if (px < M.l || px > M.l + M.pw || py < M.t || py > M.t + M.ph) return;
+    const x = M.x[0] + (px - M.l) / M.pw * (M.x[1] - M.x[0]);
+    if (S.mode === 2) S.g.data.push(x); else S.r.data.push([x, M.y[1] - (py - M.t) / M.ph * (M.y[1] - M.y[0])]);
+    draw();
+  });
+  window.addEventListener("resize", draw);
+}
+resetRng(); bind(); for (const m of [3, 2, 1]) { S.mode = m; const s = SCEN[m].find(x => x[0] === S.scn[m]); Object.assign(cur(), s[2]); initData(); } syncUI(); draw();
+</script>
+<script>
+/* follow the site theme (assets/playgrounds/sb-theme.js): redraw everything drawn on canvases */
+window.addEventListener("sb-theme", function () { try{draw();}catch(e){} });
+</script>
+</body>
+</html>

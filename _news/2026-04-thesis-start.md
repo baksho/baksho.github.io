@@ -5,4 +5,4 @@ inline: true
 related_posts: false
 ---
 
-Started my M.Sc. thesis on end-to-end calibration of neural networks in a biomedical context at TU Braunschweig.
+Started my M.Sc. thesis, _End-to-end calibration of neural networks in a biomedical context_, at TU Braunschweig.

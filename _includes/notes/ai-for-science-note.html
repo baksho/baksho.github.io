@@ -1,0 +1,253 @@
+<p class="sb-note-meta">
+  <strong>Authors</strong>: Hanchen Wang, Tianfan Fu, Yuanqi Du, Wenhao Gao, Kexin Huang, Ziming Liu, Payal Chandak, Shengchao Liu, Peter Van Katwyk,
+  Andreea Deac, Anima Anandkumar, Karianne Bergen, Carla P. Gomes, Shirley Ho, Pushmeet Kohli, Joan Lasenby, Jure Leskovec, Tie-Yan Liu, Arjun Manrai,
+  Debora Marks, Bharath Ramsundar, Le Song, Jimeng Sun, Jian Tang, Petar Veličković, Max Welling, Linfeng Zhang, Connor W. Coley, Yoshua Bengio &amp;
+  Marinka Zitnik.
+</p>
+<p class="sb-note-meta"><strong>Venue</strong>: Nature, Volume 620, pages 47–60, published 3 August 2023.</p>
+<p class="sb-note-meta">
+  <strong>DOI</strong>: <a href="https://doi.org/10.1038/s41586-023-06221-2" target="_blank" rel="noopener">10.1038/s41586-023-06221-2</a>
+</p>
+<p class="sb-note-meta"><strong>Paper type</strong>: Review / survey, focused on AI for scientific discovery.</p>
+<h2>Problem and Motivation</h2>
+<p>
+  Scientific discovery increasingly involves enormous, complex, and heterogeneous datasets. Traditional scientific workflows can struggle with the
+  computational cost of analyzing these datasets, increases the expense of laboratory experiments, and the difficulty of exploring vast spaces of
+  possible scientific hypotheses.
+</p>
+<p>
+  The authors examine how artificial intelligence (AI) can help address these challenges throughout the scientific process, from collecting and
+  curating data to generating hypotheses, designing experiments, and interpreting results.
+</p>
+<p><strong>Three</strong> developments are particularly important:</p>
+<ul>
+  <li><strong>Self-supervised learning</strong>: Learning useful representations from large amounts of unlabeled scientific data.</li>
+  <li><strong>Geometric deep learning</strong>: Incorporating structural knowledge, symmetries, and relationships into machine-learning models.</li>
+  <li>
+    <strong>Generative AI</strong>: Producing candidate molecules, proteins, mathematical expressions, and other scientific objects for further
+    investigation.
+  </li>
+</ul>
+<p>
+  The central problem is not simply how to build more accurate predictive models. It is how to develop AI systems that contribute to scientific
+  understanding, generalize beyond their training data, and support reliable scientific decisions.
+</p>
+<p>
+  The authors emphasize that the enormous size of scientific hypothesis spaces makes exhaustive exploration impractical. For example, the paper cites
+  an estimate of approximately \( {10}^{60} \) drug-like molecules, showing why intelligent candidate selection is necessary.
+</p>
+<h2>Core contributions</h2>
+<p>
+  Since this is a review paper, it does not introduce one new algorithm or claim a single experimental breakthrough. Its contribution is to synthesize
+  developments across AI and the sciences into a broader framework.
+</p>
+<p>The main contributions are:</p>
+<ol>
+  <li>
+    <strong>A workflow-oriented perspective on AI for science</strong>. The paper connects AI methods to data collection, hypothesis generation,
+    experimental evaluation, and simulation, rather than treating scientific machine learning as an isolated prediction task.
+  </li>
+  <li>
+    <strong>A synthesis of important methodological advances</strong>. It explains how geometric deep learning, self-supervised learning,
+    transformers, generative models, reinforcement learning, and neural operators support different scientific tasks.
+  </li>
+  <li>
+    <strong>A framework for AI-guided hypothesis generation</strong>. It discusses black-box predictors, reinforcement-learning-based search, symbolic
+    regression, and differentiable representations for exploring large spaces of scientific possibilities.
+  </li>
+  <li>
+    <strong>An account of AI-driven experimentation and simulation</strong>. It describes approaches that use AI to optimize experiments, control
+    scientific instruments, accelerate simulations, and solve differential equations.
+  </li>
+  <li>
+    <strong>An identification of major research challenges</strong>. It highlights data quality, distribution shift, interpretability, uncertainty
+    estimation, reproducibility, computational costs, and responsible deployment as obstacles to reliable scientific discovery.
+  </li>
+</ol>
+<p>
+  These contributions are presented across scientific domains including biology, chemistry, materials science, physics, astronomy, and Earth science.
+</p>
+<h2>Methodology and organization</h2>
+<p>
+  We should see this paper as a narrative review of existing research and not a new empirical study.The authors organize the discussion around
+  interconnected stages of scientific discovery.
+</p>
+<ol>
+  <li><strong>Data collection and curation</strong>: Selection, annotation, synthetic data generation, denoising, and measurement refinement.</li>
+  <li>
+    <strong>Learning scientific representations</strong>: Geometric deep learning, self-supervised learning, language modelling, transformers, and
+    neural operators.
+  </li>
+  <li>
+    <strong>Hypothesis generation and search</strong>: Candidate screening, symbolic regression, reinforcement learning, and optimization in latent
+    spaces.
+  </li>
+  <li>
+    <strong>Experimental and simulation feedback</strong>: Experimental design, active learning, instrument control, molecular simulation, and neural
+    differential-equation solvers.
+  </li>
+</ol>
+<h3>Key methodological ideas</h3>
+<p>
+  <strong>Scientific inductive biases</strong>. Models can incorporate domain knowledge such as physical laws, molecular geometry, and symmetry. These
+  constraints can improve learning efficiency and generalization, particularly when labelled data are scarce.
+</p>
+<p>
+  <strong>Self-supervised learning and foundation models</strong>. Models learn representations from <strong>unlabeled</strong> data, such as protein
+  sequences or scientific literature, and subsequently adapt them to specific prediction or design tasks.
+</p>
+<p>
+  <strong>AI-guided search</strong>. Instead of evaluating every candidate, predictive models rank promising candidates, while reinforcement learning
+  or Bayesian optimization can guide the search using predicted rewards or experimental feedback.
+</p>
+<p>
+  <strong>Differentiable hypothesis spaces</strong>. Variational autoencoders and related methods can map discrete objects, such as molecular
+  structures, into continuous latent spaces that support gradient-based optimization.
+</p>
+<p>
+  <strong>AI-enhanced experiments and simulations</strong>. Active learning selects informative training points, Bayesian optimization is used to
+  determine the next query, reinforcement learning can control dynamic systems, and neural models can approximate physical quantities or solve
+  differential equations.
+</p>
+<p>This review paper illustrates these ideas through existing research rather than evaluating them under one common experimental protocol.</p>
+<h2>Key Results and Supporting Evidence</h2>
+<p>This review paper establishes previously published studies which were influential. The examples below are reported.</p>
+<div class="sb-note-table">
+  <table>
+    <thead>
+      <tr>
+        <th>Study or application</th>
+        <th>Reported result</th>
+        <th>Experimental context</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>AlphaFold2</td>
+        <td>High-accuracy prediction of protein structures, including structures unlike those in the training dataset</td>
+        <td>Protein structure prediction</td>
+      </tr>
+      <tr>
+        <td>Molecular screening</td>
+        <td>AI-guided screening of 1.6 million organic light-emitting diode material candidates</td>
+        <td>Materials discovery</td>
+      </tr>
+      <tr>
+        <td>Ligand discovery</td>
+        <td>Screening of virtual libraries containing over 11 billion synthon-based ligand candidates</td>
+        <td>Computational drug discovery</td>
+      </tr>
+      <tr>
+        <td>Gravitational-wave parameter estimation</td>
+        <td>Up to six orders of magnitude faster than traditional methods</td>
+        <td>Conditional variational autoencoders for gravitational-wave astronomy</td>
+      </tr>
+      <tr>
+        <td>Nuclear fusion control</td>
+        <td>Reinforcement learning used to control tokamak plasma through magnetic fields</td>
+        <td>AI policy trained using simulations and applied to plasma control</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+<p>
+  The figures and examples show that AI can help with several distinct objectives: improving predictions, reducing computational costs, narrowing
+  search spaces, and controlling experiments.
+</p>
+<p>
+  However, it is also warned that these outcomes should not be interpreted as evidence that one general-purpose AI method consistently outperforms
+  conventional scientific methods specifically built for one purpose.
+</p>
+<h2>Limitations and Open Questions</h2>
+<p>The authors acknowledge several unresolved challenges.</p>
+<ul>
+  <li>
+    <strong>Poor data quality and stewardship</strong>: Scientific datasets may be incomplete, biased, inconsistently annotated, or difficult to
+    access because of privacy and safety constraints.
+  </li>
+  <li><strong>Distribution shift</strong>: Models trained under one set of conditions may fail when deployed in a different scientific regime.</li>
+  <li>
+    <strong>Limited interpretability</strong>: Black-box predictions can be difficult to explain, undermining trust when scientists need to understand
+    the basis of a result.
+  </li>
+  <li>
+    <strong>Uncertainty and reliability</strong>: Scientific users need well-calibrated uncertainty estimates to judge whether predictions are
+    reliable enough to guide experiments or real-world implementation.
+  </li>
+  <li>
+    <strong>Reproducibility</strong>: Stochastic training, varying hyperparameters, changing datasets, and inconsistent implementations make results
+    difficult to reproduce.
+  </li>
+  <li><strong>Computational and infrastructure costs</strong>: Large models demand substantial data, hardware, energy, and engineering resources.</li>
+  <li>
+    <strong>Integration of scientific knowledge</strong>: It remains unclear which scientific principles are most useful to incorporate into models
+    and how to balance prior knowledge against measured data.
+  </li>
+  <li><strong>Responsible use</strong>: Misinterpretation, misuse, and dual-use risks require safeguards and appropriate oversight.</li>
+</ul>
+<p>
+  The authors also emphasize that cross-disciplinary collaboration and improvements in theory, software, and hardware are required to realize AI's
+  potential in science.
+</p>
+<h2>Connections to related work</h2>
+<p>The paper discusses several influential works that illustrate its central themes. Below are the key ones</p>
+<ul>
+  <li>
+    <strong>AlphaFold</strong>: Jumper et al., <em>Highly accurate protein structure prediction with AlphaFold</em>, <em>Nature</em> (2021). This
+    exemplifies how learned representations can solve a difficult scientific prediction problem.
+  </li>
+  <li>
+    <strong>Geometric deep learning</strong>: Bronstein et al.,
+    <em>Geometric deep learning: going beyond Euclidean data, IEEE Signal Processing Magazine</em> (2017). This provides background for incorporating
+    structure and symmetry into learning.
+  </li>
+  <li>
+    <strong>Physics-informed neural networks</strong>: Raissi, Perdikaris and Karniadakis,
+    <em
+      >Physics-informed neural networks: a deep learning framework for solving forward and inverse problems involving nonlinear partial differential
+      equations, Journal of Computational Physics</em
+    >
+    (2019). This connects domain knowledge with neural computation.
+  </li>
+  <li>
+    <strong>Magnetic control of tokamak plasmas through deep reinforcement learning</strong>: Degrave et al., <em>Nature</em> (2022). This illustrates
+    the use of learned policies in experimental control.
+  </li>
+</ul>
+<h2>Personal perspective</h2>
+<p>
+  The paper's main message is that AI can contribute to scientific discovery across the entire research workflow, not just automate prediction. Its
+  strongest contribution is the synthesis of methods for representing scientific data, generating hypotheses, navigating enormous search spaces, and
+  closing the loop between computational predictions and experimental evidence.
+</p>
+<p>
+  Its most important caution is that capability alone is insufficient. Reliable scientific AI requires good data, appropriate inductive biases,
+  uncertainty estimation, generalization beyond training distributions, reproducibility, and human scientific judgment.
+</p>
+<p>The following points are my personal assessment, rather than additional limitations explicitly attributed to the authors.</p>
+<ol>
+  <li>
+    The review does not establish which methods are best for a particular scientific problem. The examples demonstrate the potential of AI, but the
+    review does not systematically compare the reported approaches under matched datasets, baselines, metrics, or computational budgets.
+  </li>
+  <li>
+    Predictive success is not equivalent to scientific explanation. A model may accurately predict a protein structure, molecular property, or
+    physical observable without identifying the causal mechanism responsible for it. The distinction between useful prediction and scientific
+    understanding requires more attention.
+  </li>
+  <li>
+    Generalization claims require domain-specific validation. Performance on familiar distributions or benchmark datasets does not guarantee success
+    in new laboratories, biological systems, materials, or physical regimes. This is important when experimental validation is expensive.
+  </li>
+  <li>
+    Search efficiency does not guarantee useful discoveries. A model can prioritize candidates that score highly according to its objective while
+    missing other important constraints such as synthesizability, experimental feasibility, safety, or novelty. The selected candidates still need
+    appropriate validation.
+  </li>
+</ol>
+<p>
+  This paper should be read as a conceptual map of AI for Science, not as a benchmark study or a step-by-step implementation guide. It is especially
+  useful for identifying research directions and understanding how different ML paradigms fit into the scientific process.For research planning, the
+  next step would be to select one specific application area and examine its primary studies, where the datasets, experimental protocols, quantitative
+  results, and limitations can be assessed directly.
+</p>
