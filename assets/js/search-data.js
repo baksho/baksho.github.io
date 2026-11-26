@@ -137,26 +137,66 @@ ninja.data = [{
           section: "News",},{id: "news-submitted-my-m-sc-thesis-end-to-end-calibration-of-neural-networks-in-a-biomedical-context-at-tu-braunschweig",
           title: 'Submitted my M.Sc. thesis, End-to-end calibration of neural networks in a biomedical context,...',
           description: "",
-          section: "News",},{id: "projects-end-to-end-calibration-of-neural-networks",
-          title: 'End-to-End Calibration of Neural Networks',
-          description: "M.Sc. thesis. Theory and empirical evaluation in a biomedical context. TU Braunschweig, supervised by Prof. Dr. Nicole Mücke.",
+          section: "News",},{id: "projects-suppliergraph-a-knowledge-graph-for-german-and-eu-public-procurement-and-supplier-risk",
+          title: 'SupplierGraph: A Knowledge Graph for German and EU Public Procurement and Supplier Risk...',
+          description: "An end-to-end knowledge graph for German and EU public procurement and supplier risk on real open data, with every component evaluated against baselines, including the weak results.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/10_suppliergraph/";
+            },},{id: "projects-face-recognition-system-using-matlab",
+          title: 'Face Recognition System Using MATLAB',
+          description: "A face-recognition system built in MATLAB as my undergraduate engineering project, an early applied project in computer vision and algorithm implementation.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/11_face_recognition/";
+            },},{id: "projects-end-to-end-calibration-theory-and-empirical-evaluation-in-biomedical-context",
+          title: 'End-to-End Calibration: Theory and Empirical Evaluation in Biomedical Context',
+          description: "Can calibration be built into neural-network training instead of being fixed afterwards? A differentiable calibration objective, tested in controlled experiments and on gene regulatory network inference.",
           section: "Projects",handler: () => {
               window.location.href = "/projects/1_thesis/";
+            },},{id: "projects-codhy-an-ai-co-scientist-for-biomarker-guided-drug-combination-hypothesis-generation",
+          title: 'CoDHy: An AI Co-Scientist for Biomarker-Guided Drug Combination Hypothesis Generation',
+          description: "An interactive multi-agent AI co-scientist that builds task-specific knowledge graphs from biomedical evidence and proposes, validates and ranks drug-combination hypotheses. Accepted at IEEE ICDM 2026 (Demo Track).",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/2_codhy/";
             },},{id: "projects-uncertainty-quantification-in-neural-networks",
           title: 'Uncertainty Quantification in Neural Networks',
-          description: "Neural networks, Gaussian processes and distribution shift. Comparing NNGPs, deep ensembles, MC dropout and RBF GPs.",
+          description: "Comparing NNGPs, deep ensembles, MC dropout and RBF Gaussian processes, with a focus on how their uncertainty estimates behave under distribution shift.",
           section: "Projects",handler: () => {
               window.location.href = "/projects/2_uncertainty/";
             },},{id: "projects-covariate-shift-regularization-using-kernel-methods",
-          title: 'Covariate Shift Regularization using Kernel Methods',
-          description: "How covariate shift affects generalization and reliability. Importance weighting and self-attention-based adaptation.",
+          title: 'Covariate Shift Regularization Using Kernel Methods',
+          description: "How covariate shift affects generalization and reliability, evaluating importance weighting and self-attention-based approaches for adapting to changing input distributions.",
           section: "Projects",handler: () => {
               window.location.href = "/projects/3_covariate_shift/";
-            },},{id: "projects-binary-amr-prediction-from-pbp4-using-transformers",
-          title: 'Binary AMR Prediction from PBP4 using Transformers',
-          description: "Benchmarking DNABERT and Nucleotide Transformer for antimicrobial resistance prediction, with parameter-efficient adaptation.",
+            },},{id: "projects-binary-antimicrobial-resistance-prediction-from-pbp4-gene-sequences",
+          title: 'Binary Antimicrobial Resistance Prediction from pbp4 Gene Sequences',
+          description: "Benchmarking encoder-only pretrained Transformers (DNABERT, Nucleotide Transformer) for antimicrobial resistance prediction in Staphylococcus aureus, with LoRA-based parameter-efficient fine-tuning.",
           section: "Projects",handler: () => {
               window.location.href = "/projects/4_amr_transformers/";
+            },},{id: "projects-grokking-and-normal-hyperbolicity-of-the-interpolation-manifold",
+          title: 'Grokking and Normal Hyperbolicity of the Interpolation Manifold',
+          description: "Is the sudden jump from memorization to generalization in grokking a loss of normal hyperbolicity of the interpolation manifold? A singular-value diagnostic of the residual Jacobian suggests it is not.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/5_grokking/";
+            },},{id: "projects-interpretable-cancer-drug-response-prediction",
+          title: 'Interpretable Cancer Drug-Response Prediction',
+          description: "An interpretable deep-learning pipeline that combines Gene Ontology-guided neural networks with molecular graph-based drug encoders to predict cancer drug response.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/6_drug_response/";
+            },},{id: "projects-an-ontology-driven-biomedical-knowledge-graph-for-drug-link-prediction",
+          title: 'An Ontology-Driven Biomedical Knowledge Graph for Drug Link Prediction',
+          description: "A reproducible, test-covered pipeline from public biomedical data (ClinicalTrials.gov, openFDA, GDSC2, PubMed) to a validated knowledge graph and a leakage-controlled link-prediction benchmark.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/7_biopharma_kg/";
+            },},{id: "projects-evaluating-grounding-and-abstention-in-graphrag-over-a-pharmacogenomics-knowledge-graph",
+          title: 'Evaluating Grounding and Abstention in GraphRAG over a Pharmacogenomics Knowledge Graph',
+          description: "A reusable harness that compares four retrieval strategies on grounding, citation validity and abstention when answering questions over a pharmacogenomics knowledge graph.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/8_truthlens/";
+            },},{id: "projects-continuous-optimization-for-dag-learning",
+          title: 'Continuous Optimization for DAG Learning',
+          description: "An audit of continuous-optimization approaches to DAG learning (NOTEARS, DAGMA), with emphasis on benchmark sensitivity, standardization and causal-structure recovery.",
+          section: "Projects",handler: () => {
+              window.location.href = "/projects/9_dag/";
             },},{id: "teachings-mathematical-algorithms-and-programming-2",
           title: 'Mathematical Algorithms and Programming 2',
           description: "Led tutorials and graded assignments.",
