@@ -48,6 +48,12 @@
   font-size: 0.64rem;
   color: var(--global-text-color);
 }
+// the term capsule is filled like the primary buttons (dark in light theme, light in dark theme)
+.sb-teach-term {
+  background: var(--global-text-color);
+  border-color: var(--global-text-color);
+  color: var(--global-bg-color);
+}
 .sb-teach-title {
   margin: 0 0 0.3rem;
   font-size: 1.2rem;

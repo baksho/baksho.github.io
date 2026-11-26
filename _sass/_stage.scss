@@ -903,7 +903,7 @@ html.sb-reveal .sb-ul path {
 }
 html:not(.sb-landing) .sb-ul .u2,
 html.sb-reveal .sb-ul .u2 {
-  animation-delay: 1s;
+  animation-delay: 1.9s; // starts only once the first stroke has finished drawing (0.6s delay + 14% of 7s = ~1.6s)
 }
 @keyframes sb-underline {
   0% {

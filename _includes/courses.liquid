@@ -13,7 +13,7 @@
 {%- assign year_courses = year_group.items | sort: 'term' -%}
 {%- for course in year_courses %}
 <article class="sb-teach-item">
-<div class="sb-teach-tags">{% if course.level %}<span class="sb-teach-level">{{ course.level }} level</span>{% endif %}{% if course.term %}<span class="sb-teach-level">{{ course.term }}</span>{% endif %}</div>
+<div class="sb-teach-tags">{% if course.level %}<span class="sb-teach-level">{{ course.level }} level</span>{% endif %}{% if course.term %}<span class="sb-teach-level sb-teach-term">{{ course.term }}</span>{% endif %}</div>
 <h3 class="sb-teach-title">{{ course.title }}</h3>
 <p class="sb-teach-role">{{ course.role }}{% if course.institution %}<span class="sb-teach-sep"> · </span>{{ course.institution }}{% endif %}</p>
 {% if course.description %}<p class="sb-teach-desc">{{ course.description }}</p>{% endif %}
