@@ -105,7 +105,7 @@ ninja.data = [{
         
           title: 'Getting Active: The Math That Makes Neural Networks Learn <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
         
-        description: "",
+        description: "In today’s world, “Neural network” must be the most commonly heard term on a daily basis. Neural networks are computational models inspired by the human brain, designed to recognize complex patterns and make decisions based on data (predicting outcomes or classify data etc.). They consist of layers of interconnected nodes (neurons) that process and transmit information. One of the key components that enable neural networks to learn and perform complex tasks is the activation function.",
         section: "Posts",
         handler: () => {
           
