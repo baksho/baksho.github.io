@@ -953,11 +953,46 @@ html[data-theme="dark"] .sb-paper-cover {
   text-transform: uppercase;
 }
 
+.sb-book-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1.5px solid #fff;
+  background: #15803d;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+  // small pulsing dot: this one is in progress
+  &::before {
+    content: "";
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: #fff;
+    animation: sb-badge-pulse 1.6s ease-in-out infinite;
+  }
+}
 .sb-book-badge-planned {
-  background: transparent;
-  color: var(--global-text-color);
-  border: 1px solid var(--global-text-color);
-  background: var(--global-bg-color);
+  background: #f59e0b;
+  color: #1c1400;
+  &::before {
+    display: none;
+  }
+}
+@keyframes sb-badge-pulse {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.35;
+    transform: scale(0.7);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .sb-book-badge::before {
+    animation: none;
+  }
 }
 .sb-shelf-title {
   margin: 2.4rem 0 0;
@@ -1044,6 +1079,7 @@ html[data-theme="dark"] .sb-paper-cover {
   }
 }
 .sb-pg-title {
+  color: var(--global-theme-color);
   margin: 0 0 0.35rem;
   font-size: 1.7rem;
   font-weight: 650;

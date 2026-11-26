@@ -903,14 +903,14 @@ html.sb-reveal .sb-ul path {
 }
 html:not(.sb-landing) .sb-ul .u2,
 html.sb-reveal .sb-ul .u2 {
-  animation-delay: 1.9s; // starts only once the first stroke has finished drawing (0.6s delay + 14% of 7s = ~1.6s)
+  animation-delay: 1.4s; // starts only once the first stroke has finished drawing (0.6s delay + 9.5% of 7s = ~1.27s)
 }
 @keyframes sb-underline {
   0% {
     stroke-dashoffset: 1;
     opacity: 1;
   }
-  14% {
+  9.5% {
     stroke-dashoffset: 0;
   }
   82% {
@@ -1082,6 +1082,27 @@ html[data-theme="light"] #sb-backdrop {
   .sb-trav,
   .sb-scroll span {
     transition: none;
+    animation: none;
+  }
+}
+
+// brief click glow on a nav tab (added by assets/js/sb-ui.js; the next page does not carry it)
+.navbar .navbar-nav .nav-link.sb-click-glow {
+  border-radius: 999px;
+  animation: sb-click-glow 0.45s ease-out;
+}
+@keyframes sb-click-glow {
+  0% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--global-theme-color) 55%, transparent);
+    background-color: color-mix(in srgb, var(--global-theme-color) 22%, transparent);
+  }
+  100% {
+    box-shadow: 0 0 0 12px transparent;
+    background-color: transparent;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .navbar .navbar-nav .nav-link.sb-click-glow {
     animation: none;
   }
 }

@@ -71,6 +71,9 @@
     background-color: inherit;
     font-weight: bolder;
     color: var(--global-theme-color);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 6px;
 
     &:hover {
       color: var(--global-hover-color);

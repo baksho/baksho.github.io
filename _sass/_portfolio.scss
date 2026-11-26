@@ -63,6 +63,11 @@ li {
   margin-bottom: 0.5rem;
 }
 
+// page titles use the same blue as the venue badges on the publications page (the About name keeps its own colour)
+.post-header .post-title:not(.sb-trav) {
+  color: var(--global-theme-color);
+}
+
 .post-header .post-title .font-weight-bold {
   font-weight: 700;
 }
