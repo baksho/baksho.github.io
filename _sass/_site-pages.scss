@@ -808,14 +808,27 @@ html[data-theme="dark"] .sb-paper-cover {
 }
 .sb-dl {
   display: flex;
-  flex-direction: column;
-  gap: 0.55rem;
+  gap: 0.5rem;
   margin-top: 0.8rem;
   .sb-btn {
+    flex: 1 1 0;
+    min-width: 0;
     justify-content: center;
-    width: 100%;
-    gap: 0.6rem;
-    font-size: 0.78rem;
+    gap: 0.35rem;
+    padding-left: 0.4rem;
+    padding-right: 0.4rem;
+    font-size: 0.74rem;
+    white-space: nowrap;
+  }
+  // the outlined button needs a clearly visible border in both themes
+  .sb-btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--global-text-color);
+    color: var(--global-text-color) !important;
+    &:hover {
+      background: var(--global-text-color);
+      color: var(--global-bg-color) !important;
+    }
   }
 }
 .sb-tagbar {
