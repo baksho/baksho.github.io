@@ -1085,3 +1085,10 @@ html[data-theme="light"] #sb-backdrop {
     animation: none;
   }
 }
+
+// The theme script puts a 750 ms "transition: all" on every element each time a page loads. For the name, role line and
+// icons (positioned with transform by stage.js) that made them glide in from the top-left corner. Only colours may transition.
+html.transition .sb-trav,
+html.transition .sb-trav * {
+  transition-property: color, background-color, border-color, opacity !important;
+}

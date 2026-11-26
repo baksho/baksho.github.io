@@ -155,7 +155,7 @@ html[data-theme="dark"] .sb-card-img {
   display: grid;
   grid-template-columns: minmax(150px, 210px) 1fr;
   gap: 1.4rem;
-  align-items: center;
+  align-items: start;
 }
 .sb-post-thumb {
   display: block;
@@ -855,6 +855,7 @@ html[data-theme="dark"] .sb-paper-cover {
   .sb-post-title {
     font-size: 1.15rem;
     line-height: 1.35;
+    margin-top: -0.2rem; // lifts the first line so its top sits level with the thumbnail's top edge
   }
   a {
     border-bottom: 0 !important;
