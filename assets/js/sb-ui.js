@@ -1,22 +1,3 @@
-/* Nav click glow: a short circular glow on the tab that was clicked. Navigation is not delayed. */
-(function () {
-  document.addEventListener("click", function (e) {
-    var a = e.target.closest ? e.target.closest(".navbar .navbar-nav .nav-link") : null;
-    if (!a || a.classList.contains("dropdown-toggle")) return;
-    a.classList.remove("sb-click-glow");
-    void a.offsetWidth;
-    a.classList.add("sb-click-glow");
-    setTimeout(function () {
-      a.classList.remove("sb-click-glow");
-    }, 500);
-  });
-  // coming back with the browser's back button must not show a leftover glow
-  window.addEventListener("pageshow", function () {
-    var g = document.querySelectorAll(".sb-click-glow");
-    for (var i = 0; i < g.length; i++) g[i].classList.remove("sb-click-glow");
-  });
-})();
-
 /* Small UI helpers: the abstract pop-up on the publication lists. */
 (function () {
   var modal = document.getElementById("sbAbsModal");
