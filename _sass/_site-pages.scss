@@ -848,6 +848,23 @@ html[data-theme="dark"] .sb-paper-cover {
     text-decoration: none !important;
     box-shadow: none !important;
   }
+  // the first lines of the post (front matter "description"), cut after three lines
+  .sb-post-desc {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  // the "read on ..." link is underlined
+  .sb-post-meta a {
+    text-decoration: underline !important;
+    text-underline-offset: 3px;
+    color: var(--global-text-color) !important;
+    &:hover {
+      color: var(--global-theme-color) !important;
+    }
+  }
 }
 .sb-post-tags {
   margin: 0.5rem 0 0;
