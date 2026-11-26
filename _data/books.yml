@@ -4,42 +4,53 @@
 - title: "An Introduction to Statistical Learning"
   author: "Gareth James, Daniela Witten, Trevor Hastie, Robert Tibshirani"
   category: academic
+  cover: an-introduction-to-statistical-learning.webp
 - title: "Hands-On Machine Learning with Scikit-Learn, Keras & TensorFlow"
   author: "Aurélien Géron"
   category: academic
+  cover: hands-on-machine-learning-with-scikit-learn-keras-and-tensorflow.webp
 - title: "Deep Learning"
   author: "Ian Goodfellow, Yoshua Bengio, Aaron Courville"
   category: academic
+  cover: deep-learning.webp
 - title: "Designing Machine Learning Systems"
   author: "Chip Huyen"
   category: academic
+  cover: designing-machine-learning-systems.webp
 - title: "Hands-On Large Language Models"
   author: "Jay Alammar, Maarten Grootendorst"
   category: academic
+  cover: hands-on-large-language-model.webp
   status: ongoing
 - title: "Build a Large Language Model (From Scratch)"
   author: "Sebastian Raschka"
   category: academic
+  cover: build-a-large-language-model-from-scratch.webp
   status: ongoing
 - title: "Build a Reasoning Model (From Scratch)"
   author: "Sebastian Raschka"
   category: academic
+  cover: build-a-reasoning-model-from-scratch.webp
   status: planned
 - title: "Prompt Engineering for LLMs"
   author: "John Berryman, Albert Ziegler"
   category: academic
+  cover: prompt-engineering-for-llms.webp
   status: planned
 - title: "AI Engineering"
   author: "Chip Huyen"
   category: academic
+  cover: ai-engineering.webp
   status: planned
 - title: "Building LLMs for Production"
   author: "Louis-François Bouchard, Louie Peters"
   category: academic
+  cover: building-llms-for-production.webp
   status: planned
 - title: "LLM Engineer's Handbook"
   author: "Paul Iusztin, Maxime Labonne"
   category: academic
+  cover: llm-engineer's-handbook.webp
   status: planned
 - title: "The Psychology of Money"
   author: "Morgan Housel"
