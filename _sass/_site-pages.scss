@@ -36,6 +36,16 @@
     }
   }
 }
+// "See all ..." buttons on the About page (filled, like the hero buttons), with room below before the next section / the footer
+.sb-btnrow {
+  margin: 1.6rem 0 3.5rem;
+  .sb-btn {
+    gap: 8px;
+    span {
+      color: inherit !important; // the theme paints spans dark, which hid the arrow on the filled button
+    }
+  }
+}
 .sb-seeall-end {
   margin-top: 2.2rem;
   color: var(--global-text-color-light);
@@ -174,6 +184,14 @@ html[data-theme="dark"] .sb-card-img {
   &:hover img {
     transform: scale(1.04);
   }
+}
+// the first lines of the post (front matter "description"), cut after three lines (blog page and About page)
+.sb-post-desc {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 .sb-post-title {
   margin: 0 0 0.4rem;
@@ -861,14 +879,6 @@ html[data-theme="dark"] .sb-paper-cover {
     border-bottom: 0 !important;
     text-decoration: none !important;
     box-shadow: none !important;
-  }
-  // the first lines of the post (front matter "description"), cut after three lines
-  .sb-post-desc {
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
   }
   // the "read on ..." link is underlined
   .sb-post-meta a {

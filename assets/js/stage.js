@@ -1372,6 +1372,21 @@
   window.addEventListener("pageshow", function (e) {
     if (e.persisted) measure();
   });
-  if (document.fonts && document.fonts.ready) document.fonts.ready.then(measure);
+  // the hero is shown (faded in by CSS) only once the fonts are in and the layout is measured, so it never jumps
+  var heroShown = false;
+  function showHero() {
+    if (heroShown) return;
+    heroShown = true;
+    measure();
+    requestAnimationFrame(function () {
+      root.classList.add("sb-hero-ready");
+    });
+  }
+  if (document.fonts && document.fonts.ready)
+    document.fonts.ready.then(function () {
+      measure();
+      showHero();
+    });
+  setTimeout(showHero, 900); // fallback if the fonts take long
   measure();
 })();

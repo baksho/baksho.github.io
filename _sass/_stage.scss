@@ -852,7 +852,7 @@ html.sb-reveal .sb-hero::after {
   }
   .last {
     font-weight: 400;
-    opacity: var(--o-last, 1);
+    opacity: var(--o-last, 0);
   }
   // the hero version of the name: serif, with a full stop and a hand-drawn underline
   .sb-serif {
@@ -897,12 +897,12 @@ html.sb-reveal .sb-hero::after {
   }
 }
 // the underline is drawn, held, and rubbed out again, like someone underlining the word
-html:not(.sb-landing) .sb-ul path,
-html.sb-reveal .sb-ul path {
+html.sb-hero-ready:not(.sb-landing) .sb-ul path,
+html.sb-hero-ready.sb-reveal .sb-ul path {
   animation: sb-underline 7s ease-in-out 0.6s infinite;
 }
-html:not(.sb-landing) .sb-ul .u2,
-html.sb-reveal .sb-ul .u2 {
+html.sb-hero-ready:not(.sb-landing) .sb-ul .u2,
+html.sb-hero-ready.sb-reveal .sb-ul .u2 {
   animation-delay: 1.4s; // starts only once the first stroke has finished drawing (0.6s delay + 9.5% of 7s = ~1.27s)
 }
 @keyframes sb-underline {
@@ -1088,7 +1088,21 @@ html[data-theme="light"] #sb-backdrop {
 
 // The theme script puts a 750 ms "transition: all" on every element each time a page loads. For the name, role line and
 // icons (positioned with transform by stage.js) that made them glide in from the top-left corner. Only colours may transition.
-html.transition .sb-trav,
-html.transition .sb-trav * {
+html.transition .sb-trav {
   transition-property: color, background-color, border-color, opacity !important;
+}
+html.transition .sb-trav * {
+  transition-property: color, background-color, border-color !important;
+}
+
+// Coming back to the About page: name, role line and icons stay hidden until stage.js has measured the layout
+// (class sb-hero-ready), then fade in; the marker highlight starts after that. The first visit (landing) is not affected.
+html:not(.sb-landing):not(.sb-hero-ready) .sb-trav {
+  opacity: 0;
+}
+html:not(.sb-landing) .sb-trav {
+  transition: opacity 0.6s ease;
+}
+html.transition:not(.sb-landing) .sb-trav {
+  transition-duration: 0.6s !important;
 }

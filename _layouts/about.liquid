@@ -156,8 +156,8 @@ layout: default
           <a href="{{ '/blog/' | relative_url }}" style="color: inherit">latest posts</a>
         </h2>
         {% include latest_posts.liquid %}
-        <p class="sb-seeall">
-          <a href="{{ '/blog/' | relative_url }}">See all posts <span aria-hidden="true">→</span></a>
+        <p class="sb-btnrow">
+          <a class="sb-btn sb-btn-primary" href="{{ '/blog/' | relative_url }}">See all posts <span aria-hidden="true">→</span></a>
         </p>
       {% endif %}
 
@@ -167,8 +167,8 @@ layout: default
           <a href="{{ '/publications/' | relative_url }}" style="color: inherit">selected publications</a>
         </h2>
         {% include selected_papers.liquid %}
-        <p class="sb-seeall">
-          <a href="{{ '/publications/' | relative_url }}">See all publications <span aria-hidden="true">→</span></a>
+        <p class="sb-btnrow">
+          <a class="sb-btn sb-btn-primary" href="{{ '/publications/' | relative_url }}">See all publications <span aria-hidden="true">→</span></a>
         </p>
       {% endif %}
 
