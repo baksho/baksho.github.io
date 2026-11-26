@@ -1,0 +1,217 @@
+# Data for the CV page (/cv/), taken from the CV PDF. Edit this file to update the page.
+# (_data/cv.yml is only used by the "Render a CV" GitHub Action; this page no longer reads it.)
+# Text fields accept Markdown (links, *italics*). Dates are free text, e.g. "Oct 2023"; leave `end` out for "Ongoing".
+
+name: Suvinava Basak
+location: Braunschweig, Germany
+emails:
+  - suvinava.basak@outlook.com
+  - suvinava.basak@tu-braunschweig.de
+links:
+  - label: GitHub
+    url: https://github.com/baksho
+  - label: LinkedIn
+    url: https://linkedin.com/in/suvinava-basak
+  - label: Google Scholar
+    url: https://scholar.google.com/citations?user=LdhKjt4AAAAJ&hl=en
+  - label: ORCID
+    url: https://orcid.org/0009-0005-4289-1205
+
+interests: Machine learning for biomarker discovery and clinical decision support in systems medicine. I am interested in integrating heterogeneous molecular, clinical and literature data, including transcriptomic and multi-omics information, to identify predictive biomarkers and therapeutic targets, with an emphasis on interpretable models and calibrated, uncertainty-aware predictions that remain reliable under distribution shift.
+
+education:
+  - start: Oct 2023
+    location: Braunschweig, Germany
+    title: Master of Science (M.Sc.) in Data Science
+    org: Technische Universität Braunschweig, Germany
+    lines:
+      - "**Thesis**: End-to-End Calibration: Theory and Empirical Evaluation in Biomedical Context"
+      - "**Thesis advisor**: [Prof. Dr. Nicole Mücke](https://scholar.google.com/citations?user=yKC414MAAAAJ&hl=en)"
+      - "**Current grade**: 1.3 (German scale, 1.0 = best), excluding the thesis. Expected graduation: Nov 2026"
+    links:
+      - label: Transcript
+        url: https://drive.google.com/file/d/1p5HgIx5-xhpsS5C7d4rjZLoiyVwTQpoh/view?usp=sharing
+      - label: Relevant Coursework
+        url: https://drive.google.com/file/d/1yvNCL6kv779ecbK5G4nGIU2s8KSdtxfz/view?usp=sharing
+      - label: Thesis Report
+        url: https://github.com/baksho/e2ecal/blob/main/Final%20Thesis%20Report.pdf
+      - label: Repository
+        url: https://github.com/baksho/e2ecal
+  - start: Jul 2016
+    end: Mar 2018
+    location: Indore, India
+    title: Master of Business Administration (MBA)
+    org: Indian Institute of Management Indore, India
+    links:
+      - label: Transcript
+        url: https://drive.google.com/file/d/1abeWX_RZ9GvZPH4EI-_0MxLc-ZcV7kS2/view?usp=sharing
+      - label: Degree
+        url: https://drive.google.com/file/d/1Q4hlor6wEfv7qxhgk4pIMRKt1Z38RhPe/view?usp=sharing
+  - start: Aug 2010
+    end: Jun 2014
+    location: West Bengal, India
+    title: Bachelor of Technology in Computer Science and Engineering
+    org: Jalpaiguri Govt. Engineering College, West Bengal University of Technology, India
+    lines:
+      - "**Project**: Face Recognition System using MATLAB"
+      - "**Advisor**: [Prof. Animesh Hazra](https://scholar.google.com/citations?user=VvGKI1gAAAAJ&hl=en). **Grade**: 7.83/10.0, top 10% (of 60 students)"
+    links:
+      - label: Transcript
+        url: https://drive.google.com/file/d/1l-3oheZgv2zwQWnbe-RQClEdKRnkAyxm/view?usp=sharing
+      - label: Degree
+        url: https://drive.google.com/file/d/1lQdvhsW4_NkHQwERhzTcM3SvRF1H2Fw4/view?usp=sharing
+      - label: Coursework
+        url: https://drive.google.com/file/d/16rndZNLfOWUhpco-tfPikhmG7lIoIEZb/view?usp=sharing
+      - label: Report
+        url: https://drive.google.com/file/d/1ggy6WN6jo7cvrDWCOhBpYk-YIFgzF_2d/view?usp=sharing
+      - label: Repository
+        url: https://github.com/baksho/face-recognition-system
+
+research:
+  - start: Apr 2026
+    end: Oct 2026
+    location: Braunschweig, Germany
+    title: Master's Thesis
+    org: Institute for Statistics and Foundations of Machine Learning, TU Braunschweig
+    lines:
+      - "**Advisor**: [Prof. Dr. Nicole Mücke](https://scholar.google.com/citations?user=yKC414MAAAAJ&hl=en)"
+      - "*End-to-End Calibration: Theory and Empirical Evaluation in Biomedical Context*"
+    items:
+      - Investigated end-to-end calibration of neural networks, incorporating differentiable calibration objectives directly into model training rather than relying only on post-hoc calibration, and studying their effects on predictive reliability and uncertainty estimation.
+      - Studied the relationship between predictive performance, model confidence and reliability under distribution shift, using Transformer-based gene regulatory network inference as a scientific application.
+  - start: Aug 2025
+    location: Hannover, Germany
+    title: Student Research Assistant
+    org: CAIMed Research Group, Medizinische Hochschule Hannover, Germany
+    lines:
+      - "**Advisors**: [Dr. rer. nat. Zahra Ahmadi](https://scholar.google.com/citations?user=QdQRYyAAAAAJ&hl=en), [Dr.-Ing. Raneen Younis](https://scholar.google.com/citations?user=09ulGGQAAAAJ&hl=en)"
+      - "*Multi-agent System for Scientific Hypothesis Generation*"
+    items:
+      - "Built an LLM- and Knowledge Graph-aware RAG-based multi-agent system that proposes biomarker-guided drug combination hypotheses from heterogeneous biomedical evidence, integrating molecular, genomic, clinical and literature information. Co-first author of the resulting ICDM 2026 demo-track paper."
+      - Designed evidence-grounded reasoning and calibrated confidence mechanisms, so the system signals how reliable each hypothesis is when evidence is incomplete or heterogeneous.
+    links:
+      - label: Reference Letter
+        url: https://drive.google.com/file/d/13uXlzoOk3ECqem7k-xUGDwUJsh1sG9Ax/view?usp=sharing
+  - start: Mar 2026
+    end: May 2026
+    location: Braunschweig, Germany
+    title: Student Research Assistant
+    org: Institute for Statistics and Foundations of Machine Learning, TU Braunschweig
+    lines:
+      - "**Advisor**: [Prof. Dr. Nicole Mücke](https://scholar.google.com/citations?user=yKC414MAAAAJ&hl=en)"
+      - "*Calibrating Neural Networks under Distribution Shift*"
+    items:
+      - Researched calibration and uncertainty estimation of deep networks and its performance under distribution shift.
+
+publications:
+  - text: "S. Basak, “Is grokking a loss of normal hyperbolicity of the interpolation manifold?”, 2026. Oral presentation at SKILL 2026 (Studierendenkonferenz Informatik), INFORMATIK 2026, Gesellschaft für Informatik e.V., Dresden, 23 September. To appear in GI-Edition Lecture Notes in Informatics (LNI)."
+    links:
+      - label: Paper
+        url: https://arxiv.org/abs/2608.14803
+      - label: Presentation
+        url: https://drive.google.com/file/d/1JY9DUVtjaFeJtiajQqgWG-4k3AWlBAj2/view?usp=sharing
+  - text: "R. Younis\\*, S. Basak\\*, L. Chavez, and Z. Ahmadi, “From literature to hypotheses: An AI co-scientist system for biomarker-guided drug combination hypothesis generation”, 2026. Accepted at IEEE ICDM 2026, Demo track. To appear in ICDM 2026 Workshop Proceedings. \\*Equal contribution."
+    links:
+      - label: Paper
+        url: https://arxiv.org/abs/2603.00612
+      - label: Demo
+        url: https://huggingface.co/spaces/suvinavabasak/CoDHy
+
+teaching:
+  - start: Apr 2025
+    end: Sep 2025
+    location: Braunschweig, Germany
+    title: Student Research Assistant (Teaching Assistant)
+    org: Institute for Analysis and Algebra, TU Braunschweig
+    lines:
+      - "**Lecturer**: [Prof. Dr. Timo de Wolff](https://www.iaa.tu-bs.de/timodewolff/)"
+    items:
+      - Led tutorials and graded assignments for Mathematical Algorithms and Programming 2 (bachelor level course) in summer semester 2025 for ~50 students.
+    links:
+      - label: Reference Letter
+        url: https://drive.google.com/file/d/1qP21QdQ9PeC_vxWXnkZAo506PgQK7IVV/view?usp=sharing
+
+projects:
+  - title: Interpretable Cancer Drug-Response Prediction
+    tags: Precision Oncology, GNN, Multi-omics
+    text: Built an interpretable deep-learning pipeline for cancer drug-response prediction, integrating Gene Ontology-guided neural networks with molecular graph-based drug representations. Implemented drug-aware gene gating, multimodal fusion, and pathway-level interpretability, with synthetic-data experiments and a GDSC2 data pipeline.
+    url: https://github.com/baksho/OncoLens
+  - title: Uncertainty Quantification in Neural Networks
+    tags: Gaussian Processes, Distribution Shift
+    text: Investigated uncertainty estimation in neural networks through the connection between finite-width neural networks and infinite-width Gaussian-process limits. Compared NNGPs, deep ensembles, MC dropout, and RBF Gaussian processes, examining their predictive uncertainty and behavior under distribution shift.
+    url: https://github.com/baksho/infinite-width-uq
+  - title: Covariate Shift Regularization using Kernel Methods
+    tags: Gradient Descent, Distribution Shift
+    text: Investigated how covariate shift affects model generalization and predictive reliability under distribution mismatch; evaluated importance-weighting and self-attention-based approaches for adapting to changing input distributions. Student project supervised by Prof. Dr. Nicole Mücke, graded 1.0.
+    url: https://github.com/baksho/dist_shift_regularization
+  - title: Binary AMR Prediction from pbp4 Gene using Transformers
+    tags: DNABERT, Nucleotide Transformer, PEFT
+    text: Benchmarked encoder-only pretrained transformer models for binary antimicrobial resistance prediction in Staphylococcus aureus against Cefoxitin using pbp4 gene sequences. Analyzed learned sequence representations and classification performance across architectures, with LoRA-based parameter-efficient fine-tuning to adapt pretrained biological sequence models. Seminar "Deep Learning in Molecular Biology", supervised by Prof. Dr. Alice C. McHardy.
+    url: https://github.com/baksho/AMRxformer
+  - title: Grokking and Normal Hyperbolicity of Interpolation Manifold
+    tags: Grokking, PyTorch, Neural Networks
+    text: Investigated a possible interpretation of the sharp generalization transition in grokking as a loss of normal hyperbolicity of the interpolation manifold. Experimental evaluation of the hypothesis through a singular-value-based diagnostic of the residual Jacobian. Accepted as a paper at the SKILL 2026 student conference of the German Informatics Society.
+    url: https://github.com/baksho/grokking-normal-hyperbolicity
+  - title: Continuous Optimization DAG Learning
+    tags: Causal Discovery, DAG, Statistical Learning
+    text: Audited continuous-optimization approaches to Directed Acyclic Graph learning, including NOTEARS/DAGMA, with emphasis on benchmark sensitivity, standardization and causal-structure recovery. Compared learned graph structures and explored a directed-to-undirected bridge on real protein-signaling data.
+    url: https://github.com/baksho/DAGnostics
+
+industry:
+  - start: Aug 2024
+    end: Feb 2025
+    location: Braunschweig, Germany
+    title: Intern, Data Analytics & AI
+    org: Volkswagen Financial Services AG, Germany
+    links:
+      - label: Exp. Letter
+        url: https://drive.google.com/file/d/1A3nEEq5Xh_nIR82ZMI2BhVoKeTKXlWq2/view?usp=sharing
+  - start: Jun 2018
+    end: Oct 2023
+    location: Bangalore, India
+    title: Strategy Consultant
+    org: Wipro Ltd., India
+    links:
+      - label: Exp. Letter
+        url: https://drive.google.com/file/d/1f-o3QfmCg0zNfgznZKmJ31TXBG0Lb-2p/view?usp=sharing
+  - start: Mar 2015
+    end: Jun 2016
+    location: Kolkata, India
+    title: Solution Integrator
+    org: Ericsson Global India Services Pvt. Ltd., India
+    links:
+      - label: Exp. Letter
+        url: https://drive.google.com/file/d/1dWtcVEn87O9QGza6SoaymbzeX_nmR2Kv/view?usp=sharing
+
+skills:
+  - name: Programming
+    items: Python • Julia • SQL • MATLAB
+  - name: Deep Learning
+    items: Neural networks • Transformers • Representation learning • Parameter-efficient fine-tuning (PEFT)
+  - name: Statistical / Scientific ML
+    items: Uncertainty quantification • Calibration • Gaussian processes • Statistical learning • Distribution shift • Causal discovery • Graph learning • Multimodal learning
+  - name: Libraries
+    items: PyTorch • TensorFlow • Hugging Face • NumPy • Pandas • Scikit-learn
+  - name: LLM Systems
+    items: LLM APIs • RAG • Multi-Agent Systems • Knowledge Graphs • LangChain
+  - name: Tools
+    items: Git • Docker • Linux • LaTeX
+  - name: Spoken Languages
+    items: English (Proficient) • Bengali (Native) • Hindi (Proficient) • German (Beginner)
+
+awards:
+  - title: Deutschlandstipendium (2025/26)
+    text: Merit-based scholarship for high-achieving and committed students.
+  - title: Industry recognition, Wipro Ltd.
+    text: Excellence Award (Q3–Q4, FY19); Customer Centricity Award (Q1, FY23).
+
+references:
+  - name: Prof. Dr. Nicole Mücke
+    org: Technische Universität Braunschweig
+    role: Master's Thesis Supervisor
+  - name: Dr. rer. nat. Zahra Ahmadi
+    org: Medizinische Hochschule Hannover
+    role: Research Group Leader
+  - name: Dr.-Ing. Raneen Younis
+    org: Medizinische Hochschule Hannover
+    role: Research Supervisor

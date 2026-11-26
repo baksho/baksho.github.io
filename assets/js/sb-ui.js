@@ -85,3 +85,47 @@
     if (e.key === "Escape" && !modal.hidden) close();
   });
 })();
+
+/* Projects: the "View details" pop-up (one hidden dialog per project, opened by id). */
+(function () {
+  var openModal = null,
+    lastFocus = null;
+
+  function open(id) {
+    var m = document.getElementById(id);
+    if (!m) return;
+    if (openModal) close();
+    lastFocus = document.activeElement;
+    m.hidden = false;
+    var card = m.querySelector(".sb-modal-card");
+    if (card) card.scrollTop = 0;
+    document.documentElement.classList.add("sb-modal-open");
+    var x = m.querySelector(".sb-modal-close");
+    if (x) x.focus();
+    openModal = m;
+    if (window.MathJax && window.MathJax.typesetPromise) window.MathJax.typesetPromise([m]).catch(function () {});
+  }
+  function close() {
+    if (!openModal) return;
+    openModal.hidden = true;
+    openModal = null;
+    document.documentElement.classList.remove("sb-modal-open");
+    if (lastFocus && lastFocus.focus) lastFocus.focus();
+  }
+  document.addEventListener("click", function (e) {
+    var t = e.target.closest ? e.target.closest(".sb-proj-open") : null;
+    if (t) {
+      e.preventDefault();
+      open(t.getAttribute("data-proj"));
+      return;
+    }
+    if (openModal && (e.target === openModal || (e.target.closest && e.target.closest(".sb-modal-close") && openModal.contains(e.target)))) close();
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && openModal) close();
+  });
+  // a link such as /projects/#proj-3 opens that project directly
+  if (/^#proj-\d+$/.test(location.hash)) document.addEventListener("DOMContentLoaded", function () {
+    open(location.hash.slice(1));
+  });
+})();

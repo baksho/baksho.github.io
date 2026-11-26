@@ -218,3 +218,214 @@ ul.timeline li::before {
      color: var(--global-text-color);
 }
 */
+
+/*****************************
+ * CV page (layout cv-page): dated entries in a fixed two-column grid
+ *****************************/
+
+.sb-cv {
+  .sb-cv-card {
+    h3.card-title {
+      margin-bottom: 0.9rem;
+    }
+  }
+  .sb-cv-text {
+    margin: 0;
+    line-height: 1.7;
+  }
+  .sb-cv-sub {
+    margin: 0 0 0.8rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--global-text-color-light);
+  }
+  .sb-cv-contact {
+    p {
+      margin: 0 0 0.35rem;
+    }
+    i {
+      margin-right: 0.3rem;
+      color: var(--global-theme-color);
+    }
+  }
+}
+.sb-cv-entry {
+  display: grid;
+  grid-template-columns: 150px minmax(0, 1fr);
+  column-gap: 1.4rem;
+  padding: 1.1rem 0;
+  border-top: 1px solid var(--global-divider-color);
+  &:first-of-type {
+    border-top: 0;
+    padding-top: 0.2rem;
+  }
+  &:last-child {
+    padding-bottom: 0.2rem;
+  }
+}
+// the date badge always has the same width, and the location sits below it and may wrap, so nothing can overlap the text on the right
+.sb-cv-when {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.45rem;
+}
+.sb-cv-date {
+  display: block;
+  padding: 0.32rem 0.2rem;
+  border-radius: 4px;
+  background: var(--global-theme-color);
+  color: var(--global-bg-color);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.02em;
+  text-align: center;
+  white-space: nowrap;
+}
+.sb-cv-loc {
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--global-text-color-light);
+  text-align: center;
+  overflow-wrap: anywhere;
+  i {
+    color: var(--global-theme-color);
+    margin-right: 0.15rem;
+  }
+}
+.sb-cv-what {
+  min-width: 0;
+}
+.sb-cv-role {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--global-text-color);
+}
+.sb-cv-org {
+  margin: 0 0 0.35rem;
+  font-size: 0.92rem;
+  font-weight: 600;
+  line-height: 1.45;
+}
+.sb-cv-line {
+  margin: 0 0 0.35rem;
+  font-size: 0.9rem;
+  line-height: 1.6;
+  color: var(--global-text-color);
+}
+.sb-cv-items {
+  margin: 0.4rem 0 0.4rem;
+  padding-left: 1.2rem;
+  li {
+    margin-bottom: 0.35rem;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+}
+.sb-cv-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.55rem 0 0;
+}
+.sb-cv-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.2rem 0.65rem;
+  border: 1px solid var(--global-text-color);
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--global-text-color) !important;
+  text-decoration: none !important;
+  &:hover {
+    background: var(--global-text-color);
+    color: var(--global-bg-color) !important;
+  }
+}
+.sb-cv-pub,
+.sb-cv-proj,
+.sb-cv-award,
+.sb-cv-ref {
+  padding: 0.9rem 0;
+  border-top: 1px solid var(--global-divider-color);
+  &:first-of-type {
+    border-top: 0;
+    padding-top: 0.1rem;
+  }
+}
+.sb-cv-proj-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.2rem 1rem;
+  .sb-cv-role {
+    margin: 0;
+  }
+}
+.sb-cv-tags {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--global-text-color-light);
+}
+.sb-cv-skills {
+  display: grid;
+  grid-template-columns: 170px minmax(0, 1fr);
+  gap: 0.6rem 1.2rem;
+  margin: 0;
+  dt {
+    font-size: 0.9rem;
+    font-weight: 700;
+  }
+  dd {
+    margin: 0;
+    font-size: 0.9rem;
+    line-height: 1.6;
+  }
+}
+.sb-cv-refs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem 1.5rem;
+  .sb-cv-ref {
+    padding: 0;
+    border-top: 0;
+  }
+}
+@media (max-width: 640px) {
+  .sb-cv-entry {
+    grid-template-columns: 1fr;
+    row-gap: 0.6rem;
+  }
+  .sb-cv-when {
+    flex-direction: row;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.8rem;
+  }
+  .sb-cv-date {
+    width: auto;
+    padding: 0.32rem 0.7rem;
+  }
+  .sb-cv-loc {
+    text-align: left;
+  }
+  .sb-cv-skills {
+    grid-template-columns: 1fr;
+    gap: 0.1rem;
+    dd {
+      margin-bottom: 0.7rem;
+    }
+  }
+}

@@ -1,0 +1,130 @@
+---
+layout: default
+---
+{% comment %}
+  CV page: reads _data/cv_page.yml (taken from the CV PDF). Sections are cards with an h3.card-title so the table of contents on the left picks them up.
+{% endcomment %}
+{% assign cv = site.data.cv_page %}
+<div class="post sb-cv">
+  <header class="post-header">
+    <h1 class="post-title">
+      {{ page.title }}
+      {% if page.cv_pdf %}
+        <a href="{{ page.cv_pdf | relative_url }}" target="_blank" rel="noopener noreferrer" class="float-right" aria-label="Download the CV as PDF" title="Download the CV as PDF"><i class="fa-solid fa-file-pdf"></i></a>
+      {% endif %}
+    </h1>
+    {% if page.description %}<p class="post-description">{{ page.description }}</p>{% endif %}
+  </header>
+
+  <article>
+    <div class="cv">
+      <a class="anchor" id="contact"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Contact</h3>
+        <div class="sb-cv-contact">
+          <p><strong>{{ cv.name }}</strong></p>
+          <p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ cv.location }}</p>
+          <p>
+            {% for m in cv.emails %}<a href="mailto:{{ m }}">{{ m }}</a>{% unless forloop.last %} &nbsp;·&nbsp; {% endunless %}{% endfor %}
+          </p>
+        </div>
+        <p class="sb-cv-links">
+          {% for l in cv.links %}<a class="sb-cv-chip" href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }}</a>{% endfor %}
+        </p>
+      </div>
+
+      <a class="anchor" id="research-interests"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Research Interests</h3>
+        <p class="sb-cv-text">{{ cv.interests }}</p>
+      </div>
+
+      <a class="anchor" id="education"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Education</h3>
+        {% for e in cv.education %}{% include cv_entry.liquid e=e %}{% endfor %}
+      </div>
+
+      <a class="anchor" id="research-experience"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Research Experience</h3>
+        {% for e in cv.research %}{% include cv_entry.liquid e=e %}{% endfor %}
+      </div>
+
+      <a class="anchor" id="publications"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Publications</h3>
+        <p class="sb-cv-sub">Accepted papers</p>
+        {% for p in cv.publications %}
+          <div class="sb-cv-pub">
+            <p class="sb-cv-line">{{ p.text | markdownify | remove: '<p>' | remove: '</p>' }}</p>
+            {% include cv_links.liquid links=p.links %}
+          </div>
+        {% endfor %}
+      </div>
+
+      <a class="anchor" id="teaching-experience"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Teaching Experience</h3>
+        {% for e in cv.teaching %}{% include cv_entry.liquid e=e %}{% endfor %}
+      </div>
+
+      <a class="anchor" id="academic-research-projects"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Academic Research Projects</h3>
+        {% for p in cv.projects %}
+          <div class="sb-cv-proj">
+            <div class="sb-cv-proj-head">
+              <h4 class="sb-cv-role" data-toc-skip>{{ p.title }}</h4>
+              <span class="sb-cv-tags">{{ p.tags }}</span>
+            </div>
+            <p class="sb-cv-line">{{ p.text }}</p>
+            <p class="sb-cv-links"><a class="sb-cv-chip" href="{{ p.url }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> GitHub</a></p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <a class="anchor" id="industry-experience"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Industry Experience</h3>
+        {% for e in cv.industry %}{% include cv_entry.liquid e=e %}{% endfor %}
+      </div>
+
+      <a class="anchor" id="technical-skills"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Technical Skills</h3>
+        <dl class="sb-cv-skills">
+          {% for s in cv.skills %}
+            <dt>{{ s.name }}</dt>
+            <dd>{{ s.items }}</dd>
+          {% endfor %}
+        </dl>
+      </div>
+
+      <a class="anchor" id="awards-recognition"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">Awards &amp; Recognition</h3>
+        {% for a in cv.awards %}
+          <div class="sb-cv-award">
+            <h4 class="sb-cv-role" data-toc-skip>{{ a.title }}</h4>
+            <p class="sb-cv-line">{{ a.text }}</p>
+          </div>
+        {% endfor %}
+      </div>
+
+      <a class="anchor" id="references"></a>
+      <div class="card mt-3 p-3 sb-cv-card">
+        <h3 class="card-title font-weight-medium">References</h3>
+        <div class="sb-cv-refs">
+          {% for r in cv.references %}
+            <div class="sb-cv-ref">
+              <h4 class="sb-cv-role" data-toc-skip>{{ r.name }}</h4>
+              <p class="sb-cv-org">{{ r.org }}</p>
+              <p class="sb-cv-line">{{ r.role }}</p>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </article>
+</div>

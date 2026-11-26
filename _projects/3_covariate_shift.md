@@ -1,13 +1,20 @@
 ---
 layout: page
-title: Covariate Shift Regularization using Kernel Methods
-description: How covariate shift affects generalization and reliability. Importance weighting and self-attention-based adaptation.
-importance: 3
-redirect: https://github.com/baksho/dist_shift_regularization
-github: https://github.com/baksho/dist_shift_regularization
+title: Covariate Shift Regularization Using Kernel Methods
+kicker: Student research project
+subtitle: "Supervisor: Prof. Dr. Nicole Mücke. Grade: 1.0."
+area: Distribution Shift, Kernel Methods, Generalization
+description: How covariate shift affects generalization and reliability, evaluating importance weighting and self-attention-based approaches for adapting to changing input distributions.
+group: additional
+importance: 9
 thumb: /assets/img/projects/covariate-shift.webp
+icon: fa-shuffle
+github: https://github.com/baksho/dist_shift_regularization
+links:
+  - label: Repository
+    url: https://github.com/baksho/dist_shift_regularization
 ---
 
-Investigated how covariate shift affects model generalization and predictive reliability under distribution mismatch, and evaluated importance-weighting and self-attention-based approaches for adapting models to changing input distributions. Student project supervised by Prof. Dr. Nicole Mücke (graded 1.0).
+I investigated how covariate shift affects model generalization and predictive reliability under distribution mismatch. The project evaluated importance-weighting and self-attention-based approaches for adapting to changing input distributions.
 
-Code: [github.com/baksho/dist_shift_regularization](https://github.com/baksho/dist_shift_regularization)
+This work complements my thesis by focusing on distribution mismatch and on how learning methods behave when training and evaluation inputs differ.

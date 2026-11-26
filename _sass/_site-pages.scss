@@ -1113,3 +1113,142 @@ html[data-theme="dark"] .sb-paper-cover {
   border-radius: 12px;
   background: var(--global-bg-color);
 }
+
+/* ---- Projects page: research profile, cards with two buttons, details pop-up ----- */
+
+.sb-profile {
+  margin: 1.2rem 0 2.2rem;
+  padding: 1.3rem 1.5rem 1.2rem;
+  background: var(--global-card-bg-color);
+  border: 1px solid var(--global-divider-color);
+  border-left: 3px solid var(--global-theme-color);
+  border-radius: 12px;
+  p {
+    margin: 0 0 0.85rem;
+    line-height: 1.7;
+    font-size: 0.96rem;
+  }
+  .sb-notes-eyebrow {
+    margin-bottom: 0.7rem;
+    color: var(--global-theme-color);
+  }
+}
+.sb-profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  list-style: none;
+  li {
+    margin: 0;
+    padding: 0.28rem 0.7rem;
+    border: 1px solid var(--global-divider-color);
+    border-radius: 999px;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    color: var(--global-text-color);
+  }
+}
+.sb-proj-heading {
+  margin: 2.4rem 0 0;
+}
+// the picture and the title are buttons (they open the details), so reset the browser look
+button.sb-card-img {
+  width: 100%;
+  padding: 0;
+  border: 0;
+  border-bottom: 1px solid var(--global-divider-color);
+  cursor: pointer;
+}
+.sb-card-title button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  text-align: left;
+  color: var(--global-text-color);
+  cursor: pointer;
+  &:hover {
+    color: var(--global-theme-color);
+  }
+}
+// projects without a picture get a quiet gradient panel with an icon
+.sb-card-ph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, rgba(31, 95, 209, 0.14), rgba(90, 240, 184, 0.2));
+  color: var(--global-theme-color);
+  font-size: 2.6rem;
+}
+html[data-theme="dark"] .sb-card-ph {
+  background: linear-gradient(135deg, rgba(127, 176, 255, 0.16), rgba(90, 240, 184, 0.14));
+}
+.sb-card-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.5rem;
+  .sb-btn {
+    flex: 1 1 auto;
+    justify-content: center;
+    gap: 0.4rem;
+    height: 36px;
+    padding: 0 0.8rem;
+    font-size: 0.74rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .sb-btn i {
+    margin-right: 0;
+  }
+  .sb-btn-secondary {
+    background: transparent;
+    border: 1.5px solid var(--global-text-color);
+    color: var(--global-text-color) !important;
+    &:hover {
+      background: var(--global-text-color);
+      color: var(--global-bg-color) !important;
+    }
+  }
+}
+.sb-proj-meta {
+  margin: 0 0 1.1rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--global-divider-color);
+}
+.sb-proj-body {
+  h3 {
+    margin: 1.5rem 0 0.55rem;
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--global-theme-color);
+  }
+  ul {
+    margin: 0 0 0.9rem;
+    padding-left: 1.2rem;
+  }
+  li {
+    margin-bottom: 0.3rem;
+    line-height: 1.65;
+  }
+  .sb-eq {
+    margin: 0.4rem 0 1.1rem;
+    overflow-x: auto;
+    text-align: center;
+  }
+  .sb-proj-stack {
+    margin-top: 1.3rem;
+    font-size: 0.86rem;
+    color: var(--global-text-color-light);
+    strong {
+      color: var(--global-text-color);
+    }
+  }
+}

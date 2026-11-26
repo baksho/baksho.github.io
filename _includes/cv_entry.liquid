@@ -1,0 +1,26 @@
+{% comment %}
+  One dated CV entry (education, research, teaching, industry). Expects include.e with: start, end, location, title, org, lines[], items[], links[].
+{% endcomment %}
+<div class="sb-cv-entry">
+  <div class="sb-cv-when">
+    <span class="sb-cv-date">{{ include.e.start }} &ndash; {% if include.e.end %}{{ include.e.end }}{% else %}Ongoing{% endif %}</span>
+    {% if include.e.location %}
+      <span class="sb-cv-loc"><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ include.e.location }}</span>
+    {% endif %}
+  </div>
+  <div class="sb-cv-what">
+    <h4 class="sb-cv-role" data-toc-skip>{{ include.e.title }}</h4>
+    {% if include.e.org %}<p class="sb-cv-org">{{ include.e.org }}</p>{% endif %}
+    {% for line in include.e.lines %}
+      <p class="sb-cv-line">{{ line | markdownify | remove: '<p>' | remove: '</p>' }}</p>
+    {% endfor %}
+    {% if include.e.items %}
+      <ul class="sb-cv-items">
+        {% for item in include.e.items %}
+          <li>{{ item | markdownify | remove: '<p>' | remove: '</p>' }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% include cv_links.liquid links=include.e.links %}
+  </div>
+</div>

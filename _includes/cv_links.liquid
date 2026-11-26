@@ -1,0 +1,8 @@
+{% comment %} A row of small link chips. Expects include.links: a list of label/url pairs. {% endcomment %}
+{% if include.links %}
+  <p class="sb-cv-links">
+    {% for l in include.links %}
+      <a class="sb-cv-chip" href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }}</a>
+    {% endfor %}
+  </p>
+{% endif %}
