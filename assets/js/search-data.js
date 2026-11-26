@@ -83,7 +83,7 @@ ninja.data = [{
         
           title: 'RAG Without Vectors? Why PageIndex Might be the Architecture We’ve Been Missing <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
         
-        description: "",
+        description: "In recent times, Large Language Models (LLMs) have become the go-to solution for answering user queries. However, the context window (the maximum amount of tokenized text a model can process at one time) has remained a fundamental architectural limit. While recent models support longer contexts, researchers have established that model performance deteriorates with growing context length.¹ This creates problems for LLMs to accurately interpret and reason over long, complex, domain-specific documents.",
         section: "Posts",
         handler: () => {
           
@@ -94,7 +94,7 @@ ninja.data = [{
         
           title: 'To ReLU, or not to ReLU: A Practitioner’s Guide to Solve the “Zombie... <svg width="1.2rem" height="1.2rem" top=".5rem" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg"><path d="M17 13.5v6H5v-12h6m3-3h6v6m0-6-9 9" class="icon_svg-stroke" stroke="#999" stroke-width="1.5" fill="none" fill-rule="evenodd" stroke-linecap="round" stroke-linejoin="round"></path></svg>',
         
-        description: "",
+        description: "In our brains, neurons constantly filter huge amounts of sensory data, recognizing patterns and ignoring unnecessary information. This is exactly what artificial neural networks do, and it is accomplished through activation functions.",
         section: "Posts",
         handler: () => {
           
