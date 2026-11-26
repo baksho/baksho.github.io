@@ -429,3 +429,9 @@ ul.timeline li::before {
     }
   }
 }
+
+// paper titles in the publication list stand out in the accent colour
+.sb-cv-pub em {
+  color: var(--global-theme-color);
+  font-style: italic;
+}

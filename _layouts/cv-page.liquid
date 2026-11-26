@@ -18,21 +18,6 @@ layout: default
 
   <article>
     <div class="cv">
-      <a class="anchor" id="contact"></a>
-      <div class="card mt-3 p-3 sb-cv-card">
-        <h3 class="card-title font-weight-medium">Contact</h3>
-        <div class="sb-cv-contact">
-          <p><strong>{{ cv.name }}</strong></p>
-          <p><i class="fa-solid fa-location-dot" aria-hidden="true"></i> {{ cv.location }}</p>
-          <p>
-            {% for m in cv.emails %}<a href="mailto:{{ m }}">{{ m }}</a>{% unless forloop.last %} &nbsp;·&nbsp; {% endunless %}{% endfor %}
-          </p>
-        </div>
-        <p class="sb-cv-links">
-          {% for l in cv.links %}<a class="sb-cv-chip" href="{{ l.url }}" target="_blank" rel="noopener">{{ l.label }}</a>{% endfor %}
-        </p>
-      </div>
-
       <a class="anchor" id="research-interests"></a>
       <div class="card mt-3 p-3 sb-cv-card">
         <h3 class="card-title font-weight-medium">Research Interests</h3>
@@ -63,27 +48,6 @@ layout: default
         {% endfor %}
       </div>
 
-      <a class="anchor" id="teaching-experience"></a>
-      <div class="card mt-3 p-3 sb-cv-card">
-        <h3 class="card-title font-weight-medium">Teaching Experience</h3>
-        {% for e in cv.teaching %}{% include cv_entry.liquid e=e %}{% endfor %}
-      </div>
-
-      <a class="anchor" id="academic-research-projects"></a>
-      <div class="card mt-3 p-3 sb-cv-card">
-        <h3 class="card-title font-weight-medium">Academic Research Projects</h3>
-        {% for p in cv.projects %}
-          <div class="sb-cv-proj">
-            <div class="sb-cv-proj-head">
-              <h4 class="sb-cv-role" data-toc-skip>{{ p.title }}</h4>
-              <span class="sb-cv-tags">{{ p.tags }}</span>
-            </div>
-            <p class="sb-cv-line">{{ p.text }}</p>
-            <p class="sb-cv-links"><a class="sb-cv-chip" href="{{ p.url }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> GitHub</a></p>
-          </div>
-        {% endfor %}
-      </div>
-
       <a class="anchor" id="industry-experience"></a>
       <div class="card mt-3 p-3 sb-cv-card">
         <h3 class="card-title font-weight-medium">Industry Experience</h3>
@@ -110,20 +74,6 @@ layout: default
             <p class="sb-cv-line">{{ a.text }}</p>
           </div>
         {% endfor %}
-      </div>
-
-      <a class="anchor" id="references"></a>
-      <div class="card mt-3 p-3 sb-cv-card">
-        <h3 class="card-title font-weight-medium">References</h3>
-        <div class="sb-cv-refs">
-          {% for r in cv.references %}
-            <div class="sb-cv-ref">
-              <h4 class="sb-cv-role" data-toc-skip>{{ r.name }}</h4>
-              <p class="sb-cv-org">{{ r.org }}</p>
-              <p class="sb-cv-line">{{ r.role }}</p>
-            </div>
-          {% endfor %}
-        </div>
       </div>
     </div>
   </article>
