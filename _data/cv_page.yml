@@ -2,8 +2,7 @@
 # (_data/cv.yml is only used by the "Render a CV" GitHub Action; this page no longer reads it.)
 # Text fields accept Markdown (links, *italics*). Dates are free text, e.g. "Oct 2023"; leave `end` out for "Ongoing".
 
-interests: Machine learning for biomarker discovery and clinical decision support in systems medicine. I am interested in integrating heterogeneous molecular, clinical and literature data, including transcriptomic and multi-omics information, to identify predictive biomarkers and therapeutic targets, with an emphasis on interpretable models and calibrated, uncertainty-aware predictions that remain reliable under distribution shift.
-
+interests: My research interests lie at the intersection of machine learning, trustworthy AI, and computational biology. I am interested in developing principled methods for predictive reliability, uncertainty quantification, calibration, and interpretability. My research combines theoretical analysis with computational experiments to develop principled learning methods for scientific discovery, particularly uncertainty-aware probabilistic modeling, interpretable and reliable ML for interdisciplinary applications.
 education:
   - start: Oct 2023
     location: Braunschweig, Germany
