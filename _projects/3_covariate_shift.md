@@ -13,6 +13,7 @@ github: https://github.com/baksho/dist_shift_regularization
 links:
   - label: Repository
     url: https://github.com/baksho/dist_shift_regularization
+stack: Kernel Methods, Distribution Shift, Gradient Descent
 ---
 
 I investigated how covariate shift affects model generalization and predictive reliability under distribution mismatch. The project evaluated importance-weighting and self-attention-based approaches for adapting to changing input distributions.

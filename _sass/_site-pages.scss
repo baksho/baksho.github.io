@@ -386,7 +386,7 @@ html[data-theme="dark"] .sb-card-img {
 .sb-modal-kicker {
   margin: 0 0 0.4rem;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+  font-size: 0.8rem; // +1 pt
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
@@ -1187,11 +1187,20 @@ button.sb-card-img {
 html[data-theme="dark"] .sb-card-ph {
   background: linear-gradient(135deg, rgba(127, 176, 255, 0.16), rgba(90, 240, 184, 0.14));
 }
-.sb-card-actions {
+.sb-card-tags {
+  margin: 0.1rem 0 1.1rem;
+}
+// buttons sit at the bottom of the card: details + GitHub in one row, an optional paper button in the row below
+.sb-card-foot {
   display: flex;
+  flex-direction: column;
   gap: 0.5rem;
   margin-top: auto;
   padding-top: 0.5rem;
+}
+.sb-card-actions {
+  display: flex;
+  gap: 0.5rem;
   .sb-btn {
     flex: 1 1 auto;
     justify-content: center;
@@ -1215,6 +1224,13 @@ html[data-theme="dark"] .sb-card-ph {
     }
   }
 }
+.sb-proj-sub,
+.sb-proj-area {
+  display: block;
+}
+.sb-proj-area {
+  margin-top: 0.7rem;
+}
 .sb-proj-meta {
   margin: 0 0 1.1rem;
   padding-bottom: 1rem;
@@ -1224,7 +1240,7 @@ html[data-theme="dark"] .sb-card-ph {
   h3 {
     margin: 1.5rem 0 0.55rem;
     font-family: var(--font-mono);
-    font-size: 0.72rem;
+    font-size: 0.8rem; // +1 pt
     font-weight: 700;
     letter-spacing: 0.14em;
     text-transform: uppercase;
@@ -1245,7 +1261,7 @@ html[data-theme="dark"] .sb-card-ph {
   }
   .sb-proj-stack {
     margin-top: 1.3rem;
-    font-size: 0.86rem;
+    font-size: 0.94rem; // +1 pt
     color: var(--global-text-color-light);
     strong {
       color: var(--global-text-color);

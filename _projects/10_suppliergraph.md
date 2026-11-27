@@ -12,6 +12,7 @@ github: https://github.com/baksho/suppliergraph
 links:
   - label: Repository
     url: https://github.com/baksho/suppliergraph
+stack: OWL 2, R2RML, SHACL, SPARQL, GraphRAG
 ---
 
 I built an end-to-end knowledge graph for German and EU public procurement and supplier risk on real open data (GLEIF, OCDS, CPV, OpenSanctions, EU Directive 2014/24). The pipeline covers OWL 2 ontology design, R2RML integration, entity resolution, SHACL validation, OWL RL and SPARQL rule reasoning, TransE/RotatE supplier recommendation, and GraphRAG question answering.

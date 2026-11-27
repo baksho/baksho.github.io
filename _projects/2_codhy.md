@@ -9,10 +9,11 @@ group: selected
 importance: 2
 thumb: /assets/img/publication_preview/icdm-codhy.webp
 icon: fa-flask
-alt_label: View paper
-alt_icon: fa-file-lines
-alt_link: https://arxiv.org/abs/2603.00612
+github: https://github.com/baksho/CoDHy
+paper: https://arxiv.org/abs/2603.00612
 links:
+  - label: Repository
+    url: https://github.com/baksho/CoDHy
   - label: Paper
     url: https://arxiv.org/pdf/2603.00612
 stack: LLMs, RAG, Knowledge Graphs, Multi-Agent Systems, Python

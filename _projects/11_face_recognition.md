@@ -14,6 +14,7 @@ links:
     url: https://github.com/baksho/face-recognition-system/blob/main/B.Tech%20Project_Final_v2.pdf
   - label: Repository
     url: https://github.com/baksho/face-recognition-system
+stack: MATLAB, Computer Vision
 ---
 
 I developed a face-recognition system in MATLAB as my undergraduate engineering project. This early applied project gave me a foundation in computer vision, algorithmic implementation, and computational problem-solving that preceded my later research in statistical and deep learning.

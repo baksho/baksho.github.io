@@ -36,9 +36,13 @@ Add a project as a file in _projects/ (front matter: title, kicker, subtitle, ar
 <div class="sb-card-body">
 <h3 class="sb-card-title"><button type="button" class="sb-proj-open" data-proj="proj-{{ project.importance }}">{{ project.title }}</button></h3>
 <p class="sb-card-text">{{ project.description }}</p>
+{% if project.stack %}{% assign stack_items = project.stack | split: ", " %}<ul class="sb-profile-tags sb-card-tags" aria-label="Tech stack">{% for t in stack_items %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
+<div class="sb-card-foot">
 <div class="sb-card-actions">
 <button type="button" class="sb-btn sb-btn-primary sb-proj-open" data-proj="proj-{{ project.importance }}">View details</button>
-{% if project.github %}<a class="sb-btn sb-btn-secondary" href="{{ project.github }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> View on GitHub</a>{% elsif project.alt_link %}<a class="sb-btn sb-btn-secondary" href="{{ project.alt_link }}" target="_blank" rel="noopener"><i class="fa-solid {{ project.alt_icon | default: 'fa-arrow-up-right-from-square' }}" aria-hidden="true"></i> {{ project.alt_label | default: 'Open' }}</a>{% endif %}
+{% if project.github %}<a class="sb-btn sb-btn-secondary" href="{{ project.github }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> View on GitHub</a>{% endif %}
+</div>
+{% if project.paper %}<div class="sb-card-actions"><a class="sb-btn sb-btn-secondary" href="{{ project.paper }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> View paper</a></div>{% endif %}
 </div>
 </div>
 </article>
@@ -53,7 +57,7 @@ Add a project as a file in _projects/ (front matter: title, kicker, subtitle, ar
 <button class="sb-modal-close" type="button" aria-label="Close details">&times;</button>
 <p class="sb-modal-kicker">{{ project.kicker | default: 'Project' }}</p>
 <h2 class="sb-modal-title" id="proj-{{ project.importance }}-t">{{ project.title }}</h2>
-<p class="sb-note-meta sb-proj-meta">{% if project.subtitle %}{{ project.subtitle }}<br>{% endif %}{% if project.area %}<strong>Research area</strong>: {{ project.area }}{% endif %}</p>
+<p class="sb-note-meta sb-proj-meta">{% if project.subtitle %}<span class="sb-proj-sub">{{ project.subtitle }}</span>{% endif %}{% if project.area %}<span class="sb-proj-area"><strong>Research area</strong>: {{ project.area }}</span>{% endif %}</p>
 <div class="sb-sum-body sb-proj-body">
 {{ project.content }}
 {% if project.stack %}<p class="sb-proj-stack"><strong>Technical stack</strong>: {{ project.stack }}</p>{% endif %}

@@ -12,6 +12,7 @@ github: https://github.com/baksho/DAGnostics
 links:
   - label: Repository
     url: https://github.com/baksho/DAGnostics
+stack: Causal Discovery, DAG Learning, Statistical Learning
 ---
 
 I audited continuous-optimization approaches to directed acyclic graph learning, including NOTEARS and DAGMA, with emphasis on benchmark sensitivity, standardization, and causal-structure recovery. I compared learned graph structures and explored a directed-to-undirected bridge using real protein-signaling data.

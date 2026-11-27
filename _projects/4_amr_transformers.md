@@ -13,6 +13,7 @@ github: https://github.com/baksho/AMRxformer
 links:
   - label: Repository
     url: https://github.com/baksho/AMRxformer
+stack: DNABERT, Nucleotide Transformer, LoRA (PEFT)
 ---
 
 I benchmarked encoder-only pretrained Transformer models for binary antimicrobial resistance prediction in *Staphylococcus aureus* against Cefoxitin, using pbp4 gene sequences. The project analyzed learned sequence representations and classification performance across architectures, including LoRA-based parameter-efficient fine-tuning of pretrained biological sequence models.

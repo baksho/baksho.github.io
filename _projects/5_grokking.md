@@ -10,6 +10,7 @@ importance: 3
 thumb: /assets/img/publication_preview/skill-grokking.webp
 icon: fa-infinity
 github: https://github.com/baksho/grokking-normal-hyperbolicity
+paper: https://arxiv.org/abs/2608.14803
 links:
   - label: Paper
     url: https://arxiv.org/pdf/2608.14803
