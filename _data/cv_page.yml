@@ -12,10 +12,8 @@ education:
     lines:
       - "**Thesis**: End-to-End Calibration: Theory and Empirical Evaluation in Biomedical Context"
       - "**Thesis advisor**: [Prof. Dr. Nicole Mücke](https://scholar.google.com/citations?user=yKC414MAAAAJ&hl=en)"
-      - "**Current grade**: 1.3 (German scale, 1.0 = best), excluding the thesis. Expected graduation: Nov 2026"
+      - "**Current grade**: 1.3 (German scale, 1.0 = best), excluding thesis."
     links:
-      - label: Transcript
-        url: https://drive.google.com/file/d/1p5HgIx5-xhpsS5C7d4rjZLoiyVwTQpoh/view?usp=sharing
       - label: Relevant Coursework
         url: https://drive.google.com/file/d/1yvNCL6kv779ecbK5G4nGIU2s8KSdtxfz/view?usp=sharing
       - label: Thesis Report
@@ -26,9 +24,7 @@ education:
     title: Master of Business Administration (MBA)
     org: Indian Institute of Management Indore, India
     links:
-      - label: Transcript
-        url: https://drive.google.com/file/d/1abeWX_RZ9GvZPH4EI-_0MxLc-ZcV7kS2/view?usp=sharing
-      - label: Degree
+      - label: Degree Certificate
         url: https://drive.google.com/file/d/1Q4hlor6wEfv7qxhgk4pIMRKt1Z38RhPe/view?usp=sharing
   - start: Aug 2010
     end: Jun 2014
@@ -38,11 +34,9 @@ education:
     lines:
       - "**Project**: Face Recognition System using MATLAB"
       - "**Project Advisor**: [Prof. Animesh Hazra](https://scholar.google.com/citations?user=VvGKI1gAAAAJ&hl=en)"
-      - "**Grade**: 7.83/10.0, top 10% (of 60 students)"
+      - "**Grade**: 7.83/10.0"
     links:
-      - label: Transcript
-        url: https://drive.google.com/file/d/1l-3oheZgv2zwQWnbe-RQClEdKRnkAyxm/view?usp=sharing
-      - label: Degree
+      - label: Degree Certificate
         url: https://drive.google.com/file/d/1lQdvhsW4_NkHQwERhzTcM3SvRF1H2Fw4/view?usp=sharing
       - label: Coursework
         url: https://drive.google.com/file/d/16rndZNLfOWUhpco-tfPikhmG7lIoIEZb/view?usp=sharing
@@ -69,11 +63,8 @@ research:
       - "**Advisors**: [Dr. rer. nat. Zahra Ahmadi](https://scholar.google.com/citations?user=QdQRYyAAAAAJ&hl=en), [Dr.-Ing. Raneen Younis](https://scholar.google.com/citations?user=09ulGGQAAAAJ&hl=en)"
       - "*Multi-agent System for Scientific Hypothesis Generation*"
     items:
-      - "Built an LLM- and Knowledge Graph-aware RAG-based multi-agent system that proposes biomarker-guided drug combination hypotheses from heterogeneous biomedical evidence, integrating molecular, genomic, clinical and literature information. Co-first author of the resulting ICDM 2026 demo-track paper."
-      - Designed evidence-grounded reasoning and calibrated confidence mechanisms, so the system signals how reliable each hypothesis is when evidence is incomplete or heterogeneous.
-    links:
-      - label: Reference Letter
-        url: https://drive.google.com/file/d/13uXlzoOk3ECqem7k-xUGDwUJsh1sG9Ax/view?usp=sharing
+      - "Building an LLM- and Knowledge Graph-aware RAG-based multi-agent system that proposes biomarker-guided drug combination hypotheses from heterogeneous biomedical evidence, integrating molecular, genomic, clinical and literature information. **Co-first author of the resulting ICDM 2026 demo-track paper**."
+      - Designing ReAct framework-based agentic reasoning, evidence-held-out-benchmark and Budgeted Evidence Acquition and Decision-making (BEAD) policy, and risk-controlled calibrated confidence for each hypothesis, so the system signals how reliable each hypothesis is when evidence is incomplete or heterogeneous.
   - start: Mar 2026
     end: May 2026
     location: Braunschweig, Germany
@@ -108,33 +99,27 @@ industry:
     title: Intern, Data Analytics & AI
     org: Volkswagen Financial Services AG, Germany
     items:
-      - "Placeholder: add a responsibility or project for this role."
-      - "Placeholder: add an achievement or result for this role."
-    links:
-      - label: Exp. Letter
-        url: https://drive.google.com/file/d/1A3nEEq5Xh_nIR82ZMI2BhVoKeTKXlWq2/view?usp=sharing
+      - "Collaborated on developing an ML pipeline that automates invoice analysis and approval in contractual vehicle-maintenance workflows, using CatBoost, reducing manual review time."
+      - "Designed and implemented a multi-stage Docker setup for deployment pipelines, improving container security and reducing pipeline build time."
   - start: Jun 2018
     end: Oct 2023
     location: Bangalore, India
     title: Strategy Consultant
     org: Wipro Ltd., India
     items:
-      - "Placeholder: add a responsibility or project for this role."
-      - "Placeholder: add an achievement or result for this role."
-    links:
-      - label: Exp. Letter
-        url: https://drive.google.com/file/d/1f-o3QfmCg0zNfgznZKmJ31TXBG0Lb-2p/view?usp=sharing
+      - "Launched Wipro’s 8-week GenAI accelerator program for startups in India and Silicon Valley, offering masterclasses, mentoring and investor access to the top 10 selected startups from 50+ applicants."
+      - "Identified AI/ML innovation opportunities through industry research, competitor studies and analyst briefings on emerging technologies. As part of the commercial viability team, assessed investment proposals for 100+ ideas worth $500K+ investments, devised product pricing for 50+ internal IPs."
+      - "Scouted relevant startup partners in AI/ML area aligned with the organization's focus areas, and led the startup-alliance incubation from first interest to a proof-of-concept for a data-driven product and a joint go-to-market strategy."
+      - "Owned solution strategy, RFx response writing and pricing for engineering services for automotive (US) and Industrial Manufacturing (EU) customers, coordinating 3+ teams on 100+ bids worth $10M+ in total. Supported key large deals / accounts through strategic positioning of Wipro IPs, generating $1M+ in pipeline."
   - start: Mar 2015
     end: Jun 2016
     location: Kolkata, India
     title: Solution Integrator
     org: Ericsson Global India Services Pvt. Ltd., India
     items:
-      - "Placeholder: add a responsibility or project for this role."
-      - "Placeholder: add an achievement or result for this role."
-    links:
-      - label: Exp. Letter
-        url: https://drive.google.com/file/d/1dWtcVEn87O9QGza6SoaymbzeX_nmR2Kv/view?usp=sharing
+      - "Configured Ericsson’s proprietary CBiO billing system for a leading US-based mobile carrier (70+ million subscribers) and carried out end-to-end system integration, using Toad, MySQL, PuTTY and batch scripts."
+      - "Analyzed historical usage data patterns to design new billing plans, improving the alignment between the carrier’s offerings and customer behavior."
+      - "Performed sanity, unit and integration testing across new server environments, new features etc.; resolved 100+ defects in Jira."
 
 skills:
   - name: Programming
