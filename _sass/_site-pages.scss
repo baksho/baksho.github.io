@@ -1200,8 +1200,18 @@ html[data-theme="dark"] .sb-card-ph {
 .sb-card-actions.sb-card-actions-paper .sb-btn {
   flex: 0 0 calc(50% - 0.25rem); // same width as one button of the row above
 }
-.sb-card-actions .sb-btn span {
-  color: inherit !important; // the theme paints spans dark, which would hide the arrow
+.sb-card-actions .sb-btn::after {
+  content: "\2192"; // arrow drawn as a pseudo-element (the theme paints <span>s dark)
+}
+// arrow colour = the button's own text colour, set explicitly in both themes
+.sb-card-actions .sb-btn-primary::after {
+  color: var(--global-bg-color) !important;
+}
+.sb-card-actions .sb-btn-secondary::after {
+  color: var(--global-text-color) !important;
+}
+.sb-card-actions .sb-btn-secondary:hover::after {
+  color: var(--global-bg-color) !important;
 }
 .sb-card-actions {
   display: flex;

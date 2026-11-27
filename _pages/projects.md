@@ -39,10 +39,10 @@ Add a project as a file in _projects/ (front matter: title, kicker, subtitle, ar
 {% if project.stack %}{% assign stack_items = project.stack | split: ", " %}<ul class="sb-profile-tags sb-card-tags" aria-label="Tech stack">{% for t in stack_items %}<li>{{ t }}</li>{% endfor %}</ul>{% endif %}
 <div class="sb-card-foot">
 <div class="sb-card-actions">
-<button type="button" class="sb-btn sb-btn-primary sb-proj-open" data-proj="proj-{{ project.importance }}">View details <span aria-hidden="true">→</span></button>
-{% if project.github %}<a class="sb-btn sb-btn-secondary" href="{{ project.github }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> View on GitHub <span aria-hidden="true">→</span></a>{% endif %}
+<button type="button" class="sb-btn sb-btn-primary sb-proj-open" data-proj="proj-{{ project.importance }}">View details</button>
+{% if project.github %}<a class="sb-btn sb-btn-secondary" href="{{ project.github }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> View on GitHub</a>{% endif %}
 </div>
-{% if project.paper %}<div class="sb-card-actions sb-card-actions-paper"><a class="sb-btn sb-btn-secondary" href="{{ project.paper }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> View paper <span aria-hidden="true">→</span></a></div>{% endif %}
+{% if project.paper %}<div class="sb-card-actions sb-card-actions-paper"><a class="sb-btn sb-btn-secondary" href="{{ project.paper }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> View paper</a></div>{% endif %}
 </div>
 </div>
 </article>
