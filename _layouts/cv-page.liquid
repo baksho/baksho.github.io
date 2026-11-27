@@ -17,12 +17,12 @@ layout: default
   </header>
 
   <article>
-    {% comment %} tex2jax_ignore: MathJax treats text between two "$" as a formula, so amounts like $10M+ ... $1M+ must not be scanned on this page. {% endcomment %}
+    {% comment %} MathJax treats text between two dollar signs as a formula. Every dollar sign is wrapped in its own span below (a formula cannot span two elements), and tex2jax_ignore asks MathJax to skip this page. {% endcomment %}
     <div class="cv tex2jax_ignore">
       <a class="anchor" id="research-interests"></a>
       <div class="card mt-3 p-3 sb-cv-card">
         <h3 class="card-title font-weight-medium">Research Interests</h3>
-        <p class="sb-cv-text">{{ cv.interests }}</p>
+        <p class="sb-cv-text">{{ cv.interests | replace: '$', '<span>$</span>' }}</p>
       </div>
 
       <a class="anchor" id="education"></a>
@@ -43,7 +43,7 @@ layout: default
         <p class="sb-cv-sub">Accepted papers</p>
         {% for p in cv.publications %}
           <div class="sb-cv-pub">
-            <p class="sb-cv-line">{{ p.text | markdownify | remove: '<p>' | remove: '</p>' }}</p>
+            <p class="sb-cv-line">{{ p.text | markdownify | remove: '<p>' | remove: '</p>' | replace: '$', '<span>$</span>' }}</p>
             {% include cv_links.liquid links=p.links %}
           </div>
         {% endfor %}
@@ -61,7 +61,7 @@ layout: default
         <dl class="sb-cv-skills">
           {% for s in cv.skills %}
             <dt>{{ s.name }}</dt>
-            <dd>{{ s.items }}</dd>
+            <dd>{{ s.items | replace: '$', '<span>$</span>' }}</dd>
           {% endfor %}
         </dl>
       </div>
@@ -72,7 +72,7 @@ layout: default
         {% for a in cv.awards %}
           <div class="sb-cv-award">
             <h4 class="sb-cv-role" data-toc-skip>{{ a.title }}</h4>
-            <p class="sb-cv-line">{{ a.text }}</p>
+            <p class="sb-cv-line">{{ a.text | replace: '$', '<span>$</span>' }}</p>
           </div>
         {% endfor %}
       </div>

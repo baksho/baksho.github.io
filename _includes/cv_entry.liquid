@@ -12,12 +12,12 @@
     <h4 class="sb-cv-role" data-toc-skip>{{ include.e.title }}</h4>
     {% if include.e.org %}<p class="sb-cv-org">{{ include.e.org }}</p>{% endif %}
     {% for line in include.e.lines %}
-      <p class="sb-cv-line">{{ line | markdownify | remove: '<p>' | remove: '</p>' }}</p>
+      <p class="sb-cv-line">{{ line | markdownify | remove: '<p>' | remove: '</p>' | replace: '$', '<span>$</span>' }}</p>
     {% endfor %}
     {% if include.e.items %}
       <ul class="sb-cv-items">
         {% for item in include.e.items %}
-          <li>{{ item | markdownify | remove: '<p>' | remove: '</p>' }}</li>
+          <li>{{ item | markdownify | remove: '<p>' | remove: '</p>' | replace: '$', '<span>$</span>' }}</li>
         {% endfor %}
       </ul>
     {% endif %}
