@@ -1199,9 +1199,9 @@ html[data-theme="dark"] .sb-card-ph {
 }
 .sb-card-actions.sb-card-actions-paper .sb-btn {
   flex: 0 0 calc(50% - 0.25rem); // same width as one button of the row above
-  span {
-    color: inherit !important;
-  }
+}
+.sb-card-actions .sb-btn span {
+  color: inherit !important; // the theme paints spans dark, which would hide the arrow
 }
 .sb-card-actions {
   display: flex;
