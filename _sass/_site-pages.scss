@@ -1188,15 +1188,20 @@ html[data-theme="dark"] .sb-card-ph {
   background: linear-gradient(135deg, rgba(127, 176, 255, 0.16), rgba(90, 240, 184, 0.14));
 }
 .sb-card-tags {
-  margin: 0.1rem 0 1.1rem;
+  margin: 0.1rem 0 0;
 }
 // buttons sit at the bottom of the card: details + GitHub in one row, an optional paper button in the row below
 .sb-card-foot {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
-  margin-top: auto;
-  padding-top: 0.5rem;
+  margin-top: 1rem; // buttons follow the chips directly instead of being pushed to the card bottom
+}
+.sb-card-actions.sb-card-actions-paper .sb-btn {
+  flex: 0 0 calc(50% - 0.25rem); // same width as one button of the row above
+  span {
+    color: inherit !important;
+  }
 }
 .sb-card-actions {
   display: flex;

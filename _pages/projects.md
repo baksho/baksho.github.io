@@ -42,7 +42,7 @@ Add a project as a file in _projects/ (front matter: title, kicker, subtitle, ar
 <button type="button" class="sb-btn sb-btn-primary sb-proj-open" data-proj="proj-{{ project.importance }}">View details</button>
 {% if project.github %}<a class="sb-btn sb-btn-secondary" href="{{ project.github }}" target="_blank" rel="noopener"><i class="fa-brands fa-github" aria-hidden="true"></i> View on GitHub</a>{% endif %}
 </div>
-{% if project.paper %}<div class="sb-card-actions"><a class="sb-btn sb-btn-secondary" href="{{ project.paper }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> View paper</a></div>{% endif %}
+{% if project.paper %}<div class="sb-card-actions sb-card-actions-paper"><a class="sb-btn sb-btn-secondary" href="{{ project.paper }}" target="_blank" rel="noopener"><i class="fa-solid fa-file-lines" aria-hidden="true"></i> View paper <span aria-hidden="true">→</span></a></div>{% endif %}
 </div>
 </div>
 </article>
